@@ -1,0 +1,961 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Audio } from 'expo-av';
+import { useEffect, useRef, useState } from 'react';
+import { Alert, Dimensions, Image, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Animated, {
+    cancelAnimation,
+    Easing,
+    runOnJS,
+    useAnimatedStyle,
+    useSharedValue,
+    withDelay,
+    withRepeat,
+    withSequence,
+    withTiming
+} from 'react-native-reanimated';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useLanguage } from '../context/LanguageContext';
+
+const { width, height } = Dimensions.get('window');
+
+// --- Falling Flower Component ---
+const FLOWER_IMAGES = [
+    require('../assets/images/flower1.jpg'),
+    require('../assets/images/flower2.jpg'),
+    require('../assets/images/flower3.jpg')
+];
+
+const COIN_IMAGES = [
+    require('../assets/images/coin1.png'),
+    require('../assets/images/coin2.png')
+];
+
+const FLOWER_COUNT = 15;
+const FallingFlower = ({ index, onComplete }) => {
+    // Determine random properties ONCE on mount
+    const [config] = useState(() => ({
+        x: Math.random() * width,
+        delay: Math.random() * 500, // Reduced delay (0-0.5s)
+        duration: 4000 + Math.random() * 2000, // 4-6s fall duration
+        // Pick random flower image once
+        imageSource: FLOWER_IMAGES[Math.floor(Math.random() * FLOWER_IMAGES.length)]
+    }));
+
+    // Use stable config values
+    const randomX = config.x;
+    const randomDelay = config.delay;
+    const randomDuration = config.duration;
+    const imageSource = config.imageSource;
+
+
+
+    const translateY = useSharedValue(-50);
+    const rotate = useSharedValue(0);
+    const opacity = useSharedValue(1);
+
+    useEffect(() => {
+        // Target Y: Bottom Shelf area ~ (height - 190 range) - Moved UP by 30px
+        // Add random variation to "pile" them naturally
+        const targetY = height - 190 + (Math.random() * 20);
+
+        translateY.value = withDelay(
+            randomDelay,
+            withSequence(
+                // 1. Fall Down
+                withTiming(targetY, { duration: randomDuration, easing: Easing.out(Easing.quad) }),
+                // 2. "Settle" - stay there for a bit (5-8 seconds)
+                withDelay(5000 + Math.random() * 3000,
+                    // 3. Fade Out
+                    withTiming(targetY + 20, { duration: 1000 }, (finished) => { // Slight drop + fade
+                        if (finished) {
+                            runOnJS(onComplete)(index);
+                        }
+                    })
+                )
+            )
+        );
+
+        // Match fade out opacity
+        opacity.value = withDelay(
+            randomDelay + randomDuration + 5000, // Wait for fall + settle time
+            withTiming(0, { duration: 1000 })
+        );
+
+        rotate.value = withDelay(
+            randomDelay,
+            withRepeat(withTiming(360, { duration: 2000 }), -1)
+        );
+    }, []);
+
+    const style = useAnimatedStyle(() => ({
+        transform: [
+            { translateX: randomX },
+            { translateY: translateY.value },
+            { rotate: `${rotate.value}deg` }
+        ],
+        opacity: opacity.value
+    }));
+
+    return (
+        <Animated.Image
+            source={imageSource}
+            style={[styles.flower, style]}
+            resizeMode="contain"
+        />
+    );
+};
+
+const FallingCoin = ({ index, onComplete }) => {
+    // Determine random properties ONCE on mount
+    const [config] = useState(() => ({
+        x: Math.random() * width,
+        delay: Math.random() * 500,
+        duration: 3000 + Math.random() * 1500, // Coins fall slightly faster (3-4.5s)
+        imageSource: COIN_IMAGES[Math.floor(Math.random() * COIN_IMAGES.length)]
+    }));
+
+    const translateY = useSharedValue(-50);
+    const rotate = useSharedValue(0);
+
+    const opacity = useSharedValue(1);
+
+    useEffect(() => {
+        const targetY = height - 190 + (Math.random() * 20);
+
+        translateY.value = withDelay(
+            config.delay,
+            withSequence(
+                withTiming(targetY, { duration: config.duration, easing: Easing.bounce }, (finished) => {
+                    // removing onComplete here, move to end of lifecycle
+                }),
+                withDelay(5000 + Math.random() * 3000,
+                    withTiming(targetY + 10, { duration: 1000 }, (finished) => {
+                        if (finished) runOnJS(onComplete)(index);
+                    })
+                )
+            )
+        );
+
+        opacity.value = withDelay(
+            config.delay + config.duration + 5000,
+            withTiming(0, { duration: 1000 })
+        );
+
+        rotate.value = withDelay(
+            config.delay,
+            withRepeat(withTiming(360, { duration: 1000 }), -1)
+        );
+    }, []);
+
+    const style = useAnimatedStyle(() => ({
+        transform: [
+            { translateX: config.x },
+            { translateY: translateY.value },
+            { rotateY: `${rotate.value}deg` } // 3D spin for coins looks cool
+        ],
+        opacity: opacity.value
+    }));
+
+    return (
+        <Animated.Image
+            source={config.imageSource}
+            style={[styles.coin, style]}
+            resizeMode="contain"
+        />
+    );
+};
+
+// --- Helper Components for the Icons ---
+const SideIcon = ({ color, emoji, imageSource, label, onPress }) => (
+    <TouchableOpacity onPress={onPress}>
+        <View style={styles.iconWrapper}>
+            <View style={[styles.iconCircle, { backgroundColor: color || 'rgba(0,0,0,0.4)' }]}>
+                {imageSource ? (
+                    <Image source={imageSource} style={{ width: 30, height: 30 }} resizeMode="contain" />
+                ) : (
+                    <Text style={styles.iconEmoji}>{emoji}</Text>
+                )}
+            </View>
+            {label && <Text style={styles.iconLabel}>{label}</Text>}
+        </View>
+    </TouchableOpacity>
+);
+
+// --- Dummy Translation Data (Simulating Backend) ---
+const TRANSLATIONS = {
+    en: {
+        flowers: 'Flowers',
+        coins: 'Coins',
+        shankh: 'Shankh',
+        more: 'More',
+        slokas: 'Slokas',
+        chanting: 'Chanting',
+        share: 'Share',
+        about: 'About',
+        allImages: 'All Images',
+        popularImages: 'Popular Images',
+        download: 'Download',
+        wallpaper: 'Wallpaper'
+    },
+    hi: {
+        flowers: 'पुष्प',
+        coins: 'मुद्रा',
+        shankh: 'शंख',
+        more: 'अधिक',
+        slokas: 'श्लोक',
+        chanting: 'जाप',
+        share: 'साझा करें',
+        about: 'बारे में',
+        allImages: 'सभी चित्र',
+        popularImages: 'लोकप्रिय',
+        download: 'डाउनलोड',
+        wallpaper: 'वॉलपेपर'
+    },
+    // Add other languages as needed, defaulting to English for now
+};
+
+const DailyDarshanScreen = ({ navigation }) => {
+    const { language, isUIReady } = useLanguage();
+    const insets = useSafeAreaInsets();
+
+    // Get translations for current language or fallback to English
+    const t = TRANSLATIONS[language] || TRANSLATIONS['en'];
+
+    // ... (rest of the component)
+
+    // Apply strict safe area logic to critical containers
+    const bellContainerStyle = {
+        top: Math.max(insets.top, 10), // Ensure at least 20px, but more if notch exists
+    };
+
+    const bottomSectionStyle = {
+        paddingBottom: Math.max(insets.bottom, 10), // Ensure bottom nav bar space
+    };
+
+    // --- Daily Streak Logic ---
+    const [streak, setStreak] = useState(1);
+    const [streakDataLoaded, setStreakDataLoaded] = useState(false);
+
+    useEffect(() => {
+        if (isUIReady) {
+            checkDailyStreak();
+        }
+    }, [isUIReady]);
+
+    const checkDailyStreak = async () => {
+        try {
+            const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+            const lastDate = await AsyncStorage.getItem('lastDarshanDate');
+            const storedStreak = await AsyncStorage.getItem('currentStreak');
+
+            let newStreak = 1;
+            let shouldAutoPlay = false;
+
+            if (!lastDate) {
+                // First time ever
+                newStreak = 1;
+                shouldAutoPlay = true; // Maybe auto-play first time? User didn't specify, but "auto happen only for first time" implies new day
+            } else if (lastDate === today) {
+                // Already done today
+                newStreak = parseInt(storedStreak) || 1;
+                shouldAutoPlay = false;
+            } else {
+                // Check if it's consecutive (yesterday)
+                const yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+                const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+                if (lastDate === yesterdayStr) {
+                    // Consecutive day!
+                    newStreak = (parseInt(storedStreak) || 1) + 1;
+                    shouldAutoPlay = true;
+                } else {
+                    // Missed a day (Streak Broken)
+                    newStreak = 1;
+                    shouldAutoPlay = true; // New day, so perform Aarti
+                }
+            }
+
+            setStreak(newStreak);
+            setStreakDataLoaded(true);
+
+            // Save new state if it changed (optimization: only if different or new day)
+            if (lastDate !== today) {
+                await AsyncStorage.setItem('lastDarshanDate', today);
+                await AsyncStorage.setItem('currentStreak', newStreak.toString());
+            }
+
+            // Trigger Puja if needed
+            // IMPORTANT: "happen only for the first time" -> meaning first time TODAY
+            if (shouldAutoPlay) {
+                console.log("Auto-playing Puja!");
+                // Small delay to let screen mount/render before animation starts
+                setTimeout(() => {
+                    performAarti();
+                }, 1000);
+            }
+
+        } catch (error) {
+            console.error('Error checking streak:', error);
+        }
+    };
+
+    // --- DEBUG: Reset Data for Testing ---
+    const debugResetStreak = async () => {
+        try {
+            await AsyncStorage.removeItem('lastDarshanDate');
+            await AsyncStorage.removeItem('currentStreak');
+            setStreak(1);
+            Alert.alert("Testing Mode", "Data Reset! \n\n1. Restart App -> Will count as Day 1 & Auto Play.\n2. Come back tomorrow -> Day 2.");
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+
+    // --- Animations & Sound ---
+    const bellRotation = useSharedValue(0);
+    const diyaOpacity = useSharedValue(1);
+    const soundRef = useRef(null);
+    const [isRinging, setIsRinging] = useState(false);
+
+    // Cleanup sound on unmount
+    useEffect(() => {
+        return () => {
+            if (soundRef.current) {
+                soundRef.current.unloadAsync();
+            }
+        };
+    }, []);
+
+    const ringBell = async () => {
+        if (isRinging) return;
+        setIsRinging(true);
+
+        try {
+            // 1. Start Sound
+            // Using local file at src/assets/sounds/bell_sound.mp3
+            const { sound } = await Audio.Sound.createAsync(
+                require('../assets/sounds/bell_sound.mp3'),
+                { shouldPlay: true, isLooping: true }
+            );
+            soundRef.current = sound;
+
+            // 2. Start Animation
+            bellRotation.value = withRepeat(
+                withSequence(
+                    withTiming(15, { duration: 500, easing: Easing.inOut(Easing.ease) }),
+                    withTiming(-15, { duration: 500, easing: Easing.inOut(Easing.ease) })
+                ),
+                -1, // Infinite loop
+                true // Auto-reverse
+            );
+
+            // 3. Stop after 3 seconds
+            setTimeout(async () => {
+                // Stop Animation
+                cancelAnimation(bellRotation);
+                bellRotation.value = withTiming(0, { duration: 500 });
+
+                // Stop Sound
+                if (soundRef.current) {
+                    await soundRef.current.stopAsync();
+                    await soundRef.current.unloadAsync();
+                    soundRef.current = null;
+                }
+                setIsRinging(false);
+            }, 8000);
+
+        } catch (error) {
+            console.log('Error playing sound:', error);
+            setIsRinging(false);
+        }
+    };
+
+    // --- Shankh Sound ---
+    const shankhSoundRef = useRef(null);
+    const [isShankhPlaying, setIsShankhPlaying] = useState(false);
+
+    // Cleanup shankh on unmount
+    useEffect(() => {
+        return () => {
+            if (shankhSoundRef.current) {
+                shankhSoundRef.current.unloadAsync();
+            }
+        };
+    }, []);
+
+    const playShankh = async () => {
+        if (isShankhPlaying) {
+            // If already playing, stop it
+            if (shankhSoundRef.current) {
+                await shankhSoundRef.current.stopAsync();
+                await shankhSoundRef.current.unloadAsync();
+                shankhSoundRef.current = null;
+            }
+            setIsShankhPlaying(false);
+            return;
+        }
+
+        setIsShankhPlaying(true);
+        try {
+            const { sound } = await Audio.Sound.createAsync(
+                require('../assets/sounds/shank-sound.mp3'),
+                { shouldPlay: true }
+            );
+            shankhSoundRef.current = sound;
+
+            // Auto-reset state when playback finishes
+            sound.setOnPlaybackStatusUpdate((status) => {
+                if (status.didJustFinish) {
+                    setIsShankhPlaying(false);
+                    sound.unloadAsync(); // Cleanup
+                }
+            });
+
+        } catch (error) {
+            console.log('Error playing Shankh:', error);
+            setIsShankhPlaying(false);
+        }
+    };
+
+    useEffect(() => {
+        // Diya Flickering (Always On)
+        diyaOpacity.value = withRepeat(
+            withSequence(
+                withTiming(0.6, { duration: 500 }),
+                withTiming(1, { duration: 500 })
+            ),
+            -1,
+            true
+        );
+    }, []);
+
+    const bellStyle = useAnimatedStyle(() => ({
+        transform: [
+            { translateY: -40 },
+            { rotate: `${bellRotation.value}deg` },
+            { translateY: 40 }
+        ]
+    }));
+
+    // --- Aarti Animation (Diya) ---
+    const aartiRotation = useSharedValue(0);
+    const aartiScale = useSharedValue(1);
+    const [isAartiActive, setIsAartiActive] = useState(false);
+
+    const performAarti = () => {
+        if (isAartiActive) return;
+        setIsAartiActive(true);
+
+        // --- Grand Puja Mode ---
+        // Trigger all other effects
+        playShankh();
+        ringBell(); // Add Bells to the Puja!
+        triggerFlowerShower();
+        triggerCoinShower();
+
+        // 1. Scale Up slightly
+        aartiScale.value = withTiming(1.5, { duration: 500 });
+
+        // 2. Start Circular Motion (0 -> 360 * 4 rounds)
+        // Speed check: 3 rounds took 10s (3.33s/round).
+        // 4 rounds should take ~13.33s to keep same speed.
+        aartiRotation.value = withTiming(360 * 4, {
+            duration: 13333,
+            easing: Easing.linear
+        }, (finished) => {
+            if (finished) {
+                // Instantly reset rotation (since 360*4 == 0 degrees)
+                aartiRotation.value = 0;
+
+                // Animate scale back down
+                aartiScale.value = withTiming(1, { duration: 1000 });
+                runOnJS(setIsAartiActive)(false);
+            }
+        });
+    };
+
+    const diyaStyle = useAnimatedStyle(() => {
+        // Circular Path Logic
+        // Radius of the circle (covers center of screen)
+        const radius = 120;
+
+        // Convert rotation (degrees) to radians
+        const angleRad = (aartiRotation.value * Math.PI) / 180;
+
+        // If not active, stay at 0,0 (relative to container)
+        // When active, move in circle. 
+        // We offset by -90deg (-PI/2) so it starts at bottom (270 deg / -90 deg) relative to circle center
+        // But since Diya is at bottom, we want circle CENTER to be above it.
+        // Let's assume standard parametric circle: x = R*cos(a), y = R*sin(a)
+
+        // We want Start Position (Bottom Center) -> Center of Screen -> Circle
+
+        if (aartiRotation.value === 0) {
+            return {
+                opacity: diyaOpacity.value,
+                transform: [{ scale: 1 }]
+            };
+        }
+
+        return {
+            opacity: 1, // Full opacity during Aarti
+            transform: [
+                { scale: aartiScale.value },
+                // Move orbit center UP by 'radius' so 'Bottom' touches original position? 
+                // Easier: Just oscillate X and Y.
+                // Circle path: 
+                // X = R * sin(angle)
+                // Y = -R * (1 - cos(angle))  <-- Starts at 0, goes up to -2R, back to 0
+
+                // We also add a "Lift" based on scale (scales 1->1.5). 
+                // (aartiScale.value - 1) goes 0 -> 0.5. 
+                // Multiply by 120 -> Lifts 60px up.
+                { translateX: radius * Math.sin(angleRad) },
+                { translateY: -radius * (1 - Math.cos(angleRad)) - (aartiScale.value - 1) * 120 }
+            ]
+        };
+    });
+
+    // --- Flower Shower State ---
+    const [activeFlowers, setActiveFlowers] = useState([]);
+    const showerIntervalRef = useRef(null);
+
+    const triggerFlowerShower = () => {
+        // Prevent multiple intervals
+        if (showerIntervalRef.current) return;
+
+        // Function to add a small batch of flowers
+        const addBatch = () => {
+            const newFlowers = Array.from({ length: 2 }, (_, i) => ({
+                id: Date.now() + Math.random(), // Ensure unique ID
+            }));
+            setActiveFlowers(prev => [...prev, ...newFlowers]);
+        };
+
+        // Start immediate batch
+        addBatch();
+
+        // Continue adding batches every 300ms for 10 seconds (Continuous flow)
+        showerIntervalRef.current = setInterval(addBatch, 300);
+
+        // Stop generating after 10 seconds
+        setTimeout(() => {
+            if (showerIntervalRef.current) {
+                clearInterval(showerIntervalRef.current);
+                showerIntervalRef.current = null;
+            }
+        }, 10000);
+    };
+
+    const removeFlower = (index) => {
+        // No-op: handled by batch cleanup mostly, or let them fall off screen
+    };
+
+    // Cleanup interval on unmount
+    useEffect(() => {
+        return () => {
+            if (showerIntervalRef.current) {
+                clearInterval(showerIntervalRef.current);
+            }
+        };
+    }, []);
+
+    // Clear flowers state completely after 15s (10s generation + 5s fall time)
+    useEffect(() => {
+        if (activeFlowers.length > 0) {
+            const timer = setTimeout(() => {
+                // Only clear if no new generation (simple check)
+                if (!showerIntervalRef.current) {
+                    setActiveFlowers([]);
+                }
+            }, 15000);
+            return () => clearTimeout(timer);
+        }
+    }, [activeFlowers]);
+
+    // --- Coin Shower State ---
+    const [activeCoins, setActiveCoins] = useState([]);
+    const coinIntervalRef = useRef(null);
+
+    const triggerCoinShower = () => {
+        if (coinIntervalRef.current) return;
+
+        const addBatch = () => {
+            const newCoins = Array.from({ length: 2 }, (_, i) => ({
+                id: Date.now() + Math.random(),
+            }));
+            setActiveCoins(prev => [...prev, ...newCoins]);
+        };
+
+        addBatch();
+        coinIntervalRef.current = setInterval(addBatch, 300);
+
+        setTimeout(() => {
+            if (coinIntervalRef.current) {
+                clearInterval(coinIntervalRef.current);
+                coinIntervalRef.current = null;
+            }
+        }, 10000);
+    };
+
+    const removeCoin = (index) => { };
+
+    useEffect(() => {
+        return () => {
+            if (coinIntervalRef.current) clearInterval(coinIntervalRef.current);
+        };
+    }, []);
+
+    useEffect(() => {
+        if (activeCoins.length > 0) {
+            const timer = setTimeout(() => {
+                if (!coinIntervalRef.current) setActiveCoins([]);
+            }, 15000);
+            return () => clearTimeout(timer);
+        }
+    }, [activeCoins]);
+
+    return (
+        <View style={styles.container}>
+            <StatusBar barStyle="light-content" />
+
+            {/* Falling Flowers Layer */}
+            {activeFlowers.map((flower, index) => (
+                <FallingFlower key={flower.id} index={index} onComplete={removeFlower} />
+            ))}
+
+            {/* Falling Coins Layer */}
+            {activeCoins.map((coin, index) => (
+                <FallingCoin key={coin.id} index={index} onComplete={removeCoin} />
+            ))}
+
+            {/* 1. Background Wallpaper (Replaces Gradient & Center Content) */}
+            <Image
+                source={{ uri: 'https://m.media-amazon.com/images/I/61k71BV8B3L._AC_UF1000,1000_QL80_.jpg' }}
+                style={styles.background}
+                resizeMode="cover"
+            />
+
+            {/* 2. Top Layer: Hanging Bells */}
+            {/* User requested to move bells UP. Removed safe area constraint to allow them to go higher */}
+            <View style={[styles.bellsContainer, { top: 10 }]}>
+                <TouchableOpacity onPress={ringBell} activeOpacity={0.8}>
+                    <Animated.View style={[styles.bellWrapper, styles.bellLeft, bellStyle]}>
+                        <View style={styles.bellString} />
+                        <Text style={styles.bellEmoji}>🔔</Text>
+                    </Animated.View>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={ringBell} activeOpacity={0.8}>
+                    <Animated.View style={[styles.bellWrapper, styles.bellRight, bellStyle]}>
+                        <View style={styles.bellString} />
+                        <Text style={styles.bellEmoji}>🔔</Text>
+                    </Animated.View>
+                </TouchableOpacity>
+            </View>
+
+            {/* ... */}
+
+            {/* 5. Bottom Controls */}
+            <View style={[styles.bottomSection, { paddingBottom: Math.max(insets.bottom, 20) }]}>
+                {/* Tab Bar */}
+                <View style={styles.tabBar}>
+                    <Text style={styles.tabItem}>{t.allImages}</Text>
+
+                    {/* Streak Counter (Center) */}
+                    <View style={{ alignItems: 'center', width: 80 }}>
+                        <Text style={{ fontSize: 16, color: '#8b0000', fontWeight: 'bold' }}>
+                            {streak || 1} {language === 'hi' ? 'दिन' : 'Days'}
+                        </Text>
+                        <Text style={{ fontSize: 10, color: '#5e3a0e', fontWeight: '600' }}>
+                            {language === 'hi' ? 'दर्शन' : 'Darshan'}
+                        </Text>
+                    </View>
+
+                    <Text style={styles.tabItem}>{t.popularImages}</Text>
+                </View>
+
+                {/* Player Bar */}
+                <View style={styles.playerBar}>
+                    <TouchableOpacity style={styles.playButton}>
+                        <Text style={styles.playIcon}>⬇️</Text>
+                        <Text style={styles.playText}>{t.download}</Text>
+                    </TouchableOpacity>
+
+                    {/* Spacer for center Diya */}
+                    <View style={{ width: 80 }} />
+
+                    <TouchableOpacity style={styles.moreButton}>
+                        <Text style={styles.moreIcon}>🖼️</Text>
+                        <Text style={styles.moreText}>{t.wallpaper}</Text>
+                    </TouchableOpacity>
+                </View>
+
+                {/* Central Big Diya */}
+                <View style={[styles.centerThaliContainer]} pointerEvents="box-none">
+                    <TouchableOpacity onPress={performAarti} activeOpacity={0.8}>
+                        <Animated.Text style={[styles.thaliEmoji, diyaStyle]}>🪔</Animated.Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+
+            {/* 4. Side Icons Layer */}
+            <View style={styles.sidesContainer}>
+                {/* Left Column */}
+                <View style={styles.leftColumn}>
+                    <SideIcon
+                        emoji="🌼"
+                        label={t.flowers}
+                        color="#F1C40F"
+                        onPress={triggerFlowerShower}
+                    />
+
+                    <SideIcon
+                        emoji="🪙"
+                        label={t.coins}
+                        color="#F39C12"
+                        onPress={triggerCoinShower}
+                    />
+                    <SideIcon
+                        emoji="🐚"
+                        label={t.shankh}
+                        onPress={playShankh}
+                    />
+                    <SideIcon emoji="⋮" label={t.more} onPress={debugResetStreak} />
+                </View>
+
+                {/* Right Column */}
+                <View style={styles.rightColumn}>
+                    <SideIcon
+                        imageSource={require('../assets/images/sri-krishna-slokas.png')}
+                        label={t.slokas}
+                        color="#E67E22"
+                        onPress={() => navigation.navigate('Slokas')}
+                    />
+                    <SideIcon
+                        imageSource={require('../assets/images/rudraksh-mala.png')}
+                        label={t.chanting}
+                        color="#D35400"
+                        onPress={() => navigation.navigate('MantraSelection')}
+                    />
+                    <SideIcon emoji="📤" label={t.share} color="#3498DB" />
+                    <SideIcon emoji="ℹ️" label={t.about} />
+                </View>
+            </View>
+
+            {/* 5. Bottom Controls */}
+            <View style={styles.bottomSection}>
+                {/* Tab Bar */}
+                <View style={styles.tabBar}>
+                    <Text style={styles.tabItem}>{t.allImages}</Text>
+
+                    {/* Streak Counter (Center) */}
+                    <View style={{ alignItems: 'center', width: 80 }}>
+                        <Text style={{ fontSize: 16, color: '#8b0000', fontWeight: 'bold' }}>
+                            {streak || 1} {language === 'hi' ? 'दिन' : 'Days'}
+                        </Text>
+                        <Text style={{ fontSize: 10, color: '#5e3a0e', fontWeight: '600' }}>
+                            {language === 'hi' ? 'दर्शन' : 'Darshan'}
+                        </Text>
+                    </View>
+
+                    <Text style={styles.tabItem}>{t.popularImages}</Text>
+                </View>
+
+                {/* Player Bar */}
+                <View style={styles.playerBar}>
+                    <TouchableOpacity style={styles.playButton}>
+                        <Text style={styles.playIcon}>⬇️</Text>
+                        <Text style={styles.playText}>{t.download}</Text>
+                    </TouchableOpacity>
+
+                    {/* Spacer for center Diya */}
+                    <View style={{ width: 80 }} />
+
+                    <TouchableOpacity style={styles.moreButton}>
+                        <Text style={styles.moreIcon}>🖼️</Text>
+                        <Text style={styles.moreText}>{t.wallpaper}</Text>
+                    </TouchableOpacity>
+                </View>
+
+                {/* Central Big Diya */}
+                <View style={[styles.centerThaliContainer]} pointerEvents="box-none">
+                    <TouchableOpacity onPress={performAarti} activeOpacity={0.8}>
+                        <Animated.Text style={[styles.thaliEmoji, diyaStyle]}>🪔</Animated.Text>
+                    </TouchableOpacity>
+                </View>
+
+                {/* Safe Area Spacer for Bottom */}
+                <SafeAreaView edges={['bottom']} style={{ backgroundColor: '#CD9730' }} />
+            </View>
+        </View>
+    );
+};
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#000',
+    },
+    background: {
+        ...StyleSheet.absoluteFillObject,
+    },
+    // --- Top Bells ---
+    bellsContainer: {
+        position: 'absolute',
+        top: 20,
+        left: 0,
+        right: 0,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingHorizontal: 30, // Increased to move inswards x-axis
+        zIndex: 20,
+    },
+    bellWrapper: {
+        alignItems: 'center',
+    },
+    bellString: {
+        width: 2,
+        height: 40,
+        backgroundColor: '#FFD700',
+    },
+    bellEmoji: {
+        fontSize: 50, // Increased size
+        marginTop: -5,
+        color: '#FFD700', // Gold attempt via text
+    },
+    // --- Side Icons ---
+    sidesContainer: {
+        position: 'absolute',
+        bottom: 160, // Positioned above the tab bar (which is at bottom 0 and ~100px high)
+        left: 0,
+        right: 0,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingHorizontal: 15,
+        zIndex: 10,
+    },
+    leftColumn: {
+        gap: 15, // Spacing between icons
+    },
+    rightColumn: {
+        gap: 15,
+    },
+    iconWrapper: {
+        alignItems: 'center',
+    },
+    iconCircle: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        alignItems: 'center',
+        justifyContent: 'center',
+
+        // Visibility Enhancements
+        backgroundColor: 'rgba(0,0,0,0.5)', // Darker background
+        borderWidth: 1.5,
+        borderColor: 'rgba(255, 255, 255, 0.9)', // Bright crisp border
+
+        // Shadow for depth
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+    },
+    iconEmoji: {
+        fontSize: 24,
+    },
+    iconLabel: {
+        color: '#fff',
+        fontSize: 10,
+        marginTop: 4,
+        fontWeight: 'bold',
+    },
+    // --- Bottom Section ---
+    bottomSection: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 30,
+    },
+    tabBar: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        alignItems: 'center',
+        paddingVertical: 10,
+        backgroundColor: 'rgba(255, 255, 255, 0.8)', // Semi-transparent strip
+    },
+    tabItem: {
+        color: '#5e3a0e', // Dark brown
+        fontWeight: 'bold',
+        fontSize: 16,
+    },
+    centerThaliContainer: {
+        position: 'absolute',
+        bottom: 50, // Increased from 20 to move up
+        left: 0,
+        right: 0,
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 50,
+        pointerEvents: 'none', // Allow clicks to pass through if needed, or remove if interactive
+    },
+    thaliEmoji: {
+        fontSize: 80,
+    },
+    playerBar: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: '#CD9730', // Gold/DarkYellow bar
+        paddingVertical: 10,
+        paddingHorizontal: 30,
+    },
+    playButton: {
+        alignItems: 'center',
+    },
+    playIcon: {
+        fontSize: 30,
+        color: '#fff',
+    },
+    playText: {
+        color: '#8b0000',
+        fontSize: 12,
+        fontWeight: 'bold',
+    },
+    moreButton: {
+        alignItems: 'center',
+    },
+    moreIcon: {
+        fontSize: 30,
+        color: '#8b0000',
+    },
+    moreText: {
+        color: '#8b0000',
+        fontSize: 12,
+        fontWeight: 'bold',
+    },
+    flower: {
+        position: 'absolute',
+        top: -50,
+        width: 40,
+        height: 40,
+        zIndex: 100,
+    },
+    coin: {
+        position: 'absolute',
+        top: -50,
+        width: 35,
+        height: 35,
+        zIndex: 100,
+    },
+});
+
+export default DailyDarshanScreen;
