@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRoute } from '@react-navigation/native';
 import { Audio } from 'expo-av';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Dimensions, Image, Modal, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -29,6 +30,8 @@ const COIN_IMAGES = [
     require('../assets/images/coin1.png'),
     require('../assets/images/coin2.png')
 ];
+
+// --- Dummy Music Data Removed (Moved to MantrasScreen)
 
 const FLOWER_COUNT = 15;
 const FallingFlower = ({ index, onComplete }) => {
@@ -456,13 +459,113 @@ const DailyDarshanScreen = ({ navigation }) => {
     const aartiScale = useSharedValue(1);
     const [isAartiActive, setIsAartiActive] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
-    const [isSaveModalVisible, setSaveModalVisible] = useState(false); // New State
+    const [isSaveModalVisible, setSaveModalVisible] = useState(false);
+
+    // --- Music Player State (Restored) ---
+    const [sound, setSound] = useState(null);
+    const [currentTrack, setCurrentTrack] = useState(null);
+    const route = useRoute();
+    const playCountRef = useRef(0); // Track how many times played
+    const currentRepeatModeRef = useRef(0); // Store for callback access
+
+    // Check for incoming track from MantrasScreen
+    useEffect(() => {
+        if (route.params?.selectedTrack) {
+            playTrack(route.params.selectedTrack, route.params.repeatMode || 0);
+        }
+    }, [route.params?.selectedTrack]);
 
     const handleSaveOption = (option) => {
         // Placeholder handlers
         console.log(`Selected option: ${option}`);
         setSaveModalVisible(false);
+        console.log(`Selected option: ${option}`);
+        setSaveModalVisible(false);
         // Implement actual logic later: e.g. download or set wallpaper
+    };
+
+    // --- Audio Logic ---
+    useEffect(() => {
+        // Enable background audio
+        Audio.setAudioModeAsync({
+            allowsRecordingIOS: false,
+            staysActiveInBackground: true,
+            playsInSilentModeIOS: true,
+            shouldDuckAndroid: true,
+            playThroughEarpieceAndroid: false,
+        });
+
+        return () => {
+            if (sound) {
+                sound.unloadAsync();
+            }
+        };
+    }, [sound]);
+
+    const playTrack = async (track, repeatMode = 0) => {
+        try {
+            if (sound) {
+                await sound.unloadAsync();
+            }
+
+            // Reset count
+            playCountRef.current = 1;
+            currentRepeatModeRef.current = repeatMode;
+
+            // Mode 4 is Infinite Loop
+            const isInfinite = repeatMode === 4;
+
+            const { sound: newSound } = await Audio.Sound.createAsync(
+                track.source,
+                { shouldPlay: true, isLooping: isInfinite }
+            );
+
+            setSound(newSound);
+            setCurrentTrack(track);
+            setIsPlaying(true);
+
+            newSound.setOnPlaybackStatusUpdate(status => {
+                if (status.didJustFinish) {
+                    if (!status.isLooping) {
+                        const mode = currentRepeatModeRef.current;
+                        if (mode > 1 && mode < 4 && playCountRef.current < mode) {
+                            playCountRef.current += 1;
+                            newSound.replayAsync();
+                        } else {
+                            setIsPlaying(false);
+                            setSound(null);
+                            setCurrentTrack(null);
+                        }
+                    }
+                }
+            });
+
+        } catch (error) {
+            console.log('Error playing track:', error);
+            Alert.alert("Playback Error", error.message);
+        }
+    };
+
+    const togglePlayPause = async () => {
+        // Alert.alert("Debug", "Toggle Pressed"); // Uncomment to debug button
+
+        if (!sound) {
+            // If nothing loaded (e.g. app just opened or reset), play Default (Track 1)
+            if (MUSIC_TRACKS && MUSIC_TRACKS.length > 0) {
+                // console.log("Loading default track...");
+                await playTrack(MUSIC_TRACKS[0], 0);
+            } else {
+                Alert.alert("Error", "No tracks found in MUSIC_TRACKS");
+            }
+            return;
+        }
+
+        if (isPlaying) {
+            await sound.pauseAsync();
+        } else {
+            await sound.playAsync();
+        }
+        setIsPlaying(!isPlaying);
     };
 
     const performAarti = () => {
@@ -750,12 +853,18 @@ const DailyDarshanScreen = ({ navigation }) => {
                         </Text>
                     </View>
 
-                    <Text style={styles.tabItem}>{t.allMantras}</Text>
+                    <TouchableOpacity onPress={() => navigation.navigate('Mantras')}>
+                        <Text style={styles.tabItem}>{t.allMantras}</Text>
+                    </TouchableOpacity>
                 </View>
 
+
+
+                {/* Player Bar */}
                 {/* Player Bar */}
                 <View style={styles.playerBar}>
-                    <TouchableOpacity style={styles.playButton} onPress={() => setIsPlaying(!isPlaying)}>
+                    {/* Restored Play/Pause Button */}
+                    <TouchableOpacity style={styles.playButton} onPress={togglePlayPause}>
                         <Text style={styles.playIcon}>{isPlaying ? "⏸️" : "▶️"}</Text>
                         <Text style={styles.playText}>{isPlaying ? t.pause : t.play}</Text>
                     </TouchableOpacity>
@@ -813,7 +922,9 @@ const DailyDarshanScreen = ({ navigation }) => {
                     </View>
                 </TouchableOpacity>
             </Modal>
-        </View>
+
+            {/* --- Playlist Modal Removed --- */}
+        </View >
     );
 };
 
@@ -1024,6 +1135,33 @@ const styles = StyleSheet.create({
         color: '#d9534f',
         fontWeight: 'bold',
         textAlign: 'center',
+    },
+    // --- Playlist Styles ---
+    playlistContent: {
+        width: '80%',
+        maxHeight: '60%',
+        backgroundColor: '#fff',
+        borderRadius: 15,
+        padding: 20,
+        elevation: 10,
+    },
+    trackItem: {
+        paddingVertical: 15,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+    },
+    activeTrack: {
+        backgroundColor: '#FFF8E1',
+        borderRadius: 5,
+        paddingHorizontal: 5,
+    },
+    trackTitle: {
+        fontSize: 16,
+        color: '#333',
+    },
+    activeTrackText: {
+        color: '#CD9730', // Gold/DarkYellow
+        fontWeight: 'bold',
     },
 });
 

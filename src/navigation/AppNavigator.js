@@ -6,6 +6,7 @@ import FestivalScreen from '../screens/FestivalScreen';
 import HomeScreen from '../screens/HomeScreen'; // Assuming this exists or will be main landing
 import LanguageSelectionScreen from '../screens/LanguageSelectionScreen';
 import MantraSelectionScreen from '../screens/MantraSelectionScreen';
+import MantrasScreen from '../screens/MantrasScreen';
 import SlokasScreen from '../screens/SlokasScreen';
 
 const Stack = createStackNavigator();
@@ -25,6 +26,7 @@ const AppNavigator = ({ initialRouteName = 'LanguageSelection' }) => {
             <Stack.Screen name="Festivals" component={FestivalScreen} />
             <Stack.Screen name="Slokas" component={SlokasScreen} />
             <Stack.Screen name="MantraSelection" component={MantraSelectionScreen} />
+            <Stack.Screen name="Mantras" component={MantrasScreen} />
             <Stack.Screen name="Chanting" component={ChantingScreen} />
         </Stack.Navigator>
     );
