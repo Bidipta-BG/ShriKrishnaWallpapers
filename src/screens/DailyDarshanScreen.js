@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Audio } from 'expo-av';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Dimensions, Image, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, Image, Modal, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, {
     cancelAnimation,
     Easing,
@@ -193,9 +193,15 @@ const TRANSLATIONS = {
         share: 'Share',
         about: 'About',
         allImages: 'All Images',
-        popularImages: 'Popular Images',
+        allMantras: 'All Mantras',
         download: 'Download',
-        wallpaper: 'Wallpaper'
+        saveImage: 'Save Image',
+        setHomeWallpaper: 'Set Home Screen',
+        setLockWallpaper: 'Set Lock Screen',
+        cancel: 'Cancel',
+        alarm: 'Alarm',
+        play: 'Play',
+        pause: 'Pause'
     },
     hi: {
         flowers: 'पुष्प',
@@ -207,9 +213,15 @@ const TRANSLATIONS = {
         share: 'साझा करें',
         about: 'बारे में',
         allImages: 'सभी चित्र',
-        popularImages: 'लोकप्रिय',
+        allMantras: 'सभी मंत्र/गीत',
         download: 'डाउनलोड',
-        wallpaper: 'वॉलपेपर'
+        saveImage: 'सहेजें',
+        setHomeWallpaper: 'होम स्क्रीन सेट करें',
+        setLockWallpaper: 'लॉक स्क्रीन सेट करें',
+        cancel: 'रद्द करें',
+        alarm: 'अलार्म',
+        play: 'चलाएं',
+        pause: 'रोकें'
     },
     // Add other languages as needed, defaulting to English for now
 };
@@ -443,6 +455,15 @@ const DailyDarshanScreen = ({ navigation }) => {
     const aartiRotation = useSharedValue(0);
     const aartiScale = useSharedValue(1);
     const [isAartiActive, setIsAartiActive] = useState(false);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [isSaveModalVisible, setSaveModalVisible] = useState(false); // New State
+
+    const handleSaveOption = (option) => {
+        // Placeholder handlers
+        console.log(`Selected option: ${option}`);
+        setSaveModalVisible(false);
+        // Implement actual logic later: e.g. download or set wallpaper
+    };
 
     const performAarti = () => {
         if (isAartiActive) return;
@@ -658,52 +679,11 @@ const DailyDarshanScreen = ({ navigation }) => {
 
             {/* ... */}
 
-            {/* 5. Bottom Controls */}
-            <View style={[styles.bottomSection, { paddingBottom: Math.max(insets.bottom, 20) }]}>
-                {/* Tab Bar */}
-                <View style={styles.tabBar}>
-                    <Text style={styles.tabItem}>{t.allImages}</Text>
 
-                    {/* Streak Counter (Center) */}
-                    <View style={{ alignItems: 'center', width: 80 }}>
-                        <Text style={{ fontSize: 16, color: '#8b0000', fontWeight: 'bold' }}>
-                            {streak || 1} {language === 'hi' ? 'दिन' : 'Days'}
-                        </Text>
-                        <Text style={{ fontSize: 10, color: '#5e3a0e', fontWeight: '600' }}>
-                            {language === 'hi' ? 'दर्शन' : 'Darshan'}
-                        </Text>
-                    </View>
-
-                    <Text style={styles.tabItem}>{t.popularImages}</Text>
-                </View>
-
-                {/* Player Bar */}
-                <View style={styles.playerBar}>
-                    <TouchableOpacity style={styles.playButton}>
-                        <Text style={styles.playIcon}>⬇️</Text>
-                        <Text style={styles.playText}>{t.download}</Text>
-                    </TouchableOpacity>
-
-                    {/* Spacer for center Diya */}
-                    <View style={{ width: 80 }} />
-
-                    <TouchableOpacity style={styles.moreButton}>
-                        <Text style={styles.moreIcon}>🖼️</Text>
-                        <Text style={styles.moreText}>{t.wallpaper}</Text>
-                    </TouchableOpacity>
-                </View>
-
-                {/* Central Big Diya */}
-                <View style={[styles.centerThaliContainer]} pointerEvents="box-none">
-                    <TouchableOpacity onPress={performAarti} activeOpacity={0.8}>
-                        <Animated.Text style={[styles.thaliEmoji, diyaStyle]}>🪔</Animated.Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
 
             {/* 4. Side Icons Layer */}
             <View style={styles.sidesContainer}>
-                {/* Left Column */}
+                {/* Left Column - 5 buttons */}
                 <View style={styles.leftColumn}>
                     <SideIcon
                         emoji="🌼"
@@ -723,10 +703,15 @@ const DailyDarshanScreen = ({ navigation }) => {
                         label={t.shankh}
                         onPress={playShankh}
                     />
-                    <SideIcon emoji="⋮" label={t.more} onPress={debugResetStreak} />
+                    <SideIcon
+                        emoji="💾"
+                        label={t.saveImage}
+                        color="#9B59B6"
+                        onPress={() => setSaveModalVisible(true)}
+                    />
                 </View>
 
-                {/* Right Column */}
+                {/* Right Column - 4 buttons */}
                 <View style={styles.rightColumn}>
                     <SideIcon
                         imageSource={require('../assets/images/sri-krishna-slokas.png')}
@@ -740,8 +725,12 @@ const DailyDarshanScreen = ({ navigation }) => {
                         color="#D35400"
                         onPress={() => navigation.navigate('MantraSelection')}
                     />
+                    <SideIcon
+                        emoji="⏰"
+                        label={t.alarm}
+                        color="#E74C3C"
+                    />
                     <SideIcon emoji="📤" label={t.share} color="#3498DB" />
-                    <SideIcon emoji="ℹ️" label={t.about} />
                 </View>
             </View>
 
@@ -761,22 +750,22 @@ const DailyDarshanScreen = ({ navigation }) => {
                         </Text>
                     </View>
 
-                    <Text style={styles.tabItem}>{t.popularImages}</Text>
+                    <Text style={styles.tabItem}>{t.allMantras}</Text>
                 </View>
 
                 {/* Player Bar */}
                 <View style={styles.playerBar}>
-                    <TouchableOpacity style={styles.playButton}>
-                        <Text style={styles.playIcon}>⬇️</Text>
-                        <Text style={styles.playText}>{t.download}</Text>
+                    <TouchableOpacity style={styles.playButton} onPress={() => setIsPlaying(!isPlaying)}>
+                        <Text style={styles.playIcon}>{isPlaying ? "⏸️" : "▶️"}</Text>
+                        <Text style={styles.playText}>{isPlaying ? t.pause : t.play}</Text>
                     </TouchableOpacity>
 
                     {/* Spacer for center Diya */}
                     <View style={{ width: 80 }} />
 
                     <TouchableOpacity style={styles.moreButton}>
-                        <Text style={styles.moreIcon}>🖼️</Text>
-                        <Text style={styles.moreText}>{t.wallpaper}</Text>
+                        <Text style={styles.moreIcon}>ℹ️</Text>
+                        <Text style={styles.moreText}>{t.about}</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -790,6 +779,40 @@ const DailyDarshanScreen = ({ navigation }) => {
                 {/* Safe Area Spacer for Bottom */}
                 <SafeAreaView edges={['bottom']} style={{ backgroundColor: '#CD9730' }} />
             </View>
+
+            {/* --- Save Options Modal --- */}
+            <Modal
+                transparent={true}
+                visible={isSaveModalVisible}
+                animationType="fade"
+                onRequestClose={() => setSaveModalVisible(false)}
+            >
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setSaveModalVisible(false)}
+                >
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>{t.saveImage}</Text>
+
+                        <TouchableOpacity style={styles.modalButton} onPress={() => handleSaveOption('download')}>
+                            <Text style={styles.modalButtonText}>⬇️  {t.download}</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.modalButton} onPress={() => handleSaveOption('home')}>
+                            <Text style={styles.modalButtonText}>🏠  {t.setHomeWallpaper}</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.modalButton} onPress={() => handleSaveOption('lock')}>
+                            <Text style={styles.modalButtonText}>🔒  {t.setLockWallpaper}</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={[styles.modalButton, styles.cancelButton]} onPress={() => setSaveModalVisible(false)}>
+                            <Text style={styles.cancelButtonText}>{t.cancel}</Text>
+                        </TouchableOpacity>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
         </View>
     );
 };
@@ -955,6 +978,52 @@ const styles = StyleSheet.create({
         width: 35,
         height: 35,
         zIndex: 100,
+    },
+    // --- Modal Styles ---
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContent: {
+        width: 300,
+        backgroundColor: '#fff',
+        borderRadius: 15,
+        padding: 20,
+        alignItems: 'center',
+        elevation: 10,
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 20,
+        color: '#333',
+    },
+    modalButton: {
+        width: '100%',
+        paddingVertical: 12,
+        paddingHorizontal: 15,
+        marginVertical: 5,
+        backgroundColor: '#f0f0f0',
+        borderRadius: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    modalButtonText: {
+        fontSize: 16,
+        color: '#333',
+        fontWeight: '500',
+    },
+    cancelButton: {
+        marginTop: 15,
+        backgroundColor: '#ffdddd',
+        justifyContent: 'center',
+    },
+    cancelButtonText: {
+        color: '#d9534f',
+        fontWeight: 'bold',
+        textAlign: 'center',
     },
 });
 
