@@ -203,6 +203,7 @@ const TRANSLATIONS = {
         setLockWallpaper: 'Set Lock Screen',
         cancel: 'Cancel',
         alarm: 'Alarm',
+        scheduleDarshan: 'Daily Darshan',
         play: 'Play',
         pause: 'Pause'
     },
@@ -223,6 +224,7 @@ const TRANSLATIONS = {
         setLockWallpaper: 'लॉक स्क्रीन सेट करें',
         cancel: 'रद्द करें',
         alarm: 'अलार्म',
+        scheduleDarshan: 'दैनिक दर्शन',
         play: 'चलाएं',
         pause: 'रोकें'
     },
@@ -458,22 +460,30 @@ const DailyDarshanScreen = ({ navigation }) => {
     const aartiRotation = useSharedValue(0);
     const aartiScale = useSharedValue(1);
     const [isAartiActive, setIsAartiActive] = useState(false);
-    const [isPlaying, setIsPlaying] = useState(false);
     const [isSaveModalVisible, setSaveModalVisible] = useState(false);
+
+    // --- Gallery State ---
+    const [viewMode, setViewMode] = useState('darshan'); // 'darshan' or 'gallery'
+    const [galleryTab, setGalleryTab] = useState('New'); // 'New', 'Popular', 'Favourite'
 
     // --- Music Player State (Restored) ---
     const [sound, setSound] = useState(null);
-    const [currentTrack, setCurrentTrack] = useState(null);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [loopMode, setLoopMode] = useState(1); // Default 1 (1 repeat/play)
+    const [playbackStatus, setPlaybackStatus] = useState({ position: 0, duration: 1 });
+
     const route = useRoute();
     const playCountRef = useRef(0); // Track how many times played
-    const currentRepeatModeRef = useRef(0); // Store for callback access
+    const currentLoopModeRef = useRef(1); // Store for callback access
+
 
     // Check for incoming track from MantrasScreen
-    useEffect(() => {
-        if (route.params?.selectedTrack) {
-            playTrack(route.params.selectedTrack, route.params.repeatMode || 0);
-        }
-    }, [route.params?.selectedTrack]);
+    // Check for incoming track from MantrasScreen - REMOVED
+
+
+    const handleSetAlarm = () => {
+        Alert.alert("Set Alarm", "Alarm feature is coming soon!");
+    };
 
     const handleSaveOption = (option) => {
         // Placeholder handlers
@@ -502,70 +512,66 @@ const DailyDarshanScreen = ({ navigation }) => {
         };
     }, [sound]);
 
-    const playTrack = async (track, repeatMode = 0) => {
+    const playMusic = async () => {
         try {
             if (sound) {
-                await sound.unloadAsync();
-            }
+                // If loaded, just play/pause
+                if (isPlaying) {
+                    await sound.pauseAsync();
+                    setIsPlaying(false);
+                } else {
+                    await sound.playAsync();
+                    setIsPlaying(true);
+                }
+            } else {
+                // Load Shankh Sound
+                const { sound: newSound } = await Audio.Sound.createAsync(
+                    require('../assets/sounds/shank-sound.mp3'),
+                    { shouldPlay: true, isLooping: false } // Manual looping
+                );
 
-            // Reset count
-            playCountRef.current = 1;
-            currentRepeatModeRef.current = repeatMode;
+                setSound(newSound);
+                setIsPlaying(true);
+                playCountRef.current = 1;
+                currentLoopModeRef.current = loopMode;
 
-            // Mode 4 is Infinite Loop
-            const isInfinite = repeatMode === 4;
+                newSound.setOnPlaybackStatusUpdate(status => {
+                    if (status.isLoaded) {
+                        setPlaybackStatus({
+                            position: status.positionMillis,
+                            duration: status.durationMillis || 1
+                        });
 
-            const { sound: newSound } = await Audio.Sound.createAsync(
-                track.source,
-                { shouldPlay: true, isLooping: isInfinite }
-            );
-
-            setSound(newSound);
-            setCurrentTrack(track);
-            setIsPlaying(true);
-
-            newSound.setOnPlaybackStatusUpdate(status => {
-                if (status.didJustFinish) {
-                    if (!status.isLooping) {
-                        const mode = currentRepeatModeRef.current;
-                        if (mode > 1 && mode < 4 && playCountRef.current < mode) {
-                            playCountRef.current += 1;
-                            newSound.replayAsync();
-                        } else {
-                            setIsPlaying(false);
-                            setSound(null);
-                            setCurrentTrack(null);
+                        if (status.didJustFinish) {
+                            if (playCountRef.current < currentLoopModeRef.current) {
+                                playCountRef.current += 1;
+                                newSound.replayAsync();
+                            } else {
+                                setIsPlaying(false);
+                                newSound.stopAsync(); // Stop and reset
+                                playCountRef.current = 1;
+                            }
                         }
                     }
-                }
-            });
-
+                });
+            }
         } catch (error) {
-            console.log('Error playing track:', error);
-            Alert.alert("Playback Error", error.message);
+            console.log('Error playing music:', error);
         }
     };
 
-    const togglePlayPause = async () => {
-        // Alert.alert("Debug", "Toggle Pressed"); // Uncomment to debug button
+    const toggleLoopMode = async () => {
+        // Cycle 1 -> 2 -> 3 -> 4 -> 1
+        setLoopMode(prev => {
+            const next = prev >= 4 ? 1 : prev + 1;
+            currentLoopModeRef.current = next; // Update ref instantaneously
+            return next;
+        });
+        // Logic handled in callback via ref
+    };
 
-        if (!sound) {
-            // If nothing loaded (e.g. app just opened or reset), play Default (Track 1)
-            if (MUSIC_TRACKS && MUSIC_TRACKS.length > 0) {
-                // console.log("Loading default track...");
-                await playTrack(MUSIC_TRACKS[0], 0);
-            } else {
-                Alert.alert("Error", "No tracks found in MUSIC_TRACKS");
-            }
-            return;
-        }
-
-        if (isPlaying) {
-            await sound.pauseAsync();
-        } else {
-            await sound.playAsync();
-        }
-        setIsPlaying(!isPlaying);
+    const togglePlayPause = () => {
+        playMusic();
     };
 
     const performAarti = () => {
@@ -786,7 +792,7 @@ const DailyDarshanScreen = ({ navigation }) => {
 
             {/* 4. Side Icons Layer */}
             <View style={styles.sidesContainer}>
-                {/* Left Column - 5 buttons */}
+                {/* Left Column - 3 buttons */}
                 <View style={styles.leftColumn}>
                     <SideIcon
                         emoji="🌼"
@@ -806,15 +812,9 @@ const DailyDarshanScreen = ({ navigation }) => {
                         label={t.shankh}
                         onPress={playShankh}
                     />
-                    <SideIcon
-                        emoji="💾"
-                        label={t.saveImage}
-                        color="#9B59B6"
-                        onPress={() => setSaveModalVisible(true)}
-                    />
                 </View>
 
-                {/* Right Column - 4 buttons */}
+                {/* Right Column - 3 buttons */}
                 <View style={styles.rightColumn}>
                     <SideIcon
                         imageSource={require('../assets/images/sri-krishna-slokas.png')}
@@ -829,11 +829,11 @@ const DailyDarshanScreen = ({ navigation }) => {
                         onPress={() => navigation.navigate('MantraSelection')}
                     />
                     <SideIcon
-                        emoji="⏰"
-                        label={t.alarm}
-                        color="#E74C3C"
+                        emoji="💾"
+                        label={t.saveImage}
+                        color="#9B59B6"
+                        onPress={() => setSaveModalVisible(true)}
                     />
-                    <SideIcon emoji="📤" label={t.share} color="#3498DB" />
                 </View>
             </View>
 
@@ -853,8 +853,8 @@ const DailyDarshanScreen = ({ navigation }) => {
                         </Text>
                     </View>
 
-                    <TouchableOpacity onPress={() => navigation.navigate('Mantras')}>
-                        <Text style={styles.tabItem}>{t.allMantras}</Text>
+                    <TouchableOpacity onPress={handleSetAlarm}>
+                        <Text style={styles.tabItem}>{t.scheduleDarshan}</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -862,15 +862,39 @@ const DailyDarshanScreen = ({ navigation }) => {
 
                 {/* Player Bar */}
                 {/* Player Bar */}
-                <View style={styles.playerBar}>
-                    {/* Restored Play/Pause Button */}
-                    <TouchableOpacity style={styles.playButton} onPress={togglePlayPause}>
-                        <Text style={styles.playIcon}>{isPlaying ? "⏸️" : "▶️"}</Text>
-                        <Text style={styles.playText}>{isPlaying ? t.pause : t.play}</Text>
-                    </TouchableOpacity>
+                {/* Player Bar */}
+                {/* Progress Bar (Moved to Top of Yellow Section) */}
+                <View style={styles.progressBarContainerTop}>
+                    <View
+                        style={[
+                            styles.progressBarFill,
+                            { width: `${(playbackStatus.position / playbackStatus.duration) * 100}%` }
+                        ]}
+                    />
+                </View>
 
-                    {/* Spacer for center Diya */}
-                    <View style={{ width: 80 }} />
+                {/* Player Bar */}
+                <View style={styles.playerBar}>
+                    {/* Controls container (Left Side) */}
+                    <View style={styles.controlsContainer}>
+                        {/* Play Button */}
+                        <TouchableOpacity style={styles.playButton} onPress={togglePlayPause}>
+                            <Text style={styles.playIcon}>{isPlaying ? "⏸️" : "▶️"}</Text>
+                        </TouchableOpacity>
+
+                        {/* Loop Button */}
+                        <TouchableOpacity style={styles.loopButton} onPress={toggleLoopMode}>
+                            <View style={styles.loopContent}>
+                                <Text style={styles.loopNumber}>{loopMode}</Text>
+                                <Text style={styles.loopText}>repeat</Text>
+                            </View>
+                        </TouchableOpacity>
+
+
+                    </View>
+
+                    {/* Spacer for Diya */}
+                    <View style={{ width: 60 }} />
 
                     <TouchableOpacity style={styles.moreButton}>
                         <Text style={styles.moreIcon}>ℹ️</Text>
@@ -914,6 +938,10 @@ const DailyDarshanScreen = ({ navigation }) => {
 
                         <TouchableOpacity style={styles.modalButton} onPress={() => handleSaveOption('lock')}>
                             <Text style={styles.modalButtonText}>🔒  {t.setLockWallpaper}</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.modalButton} onPress={() => handleSaveOption('share')}>
+                            <Text style={styles.modalButtonText}>📤  {t.share}</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity style={[styles.modalButton, styles.cancelButton]} onPress={() => setSaveModalVisible(false)}>
@@ -963,7 +991,7 @@ const styles = StyleSheet.create({
     // --- Side Icons ---
     sidesContainer: {
         position: 'absolute',
-        bottom: 160, // Positioned above the tab bar (which is at bottom 0 and ~100px high)
+        bottom: 190, // Increased to move icons up so labels don't hide behind tab bar
         left: 0,
         right: 0,
         flexDirection: 'row',
@@ -1025,6 +1053,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 10,
         backgroundColor: 'rgba(255, 255, 255, 0.8)', // Semi-transparent strip
+        zIndex: 60, // Ensure it's above the centerThaliContainer (zIndex 50)
     },
     tabItem: {
         color: '#5e3a0e', // Dark brown
@@ -1054,15 +1083,47 @@ const styles = StyleSheet.create({
     },
     playButton: {
         alignItems: 'center',
+        marginRight: 10,
     },
     playIcon: {
-        fontSize: 30,
+        fontSize: 30, // Main play icon
         color: '#fff',
     },
-    playText: {
-        color: '#8b0000',
-        fontSize: 12,
+    loopButton: {
+        marginRight: 10,
+        backgroundColor: 'rgba(255,255,255,0.2)', // Slight bg for shape
+        borderRadius: 8,
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+    },
+    loopContent: {
+        alignItems: 'center',
+    },
+    loopNumber: {
+        fontSize: 16,
         fontWeight: 'bold',
+        color: '#8b0000', // Matches theme
+    },
+    loopText: {
+        fontSize: 8,
+        color: '#5e3a0e', // Dark brown
+        fontWeight: '600',
+    },
+    controlsContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        // flex: 1, // Removed flex to pack buttons to the left
+        marginRight: 10,
+    },
+    progressBarContainerTop: {
+        width: '100%',
+        height: 4,
+        backgroundColor: 'rgba(255, 255, 255, 0.3)', // Semi-transparent track
+        // No border radius for full width look, or keep it if desired
+    },
+    progressBarFill: {
+        height: '100%',
+        backgroundColor: '#8b0000', // Deep Red fill
     },
     moreButton: {
         alignItems: 'center',
@@ -1163,6 +1224,61 @@ const styles = StyleSheet.create({
         color: '#CD9730', // Gold/DarkYellow
         fontWeight: 'bold',
     },
+    // --- Gallery Styles ---
+    galleryContainer: {
+        flex: 1,
+        width: '100%',
+        paddingTop: 10,
+        backgroundColor: 'rgba(255,255,255,0.5)',
+    },
+    galleryTabs: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        marginBottom: 10,
+        backgroundColor: 'rgba(255,255,255,0.8)',
+        paddingVertical: 10,
+        borderRadius: 20,
+        marginHorizontal: 10,
+    },
+    galleryTabItem: {
+        paddingVertical: 5,
+        paddingHorizontal: 10,
+        borderRadius: 15,
+    },
+    galleryTabActive: {
+        backgroundColor: '#CD9730',
+    },
+    galleryTabText: {
+        color: '#555',
+        fontWeight: '600',
+    },
+    galleryTabTextActive: {
+        color: '#fff',
+        fontWeight: 'bold',
+    },
+    galleryGrid: {
+        paddingHorizontal: 10,
+        paddingBottom: 20,
+    },
+    galleryImageContainer: {
+        flex: 1,
+        margin: 5,
+        aspectRatio: 1, // Square images
+        borderRadius: 10,
+        overflow: 'hidden',
+        elevation: 3,
+        backgroundColor: '#fff',
+    },
+    galleryImage: {
+        width: '100%',
+        height: '100%',
+        resizeMode: 'cover',
+    },
+    tabItemActive: {
+        color: '#CD9730', // Highlight active bottom tab
+        textDecorationLine: 'underline',
+    },
+
 });
 
 export default DailyDarshanScreen;
