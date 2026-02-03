@@ -10,6 +10,7 @@ import MantraSelectionScreen from '../screens/MantraSelectionScreen';
 import SlokasScreen from '../screens/SlokasScreen';
 
 import GalleryScreen from '../screens/GalleryScreen';
+import ScheduleDarshanScreen from '../screens/ScheduleDarshanScreen';
 
 const Stack = createStackNavigator();
 
@@ -30,6 +31,7 @@ const AppNavigator = ({ initialRouteName = 'LanguageSelection' }) => {
             <Stack.Screen name="MantraSelection" component={MantraSelectionScreen} />
             <Stack.Screen name="Gallery" component={GalleryScreen} />
             <Stack.Screen name="Chanting" component={ChantingScreen} />
+            <Stack.Screen name="ScheduleDarshan" component={ScheduleDarshanScreen} />
         </Stack.Navigator>
     );
 };

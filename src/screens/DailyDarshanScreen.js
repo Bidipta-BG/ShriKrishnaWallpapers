@@ -271,19 +271,25 @@ const DailyDarshanScreen = ({ navigation }) => {
 
     // --- Daily Streak Logic ---
     const [streak, setStreak] = useState(1);
+    const [challengeGoal, setChallengeGoal] = useState(7);
     const [streakDataLoaded, setStreakDataLoaded] = useState(false);
 
-    useEffect(() => {
-        if (isUIReady) {
-            checkDailyStreak();
-        }
-    }, [isUIReady]);
+    useFocusEffect(
+        useCallback(() => {
+            if (isUIReady) {
+                checkDailyStreak();
+            }
+        }, [isUIReady])
+    );
 
     const checkDailyStreak = async () => {
         try {
             const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
             const lastDate = await AsyncStorage.getItem('lastDarshanDate');
             const storedStreak = await AsyncStorage.getItem('currentStreak');
+            const storedGoal = await AsyncStorage.getItem('challenge_days');
+
+            if (storedGoal) setChallengeGoal(parseInt(storedGoal));
 
             let newStreak = 1;
             let shouldAutoPlay = false;
@@ -866,16 +872,19 @@ const DailyDarshanScreen = ({ navigation }) => {
                     </TouchableOpacity>
 
                     {/* Streak Counter (Center) */}
-                    <View style={{ alignItems: 'center', width: 80 }}>
+                    <View style={{ alignItems: 'center', minWidth: 100 }}>
                         <Text style={{ fontSize: 16, color: '#8b0000', fontWeight: 'bold' }}>
-                            {streak || 1} {language === 'hi' ? 'दिन' : 'Days'}
+                            {language === 'hi' ? `दिन ${streak}/${challengeGoal}` : `Day ${streak}/${challengeGoal}`}
                         </Text>
                         <Text style={{ fontSize: 10, color: '#5e3a0e', fontWeight: '600' }}>
-                            {language === 'hi' ? 'दर्शन' : 'Darshan'}
+                            {language === 'hi' ? 'चैलेंज' : 'Challenge'}
                         </Text>
                     </View>
 
-                    <TouchableOpacity onPress={handleSetAlarm} style={{ padding: 8 }}>
+                    <TouchableOpacity
+                        onPress={() => navigation.navigate('ScheduleDarshan')}
+                        style={{ padding: 8 }}
+                    >
                         <Text style={styles.tabItem}>{t.scheduleDarshan}</Text>
                     </TouchableOpacity>
                 </View>
