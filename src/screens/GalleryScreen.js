@@ -1,6 +1,7 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { useState } from 'react';
-import { Dimensions, FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
@@ -53,8 +54,21 @@ const GalleryScreen = () => {
         </View>
     );
 
+    const handleImageSelect = async (item) => {
+        try {
+            await AsyncStorage.setItem('saved_background_image', item.uri);
+            Alert.alert("Success", "Darshan wallpaper set successfully! \n\nGo back to see it.");
+        } catch (error) {
+            console.log("Error saving image:", error);
+            Alert.alert("Error", "Failed to set wallpaper.");
+        }
+    };
+
     const renderImageItem = ({ item }) => (
-        <TouchableOpacity style={styles.imageContainer}>
+        <TouchableOpacity
+            style={styles.imageContainer}
+            onPress={() => handleImageSelect(item)}
+        >
             <Image source={item} style={styles.image} />
         </TouchableOpacity>
     );
@@ -70,6 +84,7 @@ const GalleryScreen = () => {
                     data={dummyImages}
                     renderItem={renderImageItem}
                     keyExtractor={(_, index) => index.toString()}
+                    key={2} // Force re-render when columns change
                     numColumns={2}
                     contentContainerStyle={styles.gridContainer}
                     showsVerticalScrollIndicator={false}

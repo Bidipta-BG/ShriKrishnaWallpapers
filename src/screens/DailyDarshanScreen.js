@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRoute } from '@react-navigation/native';
+import { useFocusEffect, useRoute } from '@react-navigation/native';
 import { Audio } from 'expo-av';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Dimensions, Image, Modal, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, {
     cancelAnimation,
@@ -16,6 +16,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '../context/LanguageContext';
+
+// ... other imports ...
 
 const { width, height } = Dimensions.get('window');
 
@@ -234,11 +236,29 @@ const TRANSLATIONS = {
 const DailyDarshanScreen = ({ navigation }) => {
     const { language, isUIReady } = useLanguage();
     const insets = useSafeAreaInsets();
+    const route = useRoute();
+
+    const [backgroundImage, setBackgroundImage] = useState('https://m.media-amazon.com/images/I/61k71BV8B3L._AC_UF1000,1000_QL80_.jpg');
+
+    // Load saved background whenever screen gains focus
+    useFocusEffect(
+        useCallback(() => {
+            const loadBackground = async () => {
+                try {
+                    const saved = await AsyncStorage.getItem('saved_background_image');
+                    if (saved) {
+                        setBackgroundImage(saved);
+                    }
+                } catch (error) {
+                    console.log('Error loading background:', error);
+                }
+            };
+            loadBackground();
+        }, [])
+    );
 
     // Get translations for current language or fallback to English
     const t = TRANSLATIONS[language] || TRANSLATIONS['en'];
-
-    // ... (rest of the component)
 
     // Apply strict safe area logic to critical containers
     const bellContainerStyle = {
@@ -468,7 +488,6 @@ const DailyDarshanScreen = ({ navigation }) => {
     const [loopMode, setLoopMode] = useState(1); // Default 1 (1 repeat/play)
     const [playbackStatus, setPlaybackStatus] = useState({ position: 0, duration: 1 });
 
-    const route = useRoute();
     const playCountRef = useRef(0); // Track how many times played
     const currentLoopModeRef = useRef(1); // Store for callback access
 
@@ -655,7 +674,7 @@ const DailyDarshanScreen = ({ navigation }) => {
         // Function to add a small batch of flowers
         const addBatch = () => {
             const newFlowers = Array.from({ length: 2 }, (_, i) => ({
-                id: Date.now() + Math.random(), // Ensure unique ID
+                id: `${Date.now()}-${i}-${Math.random()}`, // Ensure unique ID
             }));
             setActiveFlowers(prev => [...prev, ...newFlowers]);
         };
@@ -708,9 +727,10 @@ const DailyDarshanScreen = ({ navigation }) => {
     const triggerCoinShower = () => {
         if (coinIntervalRef.current) return;
 
+        // ... existing coin logic ...
         const addBatch = () => {
             const newCoins = Array.from({ length: 2 }, (_, i) => ({
-                id: Date.now() + Math.random(),
+                id: `${Date.now()}-${i}-${Math.random()}`,
             }));
             setActiveCoins(prev => [...prev, ...newCoins]);
         };
@@ -759,7 +779,7 @@ const DailyDarshanScreen = ({ navigation }) => {
 
             {/* 1. Background Wallpaper (Replaces Gradient & Center Content) */}
             <Image
-                source={{ uri: 'https://m.media-amazon.com/images/I/61k71BV8B3L._AC_UF1000,1000_QL80_.jpg' }}
+                source={{ uri: backgroundImage }}
                 style={styles.background}
                 resizeMode="cover"
             />
@@ -839,7 +859,7 @@ const DailyDarshanScreen = ({ navigation }) => {
                 <View style={styles.tabBar}>
                     <TouchableOpacity
                         onPress={() => navigation.navigate('Gallery')}
-                        style={{ padding: 15, zIndex: 100 }}
+                        style={{ padding: 8, zIndex: 100 }}
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
                         <Text style={styles.tabItem}>{t.allImages}</Text>
@@ -855,7 +875,7 @@ const DailyDarshanScreen = ({ navigation }) => {
                         </Text>
                     </View>
 
-                    <TouchableOpacity onPress={handleSetAlarm}>
+                    <TouchableOpacity onPress={handleSetAlarm} style={{ padding: 8 }}>
                         <Text style={styles.tabItem}>{t.scheduleDarshan}</Text>
                     </TouchableOpacity>
                 </View>
@@ -1053,7 +1073,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-around',
         alignItems: 'center',
-        paddingVertical: 10,
+        paddingVertical: 6,
         backgroundColor: 'rgba(255, 255, 255, 0.8)', // Semi-transparent strip
         zIndex: 60, // Ensure it's above the centerThaliContainer (zIndex 50)
     },
