@@ -9,6 +9,7 @@ import MantraSelectionScreen from '../screens/MantraSelectionScreen';
 
 import SlokasScreen from '../screens/SlokasScreen';
 
+import AboutScreen from '../screens/AboutScreen';
 import GalleryScreen from '../screens/GalleryScreen';
 import ScheduleDarshanScreen from '../screens/ScheduleDarshanScreen';
 
@@ -32,6 +33,7 @@ const AppNavigator = ({ initialRouteName = 'LanguageSelection' }) => {
             <Stack.Screen name="Gallery" component={GalleryScreen} />
             <Stack.Screen name="Chanting" component={ChantingScreen} />
             <Stack.Screen name="ScheduleDarshan" component={ScheduleDarshanScreen} />
+            <Stack.Screen name="About" component={AboutScreen} />
         </Stack.Navigator>
     );
 };

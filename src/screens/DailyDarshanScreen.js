@@ -927,7 +927,10 @@ const DailyDarshanScreen = ({ navigation }) => {
                     {/* Spacer for Diya */}
                     <View style={{ width: 60 }} />
 
-                    <TouchableOpacity style={styles.moreButton}>
+                    <TouchableOpacity
+                        style={styles.moreButton}
+                        onPress={() => navigation.navigate('About')}
+                    >
                         <Text style={styles.moreIcon}>ℹ️</Text>
                         <Text style={styles.moreText}>{t.about}</Text>
                     </TouchableOpacity>
