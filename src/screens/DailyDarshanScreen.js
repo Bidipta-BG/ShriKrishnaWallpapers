@@ -207,7 +207,9 @@ const TRANSLATIONS = {
         alarm: 'Alarm',
         scheduleDarshan: 'Daily Darshan',
         play: 'Play',
-        pause: 'Pause'
+        pause: 'Pause',
+        like: 'Like',
+        favourite: 'Favourite'
     },
     hi: {
         flowers: 'पुष्प',
@@ -228,7 +230,9 @@ const TRANSLATIONS = {
         alarm: 'अलार्म',
         scheduleDarshan: 'दैनिक दर्शन',
         play: 'चलाएं',
-        pause: 'रोकें'
+        pause: 'रोकें',
+        like: 'पसंद',
+        favourite: 'पसंदीदा'
     },
     // Add other languages as needed, defaulting to English for now
 };
@@ -273,6 +277,8 @@ const DailyDarshanScreen = ({ navigation }) => {
     const [streak, setStreak] = useState(1);
     const [challengeGoal, setChallengeGoal] = useState(7);
     const [streakDataLoaded, setStreakDataLoaded] = useState(false);
+    const [likeCount, setLikeCount] = useState(108); // Placeholder count
+    const [isFavourite, setIsFavourite] = useState(false);
 
     useFocusEffect(
         useCallback(() => {
@@ -814,8 +820,14 @@ const DailyDarshanScreen = ({ navigation }) => {
 
             {/* 4. Side Icons Layer */}
             <View style={styles.sidesContainer}>
-                {/* Left Column - 3 buttons */}
+                {/* Left Column - 4 buttons */}
                 <View style={styles.leftColumn}>
+                    <SideIcon
+                        emoji="❤️"
+                        label={`${likeCount} ${t.like}`}
+                        color="#E74C3C"
+                        onPress={() => setLikeCount(likeCount + 1)}
+                    />
                     <SideIcon
                         emoji="🌼"
                         label={t.flowers}
@@ -836,8 +848,14 @@ const DailyDarshanScreen = ({ navigation }) => {
                     />
                 </View>
 
-                {/* Right Column - 3 buttons */}
+                {/* Right Column - 4 buttons */}
                 <View style={styles.rightColumn}>
+                    <SideIcon
+                        emoji={isFavourite ? "🌟" : "⭐"}
+                        label={t.favourite}
+                        color="#F1C40F"
+                        onPress={() => setIsFavourite(!isFavourite)}
+                    />
                     <SideIcon
                         imageSource={require('../assets/images/sri-krishna-slokas.png')}
                         label={t.slokas}
@@ -911,6 +929,7 @@ const DailyDarshanScreen = ({ navigation }) => {
                         {/* Play Button */}
                         <TouchableOpacity style={styles.playButton} onPress={togglePlayPause}>
                             <Text style={styles.playIcon}>{isPlaying ? "⏸️" : "▶️"}</Text>
+                            <Text style={styles.playLabel}>{isPlaying ? t.pause : t.play}</Text>
                         </TouchableOpacity>
 
                         {/* Loop Button */}
@@ -1120,8 +1139,14 @@ const styles = StyleSheet.create({
         marginRight: 10,
     },
     playIcon: {
-        fontSize: 30, // Main play icon
+        fontSize: 32, // Increased size
         color: '#fff',
+    },
+    playLabel: {
+        color: '#8b0000',
+        fontSize: 12,
+        fontWeight: 'bold',
+        marginTop: -1, // Adjusted for larger icon
     },
     loopButton: {
         marginRight: 10,
