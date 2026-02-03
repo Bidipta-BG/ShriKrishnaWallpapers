@@ -9,6 +9,8 @@ import MantraSelectionScreen from '../screens/MantraSelectionScreen';
 
 import SlokasScreen from '../screens/SlokasScreen';
 
+import GalleryScreen from '../screens/GalleryScreen';
+
 const Stack = createStackNavigator();
 
 const AppNavigator = ({ initialRouteName = 'LanguageSelection' }) => {
@@ -26,7 +28,7 @@ const AppNavigator = ({ initialRouteName = 'LanguageSelection' }) => {
             <Stack.Screen name="Festivals" component={FestivalScreen} />
             <Stack.Screen name="Slokas" component={SlokasScreen} />
             <Stack.Screen name="MantraSelection" component={MantraSelectionScreen} />
-
+            <Stack.Screen name="Gallery" component={GalleryScreen} />
             <Stack.Screen name="Chanting" component={ChantingScreen} />
         </Stack.Navigator>
     );

@@ -462,10 +462,6 @@ const DailyDarshanScreen = ({ navigation }) => {
     const [isAartiActive, setIsAartiActive] = useState(false);
     const [isSaveModalVisible, setSaveModalVisible] = useState(false);
 
-    // --- Gallery State ---
-    const [viewMode, setViewMode] = useState('darshan'); // 'darshan' or 'gallery'
-    const [galleryTab, setGalleryTab] = useState('New'); // 'New', 'Popular', 'Favourite'
-
     // --- Music Player State (Restored) ---
     const [sound, setSound] = useState(null);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -841,7 +837,13 @@ const DailyDarshanScreen = ({ navigation }) => {
             <View style={styles.bottomSection}>
                 {/* Tab Bar */}
                 <View style={styles.tabBar}>
-                    <Text style={styles.tabItem}>{t.allImages}</Text>
+                    <TouchableOpacity
+                        onPress={() => navigation.navigate('Gallery')}
+                        style={{ padding: 15, zIndex: 100 }}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                        <Text style={styles.tabItem}>{t.allImages}</Text>
+                    </TouchableOpacity>
 
                     {/* Streak Counter (Center) */}
                     <View style={{ alignItems: 'center', width: 80 }}>
