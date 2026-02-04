@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useRoute } from '@react-navigation/native';
 import { Audio } from 'expo-av';
@@ -170,12 +171,14 @@ const FallingCoin = ({ index, onComplete }) => {
 };
 
 // --- Helper Components for the Icons ---
-const SideIcon = ({ color, emoji, imageSource, label, onPress }) => (
+const SideIcon = ({ color, emoji, iconName, iconSize = 24, iconColor = "#fff", imageSource, label, onPress }) => (
     <TouchableOpacity onPress={onPress}>
         <View style={styles.iconWrapper}>
             <View style={[styles.iconCircle, { backgroundColor: color || 'rgba(0,0,0,0.4)' }]}>
                 {imageSource ? (
                     <Image source={imageSource} style={{ width: 30, height: 30 }} resizeMode="contain" />
+                ) : iconName ? (
+                    <Ionicons name={iconName} size={iconSize} color={iconColor} />
                 ) : (
                     <Text style={styles.iconEmoji}>{emoji}</Text>
                 )}
@@ -249,7 +252,7 @@ const DailyDarshanScreen = ({ navigation }) => {
     const insets = useSafeAreaInsets();
     const route = useRoute();
 
-    const [backgroundImage, setBackgroundImage] = useState('https://m.media-amazon.com/images/I/61k71BV8B3L._AC_UF1000,1000_QL80_.jpg');
+    const [backgroundImage, setBackgroundImage] = useState(Image.resolveAssetSource(require('../assets/images/default_darshan.png')).uri);
 
     // Load saved background whenever screen gains focus
     useFocusEffect(
@@ -259,6 +262,9 @@ const DailyDarshanScreen = ({ navigation }) => {
                     const saved = await AsyncStorage.getItem('saved_background_image');
                     if (saved) {
                         setBackgroundImage(saved);
+                    } else {
+                        // Fallback to local bundled image
+                        setBackgroundImage(Image.resolveAssetSource(require('../assets/images/default_darshan.png')).uri);
                     }
                 } catch (error) {
                     console.log('Error loading background:', error);
@@ -1007,26 +1013,24 @@ const DailyDarshanScreen = ({ navigation }) => {
                 {/* Left Column - 4 buttons */}
                 <View style={styles.leftColumn}>
                     <SideIcon
-                        emoji="👍"
+                        iconName={isLiked ? "thumbs-up" : "thumbs-up-outline"}
+                        iconColor={isLiked ? "#3498DB" : "#fff"}
                         label={`${likeCount} ${t.like}`}
-                        color={isLiked ? "#3498DB" : "#E74C3C"} // Blue if Liked, Red otherwise
                         onPress={handleLike}
                     />
                     <SideIcon
-                        emoji="🌼"
+                        iconName="flower-outline"
                         label={t.flowers}
-                        color="#F1C40F"
                         onPress={triggerFlowerShower}
                     />
 
                     <SideIcon
-                        emoji="🪙"
+                        iconName="cash-outline"
                         label={t.coins}
-                        color="#F39C12"
                         onPress={triggerCoinShower}
                     />
                     <SideIcon
-                        emoji="🐚"
+                        imageSource={require('../assets/images/shankh_icon.png')}
                         label={t.shankh}
                         onPress={playShankh}
                     />
@@ -1035,27 +1039,24 @@ const DailyDarshanScreen = ({ navigation }) => {
                 {/* Right Column - 4 buttons */}
                 <View style={styles.rightColumn}>
                     <SideIcon
-                        emoji={isFavourite ? "❤️" : "♡"}
+                        iconName={isFavourite ? "heart" : "heart-outline"}
+                        iconColor={isFavourite ? "#E74C3C" : "#fff"}
                         label={t.favourite}
-                        color="#F1C40F"
                         onPress={toggleFavorite}
                     />
                     <SideIcon
-                        imageSource={require('../assets/images/sri-krishna-slokas.png')}
+                        iconName="book-outline"
                         label={t.slokas}
-                        color="#E67E22"
                         onPress={() => navigation.navigate('Slokas')}
                     />
                     <SideIcon
-                        imageSource={require('../assets/images/rudraksh-mala.png')}
+                        iconName="radio-button-on-outline"
                         label={t.chanting}
-                        color="#D35400"
                         onPress={() => navigation.navigate('MantraSelection')}
                     />
                     <SideIcon
-                        emoji="💾"
+                        iconName="download-outline"
                         label={t.saveImage}
-                        color="#9B59B6"
                         onPress={() => setSaveModalVisible(true)}
                     />
                 </View>

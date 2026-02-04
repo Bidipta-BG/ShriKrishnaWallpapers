@@ -27,8 +27,22 @@ const GalleryScreen = () => {
         'https://m.media-amazon.com/images/I/710cyWZ1oSL._AC_UF894,1000_QL80_.jpg'
     ];
 
-    // Create a larger list for demo purposes (repeating the list 3 times)
-    const dummyImages = [...imageUrls, ...imageUrls, ...imageUrls].map((url, index) => ({ uri: url, id: index.toString() }));
+    // Mock Backend Data with Metadata
+    const dummyImages = [
+        // Bundled Local Image (Offline Support)
+        {
+            id: 'default_local',
+            uri: Image.resolveAssetSource(require('../assets/images/default_darshan.png')).uri,
+            likes: 1250,
+            addedAt: Date.now()
+        },
+        ...imageUrls.map((url, index) => ({
+            id: `img_${index}`,
+            uri: url,
+            likes: Math.floor(Math.random() * 500),
+            addedAt: Date.now() - (index * 1000 * 60 * 60 * 24) // offset by days
+        }))
+    ];
 
     const loadFavorites = async () => {
         try {
@@ -58,8 +72,24 @@ const GalleryScreen = () => {
         }, [activeTab])
     );
 
-    // Determine data source
-    const displayedImages = activeTab === 'Favourite' ? favoriteImages : dummyImages;
+    // Determine data source and sort
+    const getDisplayedImages = () => {
+        if (activeTab === 'Favourite') {
+            return favoriteImages;
+        }
+
+        const data = [...dummyImages];
+        if (activeTab === 'New') {
+            // Sort by latest added at top
+            return data.sort((a, b) => b.addedAt - a.addedAt);
+        } else if (activeTab === 'Popular') {
+            // Sort by most likes at top
+            return data.sort((a, b) => b.likes - a.likes);
+        }
+        return data;
+    };
+
+    const displayedImages = getDisplayedImages();
 
     const renderHeader = () => (
         <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
