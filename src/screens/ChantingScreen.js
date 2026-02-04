@@ -1,12 +1,123 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { useState } from 'react';
-import { Alert, Dimensions, StatusBar, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, Vibration, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
+import * as Speech from 'expo-speech';
+import { useEffect, useState } from 'react';
+import {
+    Alert,
+    Dimensions,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    Vibration,
+    View,
+} from 'react-native';
+import Animated, {
+    Easing,
+    runOnJS,
+    useAnimatedStyle,
+    useSharedValue,
+    withDelay,
+    withRepeat,
+    withSequence,
+    withSpring,
+    withTiming
+} from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../context/LanguageContext';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
+
+// --- Assets ---
+const FLOWER_IMAGES = [
+    require('../assets/images/flower1.png'),
+    require('../assets/images/flower2.png'),
+    require('../assets/images/flower3.png')
+];
+
+// --- Falling Flower Component ---
+const FallingFlower = ({ index, onComplete }) => {
+    const [config] = useState(() => ({
+        x: Math.random() * width,
+        delay: Math.random() * 2000,
+        duration: 3000 + Math.random() * 2000,
+        imageSource: FLOWER_IMAGES[Math.floor(Math.random() * FLOWER_IMAGES.length)]
+    }));
+
+    const translateY = useSharedValue(-50);
+    const rotate = useSharedValue(0);
+    const opacity = useSharedValue(0.8);
+
+    useEffect(() => {
+        translateY.value = withDelay(
+            config.delay,
+            withTiming(height, { duration: config.duration, easing: Easing.linear }, (finished) => {
+                if (finished) runOnJS(onComplete)(index);
+            })
+        );
+        rotate.value = withDelay(
+            config.delay,
+            withRepeat(withTiming(360, { duration: 2000 }), -1)
+        );
+    }, []);
+
+    const style = useAnimatedStyle(() => ({
+        transform: [
+            { translateX: config.x },
+            { translateY: translateY.value },
+            { rotate: `${rotate.value}deg` }
+        ],
+        opacity: opacity.value
+    }));
+
+    return (
+        <Animated.Image
+            source={config.imageSource}
+            style={[styles.flower, style]}
+            resizeMode="contain"
+        />
+    );
+};
+
+// --- Virtual Mala (108 Beads Ring) ---
+const VirtualMala = ({ count, target }) => {
+    const beads = Array.from({ length: 108 }, (_, i) => i);
+    const radius = width * 0.42;
+    const centerX = width / 2;
+    const centerY = width / 2;
+
+    return (
+        <View style={styles.malaContainer}>
+            {beads.map((i) => {
+                const angleDeg = (i * (360 / 108)) - 90;
+                const angleRad = (angleDeg * Math.PI) / 180;
+                const x = centerX + radius * Math.cos(angleRad);
+                const y = centerY + radius * Math.sin(angleRad);
+
+                const isCompleted = i < count;
+                const isCurrent = i === count;
+
+                return (
+                    <View
+                        key={i}
+                        style={[
+                            styles.bead,
+                            {
+                                left: x - 3,
+                                top: y - 3,
+                                backgroundColor: isCurrent ? '#FFD700' : (isCompleted ? '#E65100' : 'rgba(141, 110, 99, 0.3)'),
+                                transform: [{ scale: isCurrent ? 1.5 : 1 }],
+                                zIndex: isCurrent ? 10 : 1
+                            }
+                        ]}
+                    />
+                );
+            })}
+        </View>
+    );
+};
+
 
 const TRANSLATIONS = {
     en: {
@@ -14,14 +125,22 @@ const TRANSLATIONS = {
         wellDone: 'Well done! You have completed',
         rounds: 'rounds.',
         reset: 'Reset',
-        tapToCount: 'Tap to Count'
+        tapToCount: 'Tap to Count',
+        sound: {
+            mute: 'Silent',
+            speak: 'Speak'
+        }
     },
     hi: {
         completed: 'Jaap पूर्ण हुआ!',
         wellDone: 'बहुत बढ़िया! आपने पूरा कर लिया है',
         rounds: 'माला।',
         reset: 'रीसेट',
-        tapToCount: 'गिनती के लिए टैप करें'
+        tapToCount: 'गिनती के लिए टैप करें',
+        sound: {
+            mute: 'मौन',
+            speak: 'बोलें'
+        }
     }
 };
 
@@ -34,23 +153,51 @@ const ChantingScreen = ({ route, navigation }) => {
     const [count, setCount] = useState(0);
     const target = mantra.count;
 
-    // Animation values
+    // Audio State: 'speak' | 'mute'
+    const [soundMode, setSoundMode] = useState('mute');
+
+    const [flowers, setFlowers] = useState([]);
+
     const scale = useSharedValue(1);
     const rippleOpacity = useSharedValue(0);
     const rippleScale = useSharedValue(0);
 
+    const addFlower = () => {
+        if (Math.random() > 0.7) {
+            const id = Date.now() + Math.random();
+            setFlowers(prev => [...prev, { id }]);
+        }
+    };
+    const removeFlower = (id) => {
+        setFlowers(prev => prev.filter(f => f.id !== id));
+    };
+
     const handlePress = async () => {
         if (count >= target) return;
 
-        // 1. Haptic Feedback
-        try {
-            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        } catch (e) {
-            // Fallback for devices without haptics
+        const newCount = count + 1;
+        setCount(newCount);
+        addFlower();
+
+        // 1. Audio & Haptics
+        if (soundMode === 'mute') {
             Vibration.vibrate(50);
+        } else if (soundMode === 'speak') {
+            try {
+                // Haptic for feedback during speech
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+                Speech.stop();
+                Speech.speak(mantra.sans, { language: 'hi-IN', rate: 1.1 });
+            } catch (e) { console.log(e); }
         }
 
-        // 2. Animate Button (Shrink then grow)
+        // Milestone Haptic (Every 27 beads - Quarter Mala)
+        if (newCount % 27 === 0 && newCount !== target) {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        }
+
+        // 2. Animate Button 
         scale.value = withSequence(
             withTiming(0.9, { duration: 50 }),
             withSpring(1, { damping: 10 })
@@ -62,11 +209,7 @@ const ChantingScreen = ({ route, navigation }) => {
         rippleScale.value = withTiming(1.5, { duration: 400 });
         rippleOpacity.value = withTiming(0, { duration: 400 });
 
-        // 4. Update Count
-        const newCount = count + 1;
-        setCount(newCount);
-
-        // 5. Check Completion
+        // 4. Check Completion
         if (newCount === target) {
             setTimeout(() => {
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -84,16 +227,13 @@ const ChantingScreen = ({ route, navigation }) => {
         ]);
     };
 
-    const handleInfo = () => {
-        const detailText = isHindi
-            ? (mantra.details?.hi || mantra.benefit.hi)
-            : (mantra.details?.en || mantra.benefit.en);
+    const toggleSoundMode = () => {
+        setSoundMode(prev => prev === 'speak' ? 'mute' : 'speak');
+    };
 
-        Alert.alert(
-            isHindi ? 'मंत्र विवरण' : 'Mantra Details',
-            detailText,
-            [{ text: 'OK' }]
-        );
+    const getSoundIcon = () => {
+        // Toggle icons
+        return soundMode === 'speak' ? 'mic' : 'volume-mute';
     };
 
     const buttonStyle = useAnimatedStyle(() => ({
@@ -109,6 +249,11 @@ const ChantingScreen = ({ route, navigation }) => {
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="light-content" />
 
+            {/* Falling Flowers Layer */}
+            {flowers.map(f => (
+                <FallingFlower key={f.id} index={f.id} onComplete={() => removeFlower(f.id)} />
+            ))}
+
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -117,48 +262,48 @@ const ChantingScreen = ({ route, navigation }) => {
                 <Text style={styles.headerTitle}>{isHindi ? 'जाप' : 'Chanting'}</Text>
 
                 <TouchableOpacity onPress={handleReset}>
-                    <Text style={{ color: '#BCAAA4', fontSize: 16, fontWeight: 'bold' }}>
-                        {t.reset}
-                    </Text>
+                    <Ionicons name="refresh" size={24} color="#BCAAA4" />
                 </TouchableOpacity>
             </View>
 
             {/* Content */}
             <View style={styles.content}>
-                {/* Mantra Text */}
-                <View style={styles.mantraContainer}>
-                    {/* Show Title if not Hindi (since Hindi uses sans as title usually) or separate transliteration */}
-                    {!isHindi && <Text style={styles.titleText}>{mantra.title}</Text>}
+
+                {/* Top Section: Mantra Info */}
+                <View style={styles.mantraInfo}>
                     <Text style={styles.sanskritText}>{mantra.sans}</Text>
-                    <Text style={styles.meaningText} numberOfLines={2}>
-                        {isHindi ? mantra.benefit.hi : mantra.benefit.en}
-                    </Text>
-                    <TouchableOpacity onPress={handleInfo} style={{ marginTop: 5 }}>
-                        <Text style={{ color: '#4FC3F7', fontSize: 12, fontWeight: 'bold' }}>
-                            {isHindi ? 'और पढ़ें... (Read More)' : 'Read More...'}
-                        </Text>
+                    {!isHindi && <Text style={styles.titleText}>{mantra.title}</Text>}
+                </View>
+
+                {/* Middle: Virtual Mala & Counter */}
+                <View style={styles.malaSection}>
+                    {/* Ring */}
+                    <VirtualMala count={count} target={target} />
+
+                    {/* Center Button */}
+                    <TouchableWithoutFeedback onPress={handlePress}>
+                        <View style={styles.buttonWrapper}>
+                            <View style={styles.rippleContainer}>
+                                <Animated.View style={[styles.ripple, rippleStyle]} />
+                            </View>
+
+                            <Animated.View style={[styles.mainButton, buttonStyle]}>
+                                <Text style={styles.countBig}>{count}</Text>
+                                <Text style={styles.targetSmall}>/ {target}</Text>
+                                <Text style={styles.tapText}>{t.tapToCount}</Text>
+                            </Animated.View>
+                        </View>
+                    </TouchableWithoutFeedback>
+                </View>
+
+                {/* Bottom: Controls */}
+                <View style={styles.controls}>
+                    <TouchableOpacity style={styles.controlBtn} onPress={toggleSoundMode}>
+                        <Ionicons name={getSoundIcon()} size={24} color="#FFD700" />
+                        <Text style={styles.controlText}>{t.sound[soundMode]}</Text>
                     </TouchableOpacity>
                 </View>
 
-                {/* Counter Display */}
-                <View style={styles.monitorContainer}>
-                    <Text style={styles.countBig}>{count}</Text>
-                    <Text style={styles.targetSmall}>/ {target}</Text>
-                </View>
-
-                {/* Big Button */}
-                <TouchableWithoutFeedback onPress={handlePress}>
-                    <View style={styles.buttonWrapper}>
-                        <View style={styles.rippleContainer}>
-                            <Animated.View style={[styles.ripple, rippleStyle]} />
-                        </View>
-
-                        <Animated.View style={[styles.mainButton, buttonStyle]}>
-                            {/* <Text style={styles.beadText}>🕉️</Text> */}
-                            <Text style={styles.tapText}>{t.tapToCount}</Text>
-                        </Animated.View>
-                    </View>
-                </TouchableWithoutFeedback>
             </View>
         </SafeAreaView>
     );
@@ -175,70 +320,79 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: 20,
         paddingVertical: 15,
-        backgroundColor: '#1A120B'
+        backgroundColor: '#1A120B',
+        zIndex: 10
     },
     headerTitle: {
-        fontSize: 18,
+        fontSize: 20,
         fontWeight: 'bold',
         color: '#FFD700',
         fontFamily: 'serif',
-        flex: 1,
-        textAlign: 'center',
-        marginHorizontal: 10
     },
     content: {
         flex: 1,
         alignItems: 'center',
-        justifyContent: 'space-around',
-        paddingBottom: 50
+        justifyContent: 'space-between',
+        paddingVertical: 20
     },
-    mantraContainer: {
-        paddingHorizontal: 30,
+    mantraInfo: {
         alignItems: 'center',
-        marginTop: 20
-    },
-    titleText: {
-        color: '#FFD700',
-        fontSize: 18,
-        textAlign: 'center',
-        fontWeight: 'bold',
-        marginBottom: 8
+        opacity: 0.9,
+        paddingHorizontal: 20,
+        zIndex: 5
     },
     sanskritText: {
         color: '#FFB74D',
-        fontSize: 24,
+        fontSize: 22,
         textAlign: 'center',
         fontWeight: 'bold',
-        marginBottom: 10
+        marginBottom: 5
     },
-    meaningText: {
+    titleText: {
         color: '#B0BEC5',
         fontSize: 14,
         textAlign: 'center',
-        fontStyle: 'italic'
     },
-    monitorContainer: {
-        alignItems: 'center',
-        justifyContent: 'center'
-    },
-    countBig: {
-        fontSize: 80,
-        color: '#FFF',
-        fontWeight: 'bold',
-        textShadowColor: 'rgba(255, 215, 0, 0.5)',
-        textShadowOffset: { width: 0, height: 0 },
-        textShadowRadius: 20
-    },
-    targetSmall: {
-        fontSize: 24,
-        color: '#8D6E63',
-        marginTop: -10
-    },
-    buttonWrapper: {
+    malaSection: {
         alignItems: 'center',
         justifyContent: 'center',
-        width: 320,
-        height: 320,
+        height: width * 0.9, // Square area for circle
+        width: width,
+    },
+    malaContainer: {
+        position: 'absolute',
+        width: width,
+        height: width,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    bead: {
+        position: 'absolute',
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+    },
+    buttonWrapper: { // Center Button Container
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 220,
+        height: 220,
+    },
+    mainButton: {
+        width: 200, // Increased size
+        height: 200,
+        borderRadius: 100,
+        backgroundColor: '#BF360C',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 3,
+        borderColor: '#FFD700',
+        shadowColor: "#FFD700",
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.4,
+        shadowRadius: 15,
+        elevation: 10,
+        zIndex: 20
     },
     rippleContainer: {
         ...StyleSheet.absoluteFillObject,
@@ -246,36 +400,54 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     ripple: {
-        width: 320,
-        height: 320,
-        borderRadius: 160,
-        backgroundColor: 'rgba(255, 215, 0, 0.3)',
+        width: 240,
+        height: 240,
+        borderRadius: 120,
+        backgroundColor: 'rgba(255, 215, 0, 0.2)',
         position: 'absolute'
     },
-    mainButton: {
-        width: 260,
-        height: 260,
-        borderRadius: 130,
-        backgroundColor: '#BF360C', // Deep Prayer Beads Color
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 4,
-        borderColor: '#FFD700',
-        shadowColor: "#FFD700",
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.4,
-        shadowRadius: 15,
-        elevation: 10
+    countBig: {
+        fontSize: 40,
+        color: '#FFF',
+        fontWeight: 'bold',
     },
-    beadText: {
-        fontSize: 80,
-        marginBottom: 10
+    targetSmall: {
+        fontSize: 14,
+        color: '#FFCC80',
+        opacity: 0.8
     },
     tapText: {
-        color: '#FFF',
-        fontSize: 24, // Increased size
-        opacity: 0.9,
+        color: 'rgba(255,255,255,0.6)',
+        fontSize: 12,
+        marginTop: 5,
+        textTransform: 'uppercase'
+    },
+    controls: {
+        flexDirection: 'row',
+        marginBottom: 20,
+        backgroundColor: '#2C1B10',
+        padding: 5,
+        borderRadius: 30,
+        borderWidth: 1,
+        borderColor: '#5D4037',
+        zIndex: 10
+    },
+    controlBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+    },
+    controlText: {
+        color: '#FFD700',
+        marginLeft: 10,
         fontWeight: 'bold'
+    },
+    flower: {
+        position: 'absolute',
+        width: 30, // Small flowers
+        height: 30,
+        zIndex: 0
     }
 });
 

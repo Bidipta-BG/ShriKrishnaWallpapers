@@ -42,14 +42,14 @@ const ScheduleDarshanScreen = () => {
     const [morningEnabled, setMorningEnabled] = useState(false);
     const [morningTime, setMorningTime] = useState(() => {
         const d = new Date();
-        d.setHours(6, 0, 0, 0);
+        d.setHours(5, 0, 0, 0);
         return d;
     });
 
     const [eveningEnabled, setEveningEnabled] = useState(false);
     const [eveningTime, setEveningTime] = useState(() => {
         const d = new Date();
-        d.setHours(19, 0, 0, 0);
+        d.setHours(16, 0, 0, 0);
         return d;
     });
 

@@ -1,6 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useRoute } from '@react-navigation/native';
 import { Audio } from 'expo-av';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as MediaLibrary from 'expo-media-library';
+import * as Sharing from 'expo-sharing';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Dimensions, Image, Modal, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, {
@@ -17,15 +20,13 @@ import Animated, {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '../context/LanguageContext';
 
-// ... other imports ...
-
 const { width, height } = Dimensions.get('window');
 
 // --- Falling Flower Component ---
 const FLOWER_IMAGES = [
-    require('../assets/images/flower1.jpg'),
-    require('../assets/images/flower2.jpg'),
-    require('../assets/images/flower3.jpg')
+    require('../assets/images/flower1.png'),
+    require('../assets/images/flower2.png'),
+    require('../assets/images/flower3.png')
 ];
 
 const COIN_IMAGES = [
@@ -51,8 +52,6 @@ const FallingFlower = ({ index, onComplete }) => {
     const randomDelay = config.delay;
     const randomDuration = config.duration;
     const imageSource = config.imageSource;
-
-
 
     const translateY = useSharedValue(-50);
     const rotate = useSharedValue(0);
@@ -209,7 +208,11 @@ const TRANSLATIONS = {
         play: 'Play',
         pause: 'Pause',
         like: 'Like',
-        favourite: 'Favourite'
+        favourite: 'Favourite',
+        downloaded: 'Image Saved!',
+        downloadSuccess: 'The image has been saved to your gallery.',
+        permissionRequired: 'Permission Required',
+        permissionMsg: 'Please grant permission to save images.'
     },
     hi: {
         flowers: 'पुष्प',
@@ -232,7 +235,11 @@ const TRANSLATIONS = {
         play: 'चलाएं',
         pause: 'रोकें',
         like: 'पसंद',
-        favourite: 'पसंदीदा'
+        favourite: 'पसंदीदा',
+        downloaded: 'छवि सहेजी गई!',
+        downloadSuccess: 'छवि आपकी गैलरी में सहेजी गई है।',
+        permissionRequired: 'अनुमति आवश्यक है',
+        permissionMsg: 'कृपया चित्र सहेजने के लिए अनुमति दें।'
     },
     // Add other languages as needed, defaulting to English for now
 };
@@ -263,6 +270,7 @@ const DailyDarshanScreen = ({ navigation }) => {
 
     // Get translations for current language or fallback to English
     const t = TRANSLATIONS[language] || TRANSLATIONS['en'];
+    const isHindi = language === 'hi';
 
     // Apply strict safe area logic to critical containers
     const bellContainerStyle = {
@@ -277,7 +285,12 @@ const DailyDarshanScreen = ({ navigation }) => {
     const [streak, setStreak] = useState(1);
     const [challengeGoal, setChallengeGoal] = useState(7);
     const [streakDataLoaded, setStreakDataLoaded] = useState(false);
-    const [likeCount, setLikeCount] = useState(108); // Placeholder count
+
+    // --- Like & User Identity ---
+    const [deviceId, setDeviceId] = useState(null);
+    const [likeCount, setLikeCount] = useState(108); // Mock total
+    const [isLiked, setIsLiked] = useState(false); // Does THIS device like it?
+
     const [isFavourite, setIsFavourite] = useState(false);
 
     useFocusEffect(
@@ -385,7 +398,7 @@ const DailyDarshanScreen = ({ navigation }) => {
             // 1. Start Sound
             // Using local file at src/assets/sounds/bell_sound.mp3
             const { sound } = await Audio.Sound.createAsync(
-                require('../assets/sounds/bell_sound.mp3'),
+                require('../assets/sounds/bell-sound.mp3'),
                 { shouldPlay: true, isLooping: true }
             );
             soundRef.current = sound;
@@ -400,7 +413,7 @@ const DailyDarshanScreen = ({ navigation }) => {
                 true // Auto-reverse
             );
 
-            // 3. Stop after 3 seconds
+            // 3. Stop after Aarti duration (~13.5s)
             setTimeout(async () => {
                 // Stop Animation
                 cancelAnimation(bellRotation);
@@ -413,7 +426,7 @@ const DailyDarshanScreen = ({ navigation }) => {
                     soundRef.current = null;
                 }
                 setIsRinging(false);
-            }, 8000);
+            }, 13500);
 
         } catch (error) {
             console.log('Error playing sound:', error);
@@ -504,22 +517,210 @@ const DailyDarshanScreen = ({ navigation }) => {
     const currentLoopModeRef = useRef(1); // Store for callback access
 
 
-    // Check for incoming track from MantrasScreen
-    // Check for incoming track from MantrasScreen - REMOVED
+    // --- Favorite Logic ---
+    const toggleFavorite = async () => {
+        try {
+            // 1. Load Current List
+            const storedFavs = await AsyncStorage.getItem('favourite_images_list');
+            let favList = storedFavs ? JSON.parse(storedFavs) : [];
+
+            // 2. Check if already favorite
+            const existingIndex = favList.findIndex(item =>
+                item.uri === backgroundImage || item.original === backgroundImage
+            );
+
+            if (existingIndex !== -1) {
+                // ALREADY FAVORITE -> REMOVE
+                favList.splice(existingIndex, 1);
+                await AsyncStorage.setItem('favourite_images_list', JSON.stringify(favList));
+                setIsFavourite(false);
+                // Optional: Delete local file (skipped for simplicity, cache will auto-clear eventually or can implement later)
+            } else {
+                // NOT FAVORITE -> ADD
+                if (favList.length >= 10) {
+                    Alert.alert("Limit Reached", "You can only save up to 10 favorite images.");
+                    return;
+                }
+
+                // Download specific file for persistent storage
+                const filename = `fav_${Date.now()}.jpg`;
+                const fileUri = `${FileSystem.documentDirectory}${filename}`;
+
+                // Download or Copy file depending on source
+                let uri;
+                if (backgroundImage.startsWith('http')) {
+                    const result = await FileSystem.downloadAsync(backgroundImage, fileUri);
+                    uri = result.uri;
+                } else {
+                    // It's already a local file (e.g. from gallery cache), so just copy it
+                    await FileSystem.copyAsync({ from: backgroundImage, to: fileUri });
+                    uri = fileUri;
+                }
+
+                const newFav = {
+                    id: Date.now().toString(),
+                    uri: uri, // Save Local Path
+                    original: backgroundImage
+                };
+
+                favList.push(newFav);
+                await AsyncStorage.setItem('favourite_images_list', JSON.stringify(favList));
+                setIsFavourite(true);
+                Alert.alert("Added to Favorites", "Saved to your Favorite Tab.");
+            }
+        } catch (e) {
+            console.log("Fav Error:", e);
+            Alert.alert("Error", "Could not update favorites.");
+        }
+    };
+
+    // Check if current image is favorite on load/change
+    useEffect(() => {
+        const checkFavStatus = async () => {
+            const storedFavs = await AsyncStorage.getItem('favourite_images_list');
+            if (storedFavs) {
+                const favList = JSON.parse(storedFavs);
+                // Check if current background URL or a vaguely matching ID exists
+                // Since background changes dynamic, check by URI string match
+                const exists = favList.some(item => item.original === backgroundImage || item.uri === backgroundImage);
+                setIsFavourite(exists);
+            }
+        };
+        checkFavStatus();
+    }, [backgroundImage]);
+
+
+    // --- Like Logic (Mock Device-based) ---
+    useEffect(() => {
+        const initIdentity = async () => {
+            try {
+                let id = await AsyncStorage.getItem('user_device_id');
+                if (!id) {
+                    id = `user_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+                    await AsyncStorage.setItem('user_device_id', id);
+                }
+                setDeviceId(id);
+            } catch (e) {
+                console.log("Identity Error:", e);
+            }
+        };
+        initIdentity();
+    }, []);
+
+    const checkLikeStatus = async () => {
+        try {
+            const likedImages = await AsyncStorage.getItem('liked_images_list');
+            const list = likedImages ? JSON.parse(likedImages) : [];
+            const liked = list.includes(backgroundImage);
+            setIsLiked(liked);
+
+            // Mock random total count for demo
+            setLikeCount(liked ? 109 : 108);
+        } catch (e) {
+            console.log("Check Like Error:", e);
+        }
+    };
+
+    useEffect(() => {
+        checkLikeStatus();
+    }, [backgroundImage]);
+
+    const handleLike = async () => {
+        try {
+            const likedImages = await AsyncStorage.getItem('liked_images_list');
+            let list = likedImages ? JSON.parse(likedImages) : [];
+
+            if (isLiked) {
+                // UNLIKE
+                list = list.filter(url => url !== backgroundImage);
+                setIsLiked(false);
+                setLikeCount(prev => prev - 1);
+            } else {
+                // LIKE
+                list.push(backgroundImage);
+                setIsLiked(true);
+                setLikeCount(prev => prev + 1);
+            }
+
+            await AsyncStorage.setItem('liked_images_list', JSON.stringify(list));
+
+            // Note: In real backend, you'd send { imageId, deviceId } here.
+            console.log(`Syncing with backend: Device ${deviceId} liked ${backgroundImage}`);
+
+        } catch (e) {
+            console.log("Like Error:", e);
+        }
+    };
 
 
     const handleSetAlarm = () => {
         Alert.alert("Set Alarm", "Alarm feature is coming soon!");
     };
 
-    const handleSaveOption = (option) => {
-        // Placeholder handlers
-        console.log(`Selected option: ${option}`);
+    // --- Download & Share Logic ---
+
+    // Helper: Download Image to Local Cache
+    const downloadToCache = async () => {
+        try {
+            const fileUri = `${FileSystem.cacheDirectory}darshan_image.jpg`;
+            const { uri } = await FileSystem.downloadAsync(backgroundImage, fileUri);
+            return uri;
+        } catch (e) {
+            console.error(e);
+            return null;
+        }
+    }
+
+    const handleSaveOption = async (option) => {
         setSaveModalVisible(false);
-        console.log(`Selected option: ${option}`);
-        setSaveModalVisible(false);
-        // Implement actual logic later: e.g. download or set wallpaper
+
+        if (option === 'download') {
+            await downloadImage();
+        } else if (option === 'share') {
+            await shareImage();
+        }
     };
+
+    const downloadImage = async () => {
+        try {
+            // Request WRITE-ONLY permissions to avoid needing READ_AUDIO/READ_VIDEO causing manifest errors
+            const { status } = await MediaLibrary.requestPermissionsAsync(true);
+            if (status !== 'granted') {
+                Alert.alert(t.permissionRequired, t.permissionMsg);
+                return;
+            }
+
+            const uri = await downloadToCache();
+            if (uri) {
+                // Modified: Using createAssetAsync instead of deprecated saveToLibraryAsync
+                const asset = await MediaLibrary.createAssetAsync(uri);
+                // On Android, createAssetAsync automatically saves to "Pictures" or "DCIM".
+                // We could also move it to a specific album using createAlbumAsync if desired,
+                // but createAssetAsync is sufficient for "Download" behavior.
+
+                if (asset) {
+                    Alert.alert(t.downloaded, t.downloadSuccess);
+                } else {
+                    throw new Error("Could not create asset.");
+                }
+            }
+        } catch (e) {
+            console.log("Download Error:", e);
+            Alert.alert("Error", e.message || "Failed to save image.");
+        }
+    };
+
+    const shareImage = async () => {
+        const uri = await downloadToCache();
+        if (uri) {
+            if (!(await Sharing.isAvailableAsync())) {
+                Alert.alert("Error", "Sharing is not available on this device");
+                return;
+            }
+            await Sharing.shareAsync(uri);
+        }
+    };
+
 
     // --- Audio Logic ---
     useEffect(() => {
@@ -551,9 +752,9 @@ const DailyDarshanScreen = ({ navigation }) => {
                     setIsPlaying(true);
                 }
             } else {
-                // Load Shankh Sound
+                // Load Main Music
                 const { sound: newSound } = await Audio.Sound.createAsync(
-                    require('../assets/sounds/shank-sound.mp3'),
+                    require('../assets/sounds/main-music.mp3'),
                     { shouldPlay: true, isLooping: false } // Manual looping
                 );
 
@@ -641,14 +842,6 @@ const DailyDarshanScreen = ({ navigation }) => {
         // Convert rotation (degrees) to radians
         const angleRad = (aartiRotation.value * Math.PI) / 180;
 
-        // If not active, stay at 0,0 (relative to container)
-        // When active, move in circle. 
-        // We offset by -90deg (-PI/2) so it starts at bottom (270 deg / -90 deg) relative to circle center
-        // But since Diya is at bottom, we want circle CENTER to be above it.
-        // Let's assume standard parametric circle: x = R*cos(a), y = R*sin(a)
-
-        // We want Start Position (Bottom Center) -> Center of Screen -> Circle
-
         if (aartiRotation.value === 0) {
             return {
                 opacity: diyaOpacity.value,
@@ -660,15 +853,6 @@ const DailyDarshanScreen = ({ navigation }) => {
             opacity: 1, // Full opacity during Aarti
             transform: [
                 { scale: aartiScale.value },
-                // Move orbit center UP by 'radius' so 'Bottom' touches original position? 
-                // Easier: Just oscillate X and Y.
-                // Circle path: 
-                // X = R * sin(angle)
-                // Y = -R * (1 - cos(angle))  <-- Starts at 0, goes up to -2R, back to 0
-
-                // We also add a "Lift" based on scale (scales 1->1.5). 
-                // (aartiScale.value - 1) goes 0 -> 0.5. 
-                // Multiply by 120 -> Lifts 60px up.
                 { translateX: radius * Math.sin(angleRad) },
                 { translateY: -radius * (1 - Math.cos(angleRad)) - (aartiScale.value - 1) * 120 }
             ]
@@ -823,10 +1007,10 @@ const DailyDarshanScreen = ({ navigation }) => {
                 {/* Left Column - 4 buttons */}
                 <View style={styles.leftColumn}>
                     <SideIcon
-                        emoji="❤️"
+                        emoji="👍"
                         label={`${likeCount} ${t.like}`}
-                        color="#E74C3C"
-                        onPress={() => setLikeCount(likeCount + 1)}
+                        color={isLiked ? "#3498DB" : "#E74C3C"} // Blue if Liked, Red otherwise
+                        onPress={handleLike}
                     />
                     <SideIcon
                         emoji="🌼"
@@ -851,10 +1035,10 @@ const DailyDarshanScreen = ({ navigation }) => {
                 {/* Right Column - 4 buttons */}
                 <View style={styles.rightColumn}>
                     <SideIcon
-                        emoji={isFavourite ? "🌟" : "⭐"}
+                        emoji={isFavourite ? "❤️" : "♡"}
                         label={t.favourite}
                         color="#F1C40F"
-                        onPress={() => setIsFavourite(!isFavourite)}
+                        onPress={toggleFavorite}
                     />
                     <SideIcon
                         imageSource={require('../assets/images/sri-krishna-slokas.png')}
@@ -985,14 +1169,6 @@ const DailyDarshanScreen = ({ navigation }) => {
                             <Text style={styles.modalButtonText}>⬇️  {t.download}</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={styles.modalButton} onPress={() => handleSaveOption('home')}>
-                            <Text style={styles.modalButtonText}>🏠  {t.setHomeWallpaper}</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={styles.modalButton} onPress={() => handleSaveOption('lock')}>
-                            <Text style={styles.modalButtonText}>🔒  {t.setLockWallpaper}</Text>
-                        </TouchableOpacity>
-
                         <TouchableOpacity style={styles.modalButton} onPress={() => handleSaveOption('share')}>
                             <Text style={styles.modalButtonText}>📤  {t.share}</Text>
                         </TouchableOpacity>
@@ -1105,7 +1281,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-around',
         alignItems: 'center',
         paddingVertical: 6,
-        backgroundColor: 'rgba(255, 255, 255, 0.8)', // Semi-transparent strip
+        backgroundColor: 'rgba(255, 255, 255, 0.8)', // Semi-transparent track
         zIndex: 60, // Ensure it's above the centerThaliContainer (zIndex 50)
     },
     tabItem: {

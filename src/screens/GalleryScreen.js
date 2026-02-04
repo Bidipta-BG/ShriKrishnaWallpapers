@@ -1,6 +1,7 @@
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation } from '@react-navigation/native';
-import { useState } from 'react';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useCallback, useState } from 'react';
 import { Alert, Dimensions, FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -10,6 +11,7 @@ const GalleryScreen = () => {
     const navigation = useNavigation();
     const insets = useSafeAreaInsets();
     const [activeTab, setActiveTab] = useState('New'); // 'New', 'Popular', 'Favourite'
+    const [favoriteImages, setFavoriteImages] = useState([]);
 
     const tabs = ['New', 'Popular', 'Favourite'];
 
@@ -28,10 +30,41 @@ const GalleryScreen = () => {
     // Create a larger list for demo purposes (repeating the list 3 times)
     const dummyImages = [...imageUrls, ...imageUrls, ...imageUrls].map((url, index) => ({ uri: url, id: index.toString() }));
 
+    const loadFavorites = async () => {
+        try {
+            const storedFavs = await AsyncStorage.getItem('favourite_images_list');
+            if (storedFavs) {
+                setFavoriteImages(JSON.parse(storedFavs));
+            } else {
+                setFavoriteImages([]);
+            }
+        } catch (error) {
+            console.log("Error loading favorites:", error);
+        }
+    };
+
+    useFocusEffect(
+        useCallback(() => {
+            loadFavorites();
+        }, [])
+    );
+
+    // Reload when tab changes to Favourite
+    useFocusEffect(
+        useCallback(() => {
+            if (activeTab === 'Favourite') {
+                loadFavorites();
+            }
+        }, [activeTab])
+    );
+
+    // Determine data source
+    const displayedImages = activeTab === 'Favourite' ? favoriteImages : dummyImages;
+
     const renderHeader = () => (
         <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                <Text style={styles.backIcon}>⬅️</Text>
+                <Ionicons name="arrow-back" size={26} color="#fff" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>All Images</Text>
             <View style={{ width: 40 }} />
@@ -57,7 +90,20 @@ const GalleryScreen = () => {
     const handleImageSelect = async (item) => {
         try {
             await AsyncStorage.setItem('saved_background_image', item.uri);
-            Alert.alert("Success", "Darshan wallpaper set successfully! \n\nGo back to see it.");
+            Alert.alert(
+                "Wallpaper Set!",
+                "Would you like to go back to the main screen or stay here?",
+                [
+                    {
+                        text: "OK",
+                        style: "cancel"
+                    },
+                    {
+                        text: "Go Back",
+                        onPress: () => navigation.goBack()
+                    }
+                ]
+            );
         } catch (error) {
             console.log("Error saving image:", error);
             Alert.alert("Error", "Failed to set wallpaper.");
@@ -69,8 +115,15 @@ const GalleryScreen = () => {
             style={styles.imageContainer}
             onPress={() => handleImageSelect(item)}
         >
-            <Image source={item} style={styles.image} />
+            <Image source={{ uri: item.uri }} style={styles.image} />
         </TouchableOpacity>
+    );
+
+    const renderEmptyState = () => (
+        <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No Favorites Yet</Text>
+            <Text style={styles.emptySubText}>Tap the ❤️ icon on Daily Darshan to add here.</Text>
+        </View>
     );
 
     return (
@@ -81,13 +134,14 @@ const GalleryScreen = () => {
                 {renderTabs()}
 
                 <FlatList
-                    data={dummyImages}
+                    data={displayedImages}
                     renderItem={renderImageItem}
-                    keyExtractor={(_, index) => index.toString()}
+                    keyExtractor={(item) => item.id || Math.random().toString()}
                     key={2} // Force re-render when columns change
                     numColumns={2}
                     contentContainerStyle={styles.gridContainer}
                     showsVerticalScrollIndicator={false}
+                    ListEmptyComponent={activeTab === 'Favourite' ? renderEmptyState : null}
                 />
             </View>
         </View>
@@ -107,6 +161,7 @@ const styles = StyleSheet.create({
         paddingVertical: 15,
         backgroundColor: '#CD9730', // Gold/DarkYellow
         elevation: 5,
+        top: 0
     },
     backButton: {
         padding: 5,
@@ -165,6 +220,23 @@ const styles = StyleSheet.create({
         width: '100%',
         height: '100%',
         resizeMode: 'cover',
+    },
+    emptyContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingTop: 50,
+    },
+    emptyText: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#555',
+        marginBottom: 10,
+    },
+    emptySubText: {
+        fontSize: 14,
+        color: '#888',
+        textAlign: 'center',
     },
 });
 
