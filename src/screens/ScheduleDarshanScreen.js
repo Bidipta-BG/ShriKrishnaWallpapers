@@ -15,6 +15,7 @@ import {
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useLanguage } from '../context/LanguageContext';
 
 // Configure notification behavior
 Notifications.setNotificationHandler({
@@ -25,18 +26,59 @@ Notifications.setNotificationHandler({
     }),
 });
 
-const SPIRITUAL_TIPS = [
-    "Performing puja during Brahma Muhurta (4:00 AM - 6:00 AM) is most auspicious.",
-    "Lighting a Diya brings positive energy and removes darkness from mind.",
-    "Chanting 'Om Namo Bhagavate Vasudevaya' 108 times daily brings peace.",
-    "Offer fresh flowers to the Lord to express your pure devotion.",
-    "Meditation on Shri Krishna's form helps in achieving mental clarity.",
-    "Always start your day with a small prayer of gratitude.",
-    "Sharing Prasad with others multiplies the blessings received."
-];
+const TRANSLATIONS = {
+    en: {
+        headerTitle: 'Spiritual Planner',
+        morning: 'Morning',
+        evening: 'Evening',
+        tipTitle: 'Daily Spiritual Tip',
+        tipChange: 'Click to change',
+        challengeTitle: (days) => `My ${days}-Day Challenge`,
+        challengeSub: 'Keep your devotion consistent to bloom every morning.',
+        footer: 'Success is a collection of small daily efforts. 🙏',
+        morningNotifyTitle: "Morning Darshan 🌅",
+        morningNotifyBody: "Good morning! Start your day with Shri Krishna's blessing.",
+        eveningNotifyTitle: "Evening Darshan 🌇",
+        eveningNotifyBody: "End your day with peace. It's time for Evening Puja.",
+        tips: [
+            "Performing puja during Brahma Muhurta (4:00 AM - 6:00 AM) is most auspicious.",
+            "Lighting a Diya brings positive energy and removes darkness from mind.",
+            "Chanting 'Om Namo Bhagavate Vasudevaya' 108 times daily brings peace.",
+            "Offer fresh flowers to the Lord to express your pure devotion.",
+            "Meditation on Shri Krishna's form helps in achieving mental clarity.",
+            "Always start your day with a small prayer of gratitude.",
+            "Sharing Prasad with others multiplies the blessings received."
+        ]
+    },
+    hi: {
+        headerTitle: 'आध्यात्मिक योजनाकार',
+        morning: 'सुबह',
+        evening: 'शाम',
+        tipTitle: 'दैनिक आध्यात्मिक सुझाव',
+        tipChange: 'बदलने के लिए क्लिक करें',
+        challengeTitle: (days) => `मेरी ${days}-दिवसीय चुनौती`,
+        challengeSub: 'हर सुबह खिलने के लिए अपनी भक्ति को निरंतर रखें।',
+        footer: 'सफलता छोटे-छोटे दैनिक प्रयासों का संग्रह है। 🙏',
+        morningNotifyTitle: "प्रभात दर्शन 🌅",
+        morningNotifyBody: "सुप्रभात! भगवान श्री कृष्ण के आशीर्वाद के साथ अपने दिन की शुरुआत करें।",
+        eveningNotifyTitle: "सायं दर्शन 🌇",
+        eveningNotifyBody: "शांति के साथ अपने दिन का अंत करें। सायं पूजा का समय हो गया है।",
+        tips: [
+            "ब्रह्म मुहूर्त (प्रातः 4:00 - 6:00) के दौरान पूजा करना सबसे शुभ है।",
+            "दीया जलाने से सकारात्मक ऊर्जा आती है और मन का अंधकार दूर होता है।",
+            "प्रतिदिन 108 बार 'ओम नमो भगवते वासुदेवाय' का जाप शांति लाता है।",
+            "अपनी शुद्ध भक्ति व्यक्त करने के लिए प्रभु को ताजे फूल अर्पित करें।",
+            "श्री कृष्ण के स्वरूप पर ध्यान करने से मानसिक स्पष्टता प्राप्त करने में मदद मिलती है।",
+            "हमेशा अपने दिन की शुरुआत कृतज्ञता की एक छोटी प्रार्थना के साथ करें।",
+            "दूसरों के साथ प्रसाद बांटने से मिलने वाला आशीर्वाद कई गुना बढ़ जाता है।"
+        ]
+    }
+};
 
 const ScheduleDarshanScreen = () => {
     const navigation = useNavigation();
+    const { language } = useLanguage();
+    const t = TRANSLATIONS[language] || TRANSLATIONS['en'];
 
     // Reminder States
     const [morningEnabled, setMorningEnabled] = useState(false);
@@ -125,8 +167,8 @@ const ScheduleDarshanScreen = () => {
         if (morningEnabled) {
             await Notifications.scheduleNotificationAsync({
                 content: {
-                    title: "Morning Darshan 🌅",
-                    body: "Good morning! Start your day with Shri Krishna's blessing.",
+                    title: t.morningNotifyTitle,
+                    body: t.morningNotifyBody,
                     sound: true,
                     channelId: 'daily-puja',
                 },
@@ -142,8 +184,8 @@ const ScheduleDarshanScreen = () => {
         if (eveningEnabled) {
             await Notifications.scheduleNotificationAsync({
                 content: {
-                    title: "Evening Darshan 🌇",
-                    body: "End your day with peace. It's time for Evening Puja.",
+                    title: t.eveningNotifyTitle,
+                    body: t.eveningNotifyBody,
                     sound: true,
                     channelId: 'daily-puja',
                 },
@@ -181,7 +223,7 @@ const ScheduleDarshanScreen = () => {
     };
 
     const rotateTip = () => {
-        setTipIndex((prev) => (prev + 1) % SPIRITUAL_TIPS.length);
+        setTipIndex((prev) => (prev + 1) % t.tips.length);
     };
 
     const renderStreakIcons = () => {
@@ -223,14 +265,14 @@ const ScheduleDarshanScreen = () => {
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                         <Ionicons name="arrow-back" size={28} color="#fff" />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Spiritual Planner</Text>
+                    <Text style={styles.headerTitle}>{t.headerTitle}</Text>
                 </View>
 
                 {/* 1. Morning/Evening Reminders */}
                 <View style={styles.remindersRow}>
                     <View style={[styles.card, styles.reminderCard]}>
                         <View style={styles.reminderHeader} pointerEvents="box-none">
-                            <Text style={styles.reminderTitle}>Morning</Text>
+                            <Text style={styles.reminderTitle}>{t.morning}</Text>
                             <Switch
                                 value={morningEnabled}
                                 onValueChange={setMorningEnabled}
@@ -250,7 +292,7 @@ const ScheduleDarshanScreen = () => {
 
                     <View style={[styles.card, styles.reminderCard]}>
                         <View style={styles.reminderHeader} pointerEvents="box-none">
-                            <Text style={styles.reminderTitle}>Evening</Text>
+                            <Text style={styles.reminderTitle}>{t.evening}</Text>
                             <Switch
                                 value={eveningEnabled}
                                 onValueChange={setEveningEnabled}
@@ -273,16 +315,16 @@ const ScheduleDarshanScreen = () => {
                 <TouchableOpacity style={styles.card} onPress={rotateTip}>
                     <View style={styles.tipHeader}>
                         <Ionicons name="sparkles" size={20} color="#CD9730" />
-                        <Text style={styles.tipTitle}>Daily Spiritual Tip</Text>
-                        <Text style={{ fontSize: 10, color: '#999' }}>Click to change</Text>
+                        <Text style={styles.tipTitle}>{t.tipTitle}</Text>
+                        <Text style={{ fontSize: 10, color: '#999' }}>{t.tipChange}</Text>
                     </View>
-                    <Text style={styles.tipText}>"{SPIRITUAL_TIPS[tipIndex]}"</Text>
+                    <Text style={styles.tipText}>"{t.tips[tipIndex]}"</Text>
                 </TouchableOpacity>
 
                 {/* 3. Streak Tracker / Challenge */}
                 <View style={[styles.card, styles.fixedChallengeCard]}>
                     <View style={styles.cardHeader}>
-                        <Text style={styles.cardTitle}>My {challengeDays}-Day Challenge</Text>
+                        <Text style={styles.cardTitle}>{t.challengeTitle(challengeDays)}</Text>
                         <View style={styles.challengeControls}>
                             <TouchableOpacity
                                 onPress={() => setChallengeDays(Math.max(7, challengeDays - 7))}
@@ -300,7 +342,7 @@ const ScheduleDarshanScreen = () => {
                             </TouchableOpacity>
                         </View>
                     </View>
-                    <Text style={styles.streakSub}>Keep your devotion consistent to bloom every morning.</Text>
+                    <Text style={styles.streakSub}>{t.challengeSub}</Text>
 
                     <ScrollView style={styles.scrollArea} showsVerticalScrollIndicator={false}>
                         <View style={styles.streakGrid}>
@@ -321,7 +363,7 @@ const ScheduleDarshanScreen = () => {
 
                 <View style={styles.footer}>
                     <Text style={styles.footerText}>
-                        Success is a collection of small daily efforts. 🙏
+                        {t.footer}
                     </Text>
                 </View>
             </SafeAreaView>

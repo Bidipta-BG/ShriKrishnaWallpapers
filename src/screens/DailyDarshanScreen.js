@@ -215,7 +215,20 @@ const TRANSLATIONS = {
         downloaded: 'Image Saved!',
         downloadSuccess: 'The image has been saved to your gallery.',
         permissionRequired: 'Permission Required',
-        permissionMsg: 'Please grant permission to save images.'
+        permissionMsg: 'Please grant permission to save images.',
+        repeat: 'repeat',
+        limitReachedTitle: 'Limit Reached',
+        limitReachedMsg: 'You can only save up to 10 favorite images.',
+        favAddedTitle: 'Added to Favorites',
+        favAddedMsg: 'Saved to your Favorite Tab.',
+        favErrorTitle: 'Error',
+        favErrorMsg: 'Could not update favorites.',
+        wallpaperSetTitle: 'Wallpaper Set!',
+        wallpaperSetMsg: 'Would you like to go back to the main screen or stay here?',
+        ok: 'OK',
+        goBack: 'Go Back',
+        noFavsYet: 'No Favorites Yet',
+        noFavsSub: 'Tap the ❤️ icon on Daily Darshan to add here.',
     },
     hi: {
         flowers: 'पुष्प',
@@ -242,7 +255,20 @@ const TRANSLATIONS = {
         downloaded: 'छवि सहेजी गई!',
         downloadSuccess: 'छवि आपकी गैलरी में सहेजी गई है।',
         permissionRequired: 'अनुमति आवश्यक है',
-        permissionMsg: 'कृपया चित्र सहेजने के लिए अनुमति दें।'
+        permissionMsg: 'कृपया चित्र सहेजने के लिए अनुमति दें।',
+        repeat: 'दोहराएं',
+        limitReachedTitle: 'सीमा समाप्त',
+        limitReachedMsg: 'आप केवल 10 पसंदीदा चित्र सहेज सकते हैं।',
+        favAddedTitle: 'पसंदीदा में जोड़ा गया',
+        favAddedMsg: 'आपकी पसंदीदा टैब में सहेजा गया।',
+        favErrorTitle: 'त्रुटि',
+        favErrorMsg: 'पसंदीदा अपडेट नहीं किया जा सका।',
+        wallpaperSetTitle: 'वॉलपेपर सेट!',
+        wallpaperSetMsg: 'क्या आप मुख्य स्क्रीन पर वापस जाना चाहते हैं या यहीं रहना चाहते हैं?',
+        ok: 'ठीक है',
+        goBack: 'वापस जाएं',
+        noFavsYet: 'अभी तक कोई पसंदीदा नहीं',
+        noFavsSub: 'जोड़ने के लिए दैनिक दर्शन पर ❤️ आइकन दबाएं।',
     },
     // Add other languages as needed, defaulting to English for now
 };
@@ -544,7 +570,7 @@ const DailyDarshanScreen = ({ navigation }) => {
             } else {
                 // NOT FAVORITE -> ADD
                 if (favList.length >= 10) {
-                    Alert.alert("Limit Reached", "You can only save up to 10 favorite images.");
+                    Alert.alert(t.limitReachedTitle, t.limitReachedMsg);
                     return;
                 }
 
@@ -572,11 +598,11 @@ const DailyDarshanScreen = ({ navigation }) => {
                 favList.push(newFav);
                 await AsyncStorage.setItem('favourite_images_list', JSON.stringify(favList));
                 setIsFavourite(true);
-                Alert.alert("Added to Favorites", "Saved to your Favorite Tab.");
+                Alert.alert(t.favAddedTitle, t.favAddedMsg);
             }
         } catch (e) {
             console.log("Fav Error:", e);
-            Alert.alert("Error", "Could not update favorites.");
+            Alert.alert(t.favErrorTitle, t.favErrorMsg);
         }
     };
 
@@ -1121,7 +1147,7 @@ const DailyDarshanScreen = ({ navigation }) => {
                         <TouchableOpacity style={styles.loopButton} onPress={toggleLoopMode}>
                             <View style={styles.loopContent}>
                                 <Text style={styles.loopNumber}>{loopMode}</Text>
-                                <Text style={styles.loopText}>repeat</Text>
+                                <Text style={styles.loopText}>{t.repeat}</Text>
                             </View>
                         </TouchableOpacity>
 

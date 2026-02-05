@@ -4,12 +4,47 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useCallback, useState } from 'react';
 import { Alert, Dimensions, FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useLanguage } from '../context/LanguageContext';
+
+const TRANSLATIONS = {
+    en: {
+        allImages: 'All Images',
+        newImage: 'New Image',
+        popularImage: 'Popular Image',
+        favouriteImage: 'Favourite Image',
+        wallpaperSetTitle: 'Wallpaper Set!',
+        wallpaperSetMsg: 'Would you like to go back to the main screen or stay here?',
+        ok: 'OK',
+        goBack: 'Go Back',
+        noFavsYet: 'No Favorites Yet',
+        noFavsSub: 'Tap the ❤️ icon on Daily Darshan to add here.',
+        error: 'Error',
+        failedSetting: 'Failed to set wallpaper.',
+    },
+    hi: {
+        allImages: 'सभी चित्र',
+        newImage: 'नया चित्र',
+        popularImage: 'लोकप्रिय चित्र',
+        favouriteImage: 'पसंदीदा चित्र',
+        wallpaperSetTitle: 'वॉलपेपर सेट!',
+        wallpaperSetMsg: 'क्या आप मुख्य स्क्रीन पर वापस जाना चाहते हैं या यहीं रहना चाहते हैं?',
+        ok: 'ठीक है',
+        goBack: 'वापस जाएं',
+        noFavsYet: 'अभी तक कोई पसंदीदा नहीं',
+        noFavsSub: 'जोड़ने के लिए दैनिक दर्शन पर ❤️ आइकन दबाएं।',
+        error: 'त्रुटि',
+        failedSetting: 'वॉलपेपर सेट करने में विफल।',
+    }
+};
 
 const { width } = Dimensions.get('window');
 
 const GalleryScreen = () => {
     const navigation = useNavigation();
     const insets = useSafeAreaInsets();
+    const { language } = useLanguage();
+    const t = TRANSLATIONS[language] || TRANSLATIONS['en'];
+
     const [activeTab, setActiveTab] = useState('New'); // 'New', 'Popular', 'Favourite'
     const [favoriteImages, setFavoriteImages] = useState([]);
 
@@ -96,7 +131,7 @@ const GalleryScreen = () => {
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                 <Ionicons name="arrow-back" size={26} color="#fff" />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>All Images</Text>
+            <Text style={styles.headerTitle}>{t.allImages}</Text>
             <View style={{ width: 40 }} />
         </View>
     );
@@ -110,7 +145,7 @@ const GalleryScreen = () => {
                     onPress={() => setActiveTab(tab)}
                 >
                     <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
-                        {tab === 'New' ? 'New Image' : tab === 'Popular' ? 'Popular Image' : 'Favourite Image'}
+                        {tab === 'New' ? t.newImage : tab === 'Popular' ? t.popularImage : t.favouriteImage}
                     </Text>
                 </TouchableOpacity>
             ))}
@@ -121,22 +156,22 @@ const GalleryScreen = () => {
         try {
             await AsyncStorage.setItem('saved_background_image', item.uri);
             Alert.alert(
-                "Wallpaper Set!",
-                "Would you like to go back to the main screen or stay here?",
+                t.wallpaperSetTitle,
+                t.wallpaperSetMsg,
                 [
                     {
-                        text: "OK",
+                        text: t.ok,
                         style: "cancel"
                     },
                     {
-                        text: "Go Back",
+                        text: t.goBack,
                         onPress: () => navigation.goBack()
                     }
                 ]
             );
         } catch (error) {
             console.log("Error saving image:", error);
-            Alert.alert("Error", "Failed to set wallpaper.");
+            Alert.alert(t.error, t.failedSetting);
         }
     };
 
@@ -151,8 +186,8 @@ const GalleryScreen = () => {
 
     const renderEmptyState = () => (
         <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No Favorites Yet</Text>
-            <Text style={styles.emptySubText}>Tap the ❤️ icon on Daily Darshan to add here.</Text>
+            <Text style={styles.emptyText}>{t.noFavsYet}</Text>
+            <Text style={styles.emptySubText}>{t.noFavsSub}</Text>
         </View>
     );
 
