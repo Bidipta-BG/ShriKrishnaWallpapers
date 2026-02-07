@@ -67,7 +67,7 @@ const GalleryScreen = () => {
         // Bundled Local Image (Offline Support)
         {
             id: 'default_local',
-            uri: Image.resolveAssetSource(require('../assets/images/default_darshan.png')).uri,
+            uri: Image.resolveAssetSource(require('../assets/images/default_darshan.jpg')).uri,
             likes: 1250,
             addedAt: Date.now()
         },

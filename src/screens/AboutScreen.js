@@ -113,7 +113,7 @@ const AboutScreen = () => {
                     {/* Support Options */}
                     <Text style={styles.sectionTitle}>{t.contributionTitle}</Text>
 
-                    <TouchableOpacity style={styles.supportButton} onPress={handleUPI}>
+                    {/* <TouchableOpacity style={styles.supportButton} onPress={handleUPI}>
                         <View style={styles.supportIcon}>
                             <Ionicons name="card" size={24} color="#fff" />
                         </View>
@@ -122,7 +122,7 @@ const AboutScreen = () => {
                             <Text style={styles.supportLabel}>GPay, PhonePe, Paytm, etc.</Text>
                         </View>
                         <Ionicons name="chevron-forward" size={20} color="#CD9730" />
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
 
                     <TouchableOpacity style={styles.supportButton} onPress={handleVideoAd}>
                         <View style={[styles.supportIcon, { backgroundColor: '#8b0000' }]}>

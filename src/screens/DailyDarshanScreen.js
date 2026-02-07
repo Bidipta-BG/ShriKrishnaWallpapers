@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useRoute } from '@react-navigation/native';
 import { Audio } from 'expo-av';
-import * as FileSystem from 'expo-file-system/legacy';
+import * as FileSystem from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -61,7 +61,7 @@ const FallingFlower = ({ index, onComplete }) => {
     useEffect(() => {
         // Target Y: Bottom Shelf area ~ (height - 190 range) - Moved UP by 30px
         // Add random variation to "pile" them naturally
-        const targetY = height - 190 + (Math.random() * 20);
+        const targetY = height - 90 + (Math.random() * 20);
 
         translateY.value = withDelay(
             randomDelay,
@@ -125,7 +125,7 @@ const FallingCoin = ({ index, onComplete }) => {
     const opacity = useSharedValue(1);
 
     useEffect(() => {
-        const targetY = height - 190 + (Math.random() * 20);
+        const targetY = height - 90 + (Math.random() * 20);
 
         translateY.value = withDelay(
             config.delay,
@@ -278,7 +278,7 @@ const DailyDarshanScreen = ({ navigation }) => {
     const insets = useSafeAreaInsets();
     const route = useRoute();
 
-    const [backgroundImage, setBackgroundImage] = useState(Image.resolveAssetSource(require('../assets/images/default_darshan.png')).uri);
+    const [backgroundImage, setBackgroundImage] = useState(Image.resolveAssetSource(require('../assets/images/default_darshan.jpg')).uri);
 
     // Load saved background whenever screen gains focus
     useFocusEffect(
@@ -290,7 +290,7 @@ const DailyDarshanScreen = ({ navigation }) => {
                         setBackgroundImage(saved);
                     } else {
                         // Fallback to local bundled image
-                        setBackgroundImage(Image.resolveAssetSource(require('../assets/images/default_darshan.png')).uri);
+                        setBackgroundImage(Image.resolveAssetSource(require('../assets/images/default_darshan.jpg')).uri);
                     }
                 } catch (error) {
                     console.log('Error loading background:', error);
@@ -315,7 +315,7 @@ const DailyDarshanScreen = ({ navigation }) => {
 
     // --- Daily Streak Logic ---
     const [streak, setStreak] = useState(1);
-    const [challengeGoal, setChallengeGoal] = useState(7);
+    const [challengeGoal, setChallengeGoal] = useState(100);
     const [streakDataLoaded, setStreakDataLoaded] = useState(false);
 
     // --- Like & User Identity ---
@@ -886,7 +886,7 @@ const DailyDarshanScreen = ({ navigation }) => {
             transform: [
                 { scale: aartiScale.value },
                 { translateX: radius * Math.sin(angleRad) },
-                { translateY: -radius * (1 - Math.cos(angleRad)) - (aartiScale.value - 1) * 120 }
+                { translateY: -radius * (1 - Math.cos(angleRad)) - (aartiScale.value - 1) * 120 - 40 }
             ]
         };
     });
@@ -993,7 +993,7 @@ const DailyDarshanScreen = ({ navigation }) => {
 
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="light-content" />
+            <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
             {/* Falling Flowers Layer */}
             {activeFlowers.map((flower, index) => (
@@ -1014,7 +1014,7 @@ const DailyDarshanScreen = ({ navigation }) => {
 
             {/* 2. Top Layer: Hanging Bells */}
             {/* User requested to move bells UP. Removed safe area constraint to allow them to go higher */}
-            <View style={[styles.bellsContainer, { top: 10 }]}>
+            <View style={[styles.bellsContainer, { top: insets.top - 25 }]}>
                 <TouchableOpacity onPress={ringBell} activeOpacity={0.8}>
                     <Animated.View style={[styles.bellWrapper, styles.bellLeft, bellStyle]}>
                         <View style={styles.bellString} />
@@ -1169,7 +1169,11 @@ const DailyDarshanScreen = ({ navigation }) => {
                 {/* Central Big Diya */}
                 <View style={[styles.centerThaliContainer]} pointerEvents="box-none">
                     <TouchableOpacity onPress={performAarti} activeOpacity={0.8}>
-                        <Animated.Text style={[styles.thaliEmoji, diyaStyle]}>🪔</Animated.Text>
+                        <Animated.Image
+                            source={require('../assets/images/my_diya.png')} // Change filename here
+                            style={[styles.thaliImage, diyaStyle]}
+                            resizeMode="contain"
+                        />
                     </TouchableOpacity>
                 </View>
 
@@ -1182,6 +1186,7 @@ const DailyDarshanScreen = ({ navigation }) => {
                 transparent={true}
                 visible={isSaveModalVisible}
                 animationType="fade"
+                statusBarTranslucent={true}
                 onRequestClose={() => setSaveModalVisible(false)}
             >
                 <TouchableOpacity
@@ -1247,7 +1252,7 @@ const styles = StyleSheet.create({
     // --- Side Icons ---
     sidesContainer: {
         position: 'absolute',
-        bottom: 190, // Increased to move icons up so labels don't hide behind tab bar
+        bottom: 145, // Increased to move icons up so labels don't hide behind tab bar
         left: 0,
         right: 0,
         flexDirection: 'row',
@@ -1295,6 +1300,11 @@ const styles = StyleSheet.create({
         marginTop: 4,
         fontWeight: 'bold',
     },
+
+    thaliImage: {
+        width: 140,  // Adjust size as needed
+        height: 140, // Adjust size as needed
+    },
     // --- Bottom Section ---
     bottomSection: {
         position: 'absolute',
@@ -1318,7 +1328,7 @@ const styles = StyleSheet.create({
     },
     centerThaliContainer: {
         position: 'absolute',
-        bottom: 50, // Increased from 20 to move up
+        bottom: -25, // Moved down for better positioning
         left: 0,
         right: 0,
         alignItems: 'center',
@@ -1415,7 +1425,8 @@ const styles = StyleSheet.create({
     },
     // --- Modal Styles ---
     modalOverlay: {
-        flex: 1,
+        width: width,
+        height: height,
         backgroundColor: 'rgba(0,0,0,0.6)',
         justifyContent: 'center',
         alignItems: 'center',

@@ -2,29 +2,21 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation } from '@react-navigation/native';
-import * as Notifications from 'expo-notifications';
+// import * as Notifications from 'expo-notifications'; // Removed for offline release
 import { useEffect, useState } from 'react';
 import {
     ImageBackground,
-    Platform,
     ScrollView,
     StyleSheet,
     Switch,
     Text,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../context/LanguageContext';
 
-// Configure notification behavior
-Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: false,
-    }),
-});
+// Notification Handler removed
 
 const TRANSLATIONS = {
     en: {
@@ -32,9 +24,9 @@ const TRANSLATIONS = {
         morning: 'Morning',
         evening: 'Evening',
         tipTitle: 'Daily Spiritual Tip',
-        tipChange: 'Click to change',
+        tipChange: 'Tap for new tip',
         challengeTitle: (days) => `My ${days}-Day Challenge`,
-        challengeSub: 'Keep your devotion consistent to bloom every morning.',
+        challengeSub: 'Keep your devotion consistent.',
         footer: 'Success is a collection of small daily efforts. 🙏',
         morningNotifyTitle: "Morning Darshan 🌅",
         morningNotifyBody: "Good morning! Start your day with Shri Krishna's blessing.",
@@ -55,9 +47,9 @@ const TRANSLATIONS = {
         morning: 'सुबह',
         evening: 'शाम',
         tipTitle: 'दैनिक आध्यात्मिक सुझाव',
-        tipChange: 'बदलने के लिए क्लिक करें',
+        tipChange: 'नई टिप के लिए टैप करें',
         challengeTitle: (days) => `मेरी ${days}-दिवसीय चुनौती`,
-        challengeSub: 'हर सुबह खिलने के लिए अपनी भक्ति को निरंतर रखें।',
+        challengeSub: 'भक्ति को निरंतर रखें।',
         footer: 'सफलता छोटे-छोटे दैनिक प्रयासों का संग्रह है। 🙏',
         morningNotifyTitle: "प्रभात दर्शन 🌅",
         morningNotifyBody: "सुप्रभात! भगवान श्री कृष्ण के आशीर्वाद के साथ अपने दिन की शुरुआत करें।",
@@ -98,7 +90,7 @@ const ScheduleDarshanScreen = () => {
     const [showPicker, setShowPicker] = useState(null); // 'morning' or 'evening'
 
     // Streak Tracker States
-    const [challengeDays, setChallengeDays] = useState(7);
+    const [challengeDays, setChallengeDays] = useState(100);
     const [currentStreak, setCurrentStreak] = useState(0);
 
     // Tip State
@@ -143,7 +135,7 @@ const ScheduleDarshanScreen = () => {
             await AsyncStorage.setItem('evening_time', eveningTime.toISOString());
             await AsyncStorage.setItem('challenge_days', challengeDays.toString());
 
-            // Reschedule all based on new settings
+            // Reschedule logic stubbed
             await rescheduleAllNotifications();
         } catch (error) {
             console.error('Error saving settings:', error);
@@ -151,51 +143,10 @@ const ScheduleDarshanScreen = () => {
     };
 
     const rescheduleAllNotifications = async () => {
-        const { status } = await Notifications.requestPermissionsAsync();
-        if (status !== 'granted') return;
-
-        await Notifications.cancelAllScheduledNotificationsAsync();
-
-        if (Platform.OS === 'android') {
-            await Notifications.setNotificationChannelAsync('daily-puja', {
-                name: 'Daily Puja Reminders',
-                importance: Notifications.AndroidImportance.HIGH,
-                sound: 'default',
-            });
-        }
-
-        if (morningEnabled) {
-            await Notifications.scheduleNotificationAsync({
-                content: {
-                    title: t.morningNotifyTitle,
-                    body: t.morningNotifyBody,
-                    sound: true,
-                    channelId: 'daily-puja',
-                },
-                trigger: {
-                    hour: morningTime.getHours(),
-                    minute: morningTime.getMinutes(),
-                    repeats: true,
-                    channelId: 'daily-puja',
-                },
-            });
-        }
-
-        if (eveningEnabled) {
-            await Notifications.scheduleNotificationAsync({
-                content: {
-                    title: t.eveningNotifyTitle,
-                    body: t.eveningNotifyBody,
-                    sound: true,
-                    channelId: 'daily-puja',
-                },
-                trigger: {
-                    hour: eveningTime.getHours(),
-                    minute: eveningTime.getMinutes(),
-                    repeats: true,
-                    channelId: 'daily-puja',
-                },
-            });
+        // Feature disabled for offline release to prevent build errors
+        // console.log("Notifications are currently disabled due to missing plugin config");
+        if (morningEnabled || eveningEnabled) {
+            // Optional: Alert.alert("Note", "Notifications will use system default.");
         }
     };
 
