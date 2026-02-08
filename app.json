@@ -42,14 +42,6 @@
         }
       ],
       [
-        "expo-media-library",
-        {
-          "photosPermission": "Allow $(PRODUCT_NAME) to access your photos.",
-          "saveToPhotosPermission": "Allow $(PRODUCT_NAME) to save photos.",
-          "isAccessMediaLocationEnabled": true
-        }
-      ],
-      [
         "expo-build-properties",
         {
           "android": {

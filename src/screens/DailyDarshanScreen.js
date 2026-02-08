@@ -4,7 +4,7 @@ import { useFocusEffect, useRoute } from '@react-navigation/native';
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Dimensions, Image, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, Image, Modal, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, {
     cancelAnimation,
     Easing,
@@ -209,10 +209,13 @@ const TRANSLATIONS = {
         play: 'Play',
         pause: 'Pause',
         repeat: 'repeat',
+        shieldTitle: 'Sadhana Saved! 🙏',
+        shieldMsg: 'You missed your Puja yesterday, but your Raksha Kavach (Shield) protected your progress. Shri Krishna is waiting for you!',
+        ok: 'Pranam',
     },
     hi: {
         flowers: 'पुष्प',
-        coins: 'मुद्रा',
+        divyaCoins: 'दिव्य मुद्रा',
         shankh: 'शंख',
         more: 'अधिक',
         slokas: 'श्लोक',
@@ -227,6 +230,9 @@ const TRANSLATIONS = {
         play: 'चलाएं',
         pause: 'रोकें',
         repeat: 'दोहराएं',
+        shieldTitle: 'साधना सुरक्षित है! 🙏',
+        shieldMsg: 'कल आप प्रभु की सेवा में उपस्थित नहीं हो सके, परंतु आपके "रक्षा कवच" ने आपकी प्रगति को सुरक्षित रखा है। प्रभु आपकी प्रतीक्षा कर रहे हैं!',
+        ok: 'प्रणाम',
     },
     // Add other languages as needed, defaulting to English for now
 };
@@ -271,11 +277,14 @@ const DailyDarshanScreen = ({ navigation }) => {
         paddingBottom: Math.max(insets.bottom, 10), // Ensure bottom nav bar space
     };
 
-    // --- Daily Streak Logic ---
+    // --- Divya Progress System State ---
     const [isPlaying, setIsPlaying] = useState(false);
     const [streak, setStreak] = useState(1);
-    const [challengeGoal, setChallengeGoal] = useState(100);
+    const [challengeGoal, setChallengeGoal] = useState(7);
+    const [divyaCoins, setDivyaCoins] = useState(0);
+    const [punyaDays, setPunyaDays] = useState(0);
     const [streakDataLoaded, setStreakDataLoaded] = useState(false);
+    const [isShieldPopupVisible, setShieldPopupVisible] = useState(false);
 
     useFocusEffect(
         useCallback(() => {
@@ -287,58 +296,100 @@ const DailyDarshanScreen = ({ navigation }) => {
 
     const checkDailyStreak = async () => {
         try {
-            const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+            const today = new Date().toISOString().split('T')[0];
             const lastDate = await AsyncStorage.getItem('lastDarshanDate');
+
+            // 1. Load Current Stats
             const storedStreak = await AsyncStorage.getItem('currentStreak');
-            const storedGoal = await AsyncStorage.getItem('challenge_days');
+            const storedGoal = await AsyncStorage.getItem('streakGoal');
+            const storedCoins = await AsyncStorage.getItem('divyaCoins');
+            const storedShields = await AsyncStorage.getItem('punyaDays');
 
-            if (storedGoal) setChallengeGoal(parseInt(storedGoal));
+            let currentStreak = parseInt(storedStreak) || 0;
+            let currentGoal = parseInt(storedGoal) || 7;
+            let currentCoins = parseInt(storedCoins) || 0;
+            let currentShields = parseInt(storedShields) || 0;
 
-            let newStreak = 1;
+            let newStreak = currentStreak;
+            let newGoal = currentGoal;
+            let newCoins = currentCoins;
+            let newShields = currentShields;
             let shouldAutoPlay = false;
 
             if (!lastDate) {
                 // First time ever
                 newStreak = 1;
-                shouldAutoPlay = true; // Maybe auto-play first time? User didn't specify, but "auto happen only for first time" implies new day
+                newCoins = 1;
+                shouldAutoPlay = true;
             } else if (lastDate === today) {
-                // Already done today
-                newStreak = parseInt(storedStreak) || 1;
+                // Same day refresh
                 shouldAutoPlay = false;
             } else {
-                // Check if it's consecutive (yesterday)
                 const yesterday = new Date();
                 yesterday.setDate(yesterday.getDate() - 1);
                 const yesterdayStr = yesterday.toISOString().split('T')[0];
 
                 if (lastDate === yesterdayStr) {
-                    // Consecutive day!
-                    newStreak = (parseInt(storedStreak) || 1) + 1;
+                    // Consecutive Day (+)
+                    newStreak += 1;
+                    newCoins += 1;
                     shouldAutoPlay = true;
+
+                    // Milestone Logic (Day 7/7, 14/14, etc.)
+                    if (newStreak === newGoal) {
+                        newCoins += 3; // Bonus
+                        newShields += 1; // Award Shield
+                        newGoal += 7; // Increment goal
+                    }
                 } else {
-                    // Missed a day (Streak Broken)
-                    newStreak = 1;
-                    shouldAutoPlay = true; // New day, so perform Aarti
+                    // Missed Day(s)
+                    const lastDateObj = new Date(lastDate);
+                    const todayObj = new Date(today);
+                    const diffTime = Math.abs(todayObj - lastDateObj);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                    if (diffDays === 2 && currentShields > 0) {
+                        // Missed exactly 1 day and has shield
+                        newShields -= 1;
+                        newStreak += 1; // Treat as if they came yesterday to maintain progress
+                        newCoins += 1; // Reward for "saving" the day
+                        setShieldPopupVisible(true);
+                        shouldAutoPlay = true;
+
+                        // Milestone check even on shield day
+                        if (newStreak === newGoal) {
+                            newCoins += 3;
+                            newShields += 1;
+                            newGoal += 7;
+                        }
+                    } else {
+                        // Reset everything
+                        newStreak = 1;
+                        newGoal = 7;
+                        newCoins += 1; // Still give 1 coin for coming back
+                        shouldAutoPlay = true;
+                    }
                 }
             }
 
+            // Update State
             setStreak(newStreak);
+            setChallengeGoal(newGoal);
+            setDivyaCoins(newCoins);
+            setPunyaDays(newShields);
             setStreakDataLoaded(true);
 
-            // Save new state if it changed (optimization: only if different or new day)
+            // Persist Data
             if (lastDate !== today) {
                 await AsyncStorage.setItem('lastDarshanDate', today);
                 await AsyncStorage.setItem('currentStreak', newStreak.toString());
+                await AsyncStorage.setItem('streakGoal', newGoal.toString());
+                await AsyncStorage.setItem('divyaCoins', newCoins.toString());
+                await AsyncStorage.setItem('punyaDays', newShields.toString());
             }
 
-            // Trigger Puja if needed
-            // IMPORTANT: "happen only for the first time" -> meaning first time TODAY
             if (shouldAutoPlay) {
-                console.log("Auto-playing Puja!");
-                // Small delay to let screen mount/render before animation starts
-                setTimeout(() => {
-                    performAarti();
-                }, 1000);
+                setTimeout(() => performAarti(), 1000);
             }
 
         } catch (error) {
@@ -351,8 +402,14 @@ const DailyDarshanScreen = ({ navigation }) => {
         try {
             await AsyncStorage.removeItem('lastDarshanDate');
             await AsyncStorage.removeItem('currentStreak');
+            await AsyncStorage.removeItem('streakGoal');
+            await AsyncStorage.removeItem('divyaCoins');
+            await AsyncStorage.removeItem('punyaDays');
             setStreak(1);
-            Alert.alert("Testing Mode", "Data Reset! \n\n1. Restart App -> Will count as Day 1 & Auto Play.\n2. Come back tomorrow -> Day 2.");
+            setChallengeGoal(7);
+            setDivyaCoins(0);
+            setPunyaDays(0);
+            Alert.alert("Testing Mode", "Progress Reset!");
         } catch (e) {
             console.error(e);
         }
@@ -786,11 +843,11 @@ const DailyDarshanScreen = ({ navigation }) => {
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                             <Ionicons name="star" size={16} color="#FFD700" style={{ marginRight: 4 }} />
                             <Text style={{ fontSize: 16, color: '#000', fontWeight: 'bold', textShadowColor: '#fff', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 1 }}>
-                                {streak * 50}
+                                {divyaCoins}
                             </Text>
                         </View>
                         <Text style={{ fontSize: 10, color: '#2b1803', fontWeight: 'bold', textShadowColor: '#fff', textShadowOffset: { width: 0.5, height: 0.5 }, textShadowRadius: 0.5 }}>
-                            {language === 'hi' ? 'पुण्य मुद्रा' : 'Punya Coins'}
+                            {language === 'hi' ? 'दिव्य मुद्रा' : 'Divya Coins'}
                         </Text>
                     </TouchableOpacity>
                 </View>
@@ -841,6 +898,29 @@ const DailyDarshanScreen = ({ navigation }) => {
                 </TouchableOpacity>
             </View>
 
+            {/* --- Shield Consumed Popup --- */}
+            <Modal
+                transparent={true}
+                visible={isShieldPopupVisible}
+                animationType="fade"
+                statusBarTranslucent={true}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={{ backgroundColor: '#FFF9C4', width: 60, height: 60, borderRadius: 30, alignItems: 'center', justifyContent: 'center', marginBottom: 15 }}>
+                            <Ionicons name="shield-checkmark" size={40} color="#FBC02D" />
+                        </View>
+                        <Text style={[styles.modalTitle, { textAlign: 'center' }]}>{t.shieldTitle}</Text>
+                        <Text style={{ textAlign: 'center', color: '#666', marginBottom: 20 }}>{t.shieldMsg}</Text>
+                        <TouchableOpacity
+                            style={[styles.modalButton, { backgroundColor: '#CD9730', justifyContent: 'center' }]}
+                            onPress={() => setShieldPopupVisible(false)}
+                        >
+                            <Text style={[styles.modalButtonText, { color: '#fff' }]}>{t.ok}</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </View >
     );
 };

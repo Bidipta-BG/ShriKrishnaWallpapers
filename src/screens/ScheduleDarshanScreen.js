@@ -1,14 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { useNavigation } from '@react-navigation/native';
-// import * as Notifications from 'expo-notifications'; // Removed for offline release
-import { useEffect, useState } from 'react';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useCallback, useState } from 'react';
 import {
+    Dimensions,
     ImageBackground,
-    ScrollView,
     StyleSheet,
-    Switch,
     Text,
     TouchableOpacity,
     View
@@ -16,54 +13,48 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../context/LanguageContext';
 
-// Notification Handler removed
+const { width } = Dimensions.get('window');
 
 const TRANSLATIONS = {
     en: {
-        headerTitle: 'Spiritual Planner',
-        morning: 'Morning',
-        evening: 'Evening',
-        tipTitle: 'Daily Spiritual Tip',
-        tipChange: 'Tap for new tip',
-        challengeTitle: (days) => `My ${days}-Day Challenge`,
-        challengeSub: 'Keep your devotion consistent.',
-        footer: 'Success is a collection of small daily efforts. 🙏',
-        morningNotifyTitle: "Morning Darshan 🌅",
-        morningNotifyBody: "Good morning! Start your day with Shri Krishna's blessing.",
-        eveningNotifyTitle: "Evening Darshan 🌇",
-        eveningNotifyBody: "End your day with peace. It's time for Evening Puja.",
-        tips: [
-            "Performing puja during Brahma Muhurta (4:00 AM - 6:00 AM) is most auspicious.",
-            "Lighting a Diya brings positive energy and removes darkness from mind.",
-            "Chanting 'Om Namo Bhagavate Vasudevaya' 108 times daily brings peace.",
-            "Offer fresh flowers to the Lord to express your pure devotion.",
-            "Meditation on Shri Krishna's form helps in achieving mental clarity.",
-            "Always start your day with a small prayer of gratitude.",
-            "Sharing Prasad with others multiplies the blessings received."
-        ]
+        headerTitle: 'Bhakti Progress',
+        divyaCoins: 'Divya Coins',
+        punyaDays: 'Raksha Kavach (Shields)',
+        currentStreak: 'Nitya Bhakti (Streak)',
+        milestoneGoal: 'Next Milestone',
+        totalStats: 'Devotional Merits',
+        level: 'Bhakti Level',
+        shieldDesc: 'A divine shield that protects your streak if you miss a day.',
+        coinDesc: 'Rewards for your daily devotion.',
+        footer: 'Shri Krishna is pleased with your constant devotion. 🙏',
+        beginner: 'Sharanagat (Beginner)',
+        intermediate: 'Sadhak (Devoted)',
+        advanced: 'Bhakta (Advanced)',
+        master: 'Param Bhakta (Divine)',
+        streakMsg: (days) => `You have performed daily Puja for ${days} ${days === 1 ? 'day' : 'days'}. May the Lord bless you! 🙏`,
+        buyCoins: 'Buy Divya Coins',
+        goAdFree: 'Go Ad-Free',
+        storeTitle: 'Sacred Offerings'
     },
     hi: {
-        headerTitle: 'आध्यात्मिक योजनाकार',
-        morning: 'सुबह',
-        evening: 'शाम',
-        tipTitle: 'दैनिक आध्यात्मिक सुझाव',
-        tipChange: 'नई टिप के लिए टैप करें',
-        challengeTitle: (days) => `मेरी ${days}-दिवसीय चुनौती`,
-        challengeSub: 'भक्ति को निरंतर रखें।',
-        footer: 'सफलता छोटे-छोटे दैनिक प्रयासों का संग्रह है। 🙏',
-        morningNotifyTitle: "प्रभात दर्शन 🌅",
-        morningNotifyBody: "सुप्रभात! भगवान श्री कृष्ण के आशीर्वाद के साथ अपने दिन की शुरुआत करें।",
-        eveningNotifyTitle: "सायं दर्शन 🌇",
-        eveningNotifyBody: "शांति के साथ अपने दिन का अंत करें। सायं पूजा का समय हो गया है।",
-        tips: [
-            "ब्रह्म मुहूर्त (प्रातः 4:00 - 6:00) के दौरान पूजा करना सबसे शुभ है।",
-            "दीया जलाने से सकारात्मक ऊर्जा आती है और मन का अंधकार दूर होता है।",
-            "प्रतिदिन 108 बार 'ओम नमो भगवते वासुदेवाय' का जाप शांति लाता है।",
-            "अपनी शुद्ध भक्ति व्यक्त करने के लिए प्रभु को ताजे फूल अर्पित करें।",
-            "श्री कृष्ण के स्वरूप पर ध्यान करने से मानसिक स्पष्टता प्राप्त करने में मदद मिलती है।",
-            "हमेशा अपने दिन की शुरुआत कृतज्ञता की एक छोटी प्रार्थना के साथ करें।",
-            "दूसरों के साथ प्रसाद बांटने से मिलने वाला आशीर्वाद कई गुना बढ़ जाता है।"
-        ]
+        headerTitle: 'भक्ति की प्रगति',
+        divyaCoins: 'दिव्य मुद्रा',
+        punyaDays: 'रक्षा कवच (शील्ड)',
+        currentStreak: 'नित्य भक्ति (स्ट्रेक)',
+        milestoneGoal: 'अगला लक्ष्य',
+        totalStats: 'आध्यात्मिक पुण्य',
+        level: 'भक्ति का स्तर',
+        shieldDesc: 'एक दिव्य कवच जो पूजा छूटने पर भी आपकी प्रगति को सुरक्षित रखता है।',
+        coinDesc: 'नित्य सेवा के लिए प्राप्त पुण्य मुद्रा।',
+        footer: 'श्री कृष्ण आपकी निरंतर भक्ति से अत्यंत प्रसन्न हैं। 🙏',
+        beginner: 'शरणागत (शुरुआत)',
+        intermediate: 'साधक (समर्पित)',
+        advanced: 'भक्त (प्रगतिशील)',
+        master: 'परम भक्त (दिव्य)',
+        streakMsg: (days) => `आप पिछले ${days} ${days === 1 ? 'दिन' : 'दिनों'} से निरंतर प्रभु की सेवा कर रहे हैं। प्रभु की कृपा आप पर बनी रहे! 🙏`,
+        buyCoins: 'दिव्य मुद्रा खरीदें',
+        goAdFree: 'विज्ञापन मुक्त करें',
+        storeTitle: 'धार्मिक भेंट'
     }
 };
 
@@ -72,144 +63,49 @@ const ScheduleDarshanScreen = () => {
     const { language } = useLanguage();
     const t = TRANSLATIONS[language] || TRANSLATIONS['en'];
 
-    // Reminder States
-    const [morningEnabled, setMorningEnabled] = useState(false);
-    const [morningTime, setMorningTime] = useState(() => {
-        const d = new Date();
-        d.setHours(5, 0, 0, 0);
-        return d;
+    const [stats, setStats] = useState({
+        streak: 1,
+        goal: 7,
+        coins: 0,
+        shields: 0
     });
 
-    const [eveningEnabled, setEveningEnabled] = useState(false);
-    const [eveningTime, setEveningTime] = useState(() => {
-        const d = new Date();
-        d.setHours(16, 0, 0, 0);
-        return d;
-    });
+    useFocusEffect(
+        useCallback(() => {
+            loadStats();
+        }, [])
+    );
 
-    const [showPicker, setShowPicker] = useState(null); // 'morning' or 'evening'
-
-    // Streak Tracker States
-    const [challengeDays, setChallengeDays] = useState(100);
-    const [currentStreak, setCurrentStreak] = useState(0);
-
-    // Tip State
-    const [tipIndex, setTipIndex] = useState(0);
-
-    const [isLoaded, setIsLoaded] = useState(false);
-
-    useEffect(() => {
-        loadSettings();
-        // Load some metadata like current streak from main AsyncStorage if available
-        const getStreak = async () => {
-            const s = await AsyncStorage.getItem('currentStreak');
-            if (s) setCurrentStreak(parseInt(s));
-        };
-        getStreak();
-    }, []);
-
-    const loadSettings = async () => {
+    const loadStats = async () => {
         try {
-            const mEnabled = await AsyncStorage.getItem('morning_enabled');
-            const mTime = await AsyncStorage.getItem('morning_time');
-            const eEnabled = await AsyncStorage.getItem('evening_enabled');
-            const eTime = await AsyncStorage.getItem('evening_time');
-            const cDays = await AsyncStorage.getItem('challenge_days');
+            const streak = await AsyncStorage.getItem('currentStreak');
+            const goal = await AsyncStorage.getItem('streakGoal');
+            const coins = await AsyncStorage.getItem('divyaCoins');
+            const shields = await AsyncStorage.getItem('punyaDays');
 
-            if (mEnabled !== null) setMorningEnabled(mEnabled === 'true');
-            if (mTime !== null) setMorningTime(new Date(mTime));
-            if (eEnabled !== null) setEveningEnabled(eEnabled === 'true');
-            if (eTime !== null) setEveningTime(new Date(eTime));
-            if (cDays !== null) setChallengeDays(parseInt(cDays));
-            setIsLoaded(true);
+            setStats({
+                streak: parseInt(streak) || 1,
+                goal: parseInt(goal) || 7,
+                coins: parseInt(coins) || 0,
+                shields: parseInt(shields) || 0
+            });
         } catch (error) {
-            console.error('Error loading settings:', error);
+            console.error('Error loading stats:', error);
         }
     };
 
-    const saveSettings = async () => {
-        try {
-            await AsyncStorage.setItem('morning_enabled', morningEnabled.toString());
-            await AsyncStorage.setItem('morning_time', morningTime.toISOString());
-            await AsyncStorage.setItem('evening_enabled', eveningEnabled.toString());
-            await AsyncStorage.setItem('evening_time', eveningTime.toISOString());
-            await AsyncStorage.setItem('challenge_days', challengeDays.toString());
-
-            // Reschedule logic stubbed
-            await rescheduleAllNotifications();
-        } catch (error) {
-            console.error('Error saving settings:', error);
-        }
-    };
-
-    const rescheduleAllNotifications = async () => {
-        // Feature disabled for offline release to prevent build errors
-        // console.log("Notifications are currently disabled due to missing plugin config");
-        if (morningEnabled || eveningEnabled) {
-            // Optional: Alert.alert("Note", "Notifications will use system default.");
-        }
-    };
-
-    // Auto-save when toggles change
-    useEffect(() => {
-        if (isLoaded) {
-            saveSettings();
-        }
-    }, [morningEnabled, eveningEnabled, challengeDays, isLoaded]);
-
-    const onTimeChange = (event, selectedDate) => {
-        if (!selectedDate) {
-            setShowPicker(null);
-            return;
-        }
-
-        setShowPicker(null);
-        if (showPicker === 'morning') {
-            setMorningTime(selectedDate);
-        } else if (showPicker === 'evening') {
-            setEveningTime(selectedDate);
-        }
-        // Save will trigger on next state flush or we can call it
-        setTimeout(saveSettings, 100);
-    };
-
-    const rotateTip = () => {
-        setTipIndex((prev) => (prev + 1) % t.tips.length);
-    };
-
-    const renderStreakIcons = () => {
-        const icons = [];
-        // Scale for up to 365 days
-        let size = 35;
-        if (challengeDays > 150) size = 18;
-        else if (challengeDays > 66) size = 22;
-        else if (challengeDays > 40) size = 26;
-        else if (challengeDays > 21) size = 30;
-
-        for (let i = 1; i <= challengeDays; i++) {
-            const isCompleted = i <= currentStreak;
-            icons.push(
-                <View
-                    key={i}
-                    style={[
-                        styles.streakIcon,
-                        isCompleted && styles.streakIconActive,
-                        { width: size, height: size + 5 }
-                    ]}
-                >
-                    <Text style={{ fontSize: size * 0.5 }}>{isCompleted ? '🌸' : '⚪'}</Text>
-                    <Text style={[styles.streakDayText, { fontSize: size * 0.25 }]}>{i}</Text>
-                </View>
-            );
-        }
-        return icons;
+    const getLevel = () => {
+        if (stats.coins > 100) return t.master;
+        if (stats.coins > 50) return t.advanced;
+        if (stats.coins > 20) return t.intermediate;
+        return t.beginner;
     };
 
     return (
         <ImageBackground
             source={{ uri: 'https://m.media-amazon.com/images/I/61k71BV8B3L._AC_UF1000,1000_QL80_.jpg' }}
             style={styles.background}
-            blurRadius={10}
+            blurRadius={15}
         >
             <SafeAreaView style={styles.container}>
                 <View style={styles.header}>
@@ -219,103 +115,77 @@ const ScheduleDarshanScreen = () => {
                     <Text style={styles.headerTitle}>{t.headerTitle}</Text>
                 </View>
 
-                {/* 1. Morning/Evening Reminders */}
-                <View style={styles.remindersRow}>
-                    <View style={[styles.card, styles.reminderCard]}>
-                        <View style={styles.reminderHeader} pointerEvents="box-none">
-                            <Text style={styles.reminderTitle}>{t.morning}</Text>
-                            <Switch
-                                value={morningEnabled}
-                                onValueChange={setMorningEnabled}
-                                trackColor={{ false: "#ccc", true: "#CD9730" }}
-                            />
+                <View style={{ flex: 1 }}>
+                    {/* 1. Milestone Progress Card */}
+                    <View style={styles.card}>
+                        <Text style={styles.sectionTitle}>{t.level}</Text>
+                        <Text style={styles.levelText}>{getLevel()}</Text>
+
+                        <View style={styles.progressContainer}>
+                            <View style={styles.progressHeader}>
+                                <Text style={styles.progressLabel}>{t.milestoneGoal}</Text>
+                                <Text style={styles.progressValue}>{stats.streak}/{stats.goal} {language === 'hi' ? 'दिन' : 'Days'}</Text>
+                            </View>
+                            <View style={styles.progressBarBg}>
+                                <View style={[styles.progressBarFill, { width: `${Math.min((stats.streak / stats.goal) * 100, 100)}%` }]} />
+                            </View>
                         </View>
-                        <TouchableOpacity
-                            disabled={!morningEnabled}
-                            onPress={() => setShowPicker('morning')}
-                            style={[styles.timeButton, !morningEnabled && { opacity: 0.5 }]}
-                        >
-                            <Text style={styles.timeText}>
-                                {morningTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </Text>
+                    </View>
+
+                    {/* 2. Main Stats Grid */}
+                    <View style={styles.statsGrid}>
+                        <View style={[styles.card, styles.statCard]}>
+                            <Ionicons name="star" size={32} color="#FFD700" />
+                            <Text style={styles.statLabel}>{t.divyaCoins}</Text>
+                            <Text style={styles.statValue}>{stats.coins}</Text>
+                            <Text style={styles.statDesc}>{t.coinDesc}</Text>
+                        </View>
+
+                        <View style={[styles.card, styles.statCard]}>
+                            <Ionicons name="shield-checkmark" size={32} color="#4CAF50" />
+                            <Text style={styles.statLabel}>{t.punyaDays}</Text>
+                            <Text style={styles.statValue}>{stats.shields}</Text>
+                            <Text style={styles.statDesc}>{t.shieldDesc}</Text>
+                        </View>
+                    </View>
+
+                    {/* 3. Daily Streak Card */}
+                    <View style={styles.card}>
+                        <View style={styles.streakHeader}>
+                            <View style={styles.streakInfo}>
+                                <Text style={styles.statLabel}>{t.currentStreak}</Text>
+                                <Text style={[styles.statValue, { textAlign: 'left' }]}>{stats.streak}</Text>
+                            </View>
+                            <View style={styles.flameIcon}>
+                                <Ionicons name="flame" size={40} color="#FF5722" />
+                            </View>
+                        </View>
+                        <Text style={styles.statDesc}>
+                            {t.streakMsg(stats.streak)}
+                        </Text>
+                    </View>
+
+                    {/* 4. Store Row (Side-by-Side) */}
+                    <View style={styles.storeRow}>
+                        <TouchableOpacity style={[styles.card, styles.storeSmallCard]} activeOpacity={0.8}>
+                            <View style={styles.storeButtonIcon}>
+                                <Ionicons name="cart" size={20} color="#CD9730" />
+                            </View>
+                            <Text style={styles.storeSmallText}>{t.buyCoins}</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={[styles.card, styles.storeSmallCard]} activeOpacity={0.8}>
+                            <View style={[styles.storeButtonIcon, { backgroundColor: '#E3F2FD' }]}>
+                                <Ionicons name="ban" size={20} color="#2196F3" />
+                            </View>
+                            <Text style={styles.storeSmallText}>{t.goAdFree}</Text>
                         </TouchableOpacity>
                     </View>
 
-                    <View style={[styles.card, styles.reminderCard]}>
-                        <View style={styles.reminderHeader} pointerEvents="box-none">
-                            <Text style={styles.reminderTitle}>{t.evening}</Text>
-                            <Switch
-                                value={eveningEnabled}
-                                onValueChange={setEveningEnabled}
-                                trackColor={{ false: "#ccc", true: "#CD9730" }}
-                            />
-                        </View>
-                        <TouchableOpacity
-                            disabled={!eveningEnabled}
-                            onPress={() => setShowPicker('evening')}
-                            style={[styles.timeButton, !eveningEnabled && { opacity: 0.5 }]}
-                        >
-                            <Text style={styles.timeText}>
-                                {eveningTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
                 </View>
-
-                {/* 2. Daily Spiritual Tip */}
-                <TouchableOpacity style={styles.card} onPress={rotateTip}>
-                    <View style={styles.tipHeader}>
-                        <Ionicons name="sparkles" size={20} color="#CD9730" />
-                        <Text style={styles.tipTitle}>{t.tipTitle}</Text>
-                        <Text style={{ fontSize: 10, color: '#999' }}>{t.tipChange}</Text>
-                    </View>
-                    <Text style={styles.tipText}>"{t.tips[tipIndex]}"</Text>
-                </TouchableOpacity>
-
-                {/* 3. Streak Tracker / Challenge */}
-                <View style={[styles.card, styles.fixedChallengeCard]}>
-                    <View style={styles.cardHeader}>
-                        <Text style={styles.cardTitle}>{t.challengeTitle(challengeDays)}</Text>
-                        <View style={styles.challengeControls}>
-                            <TouchableOpacity
-                                onPress={() => setChallengeDays(Math.max(7, challengeDays - 7))}
-                                style={[styles.miniBtn, challengeDays <= 7 && { opacity: 0.3 }]}
-                                disabled={challengeDays <= 7}
-                            >
-                                <Text style={styles.miniBtnText}>-</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                onPress={() => setChallengeDays(challengeDays + 7 > 365 ? 365 : challengeDays + 7)}
-                                style={[styles.miniBtn, challengeDays >= 365 && { opacity: 0.3 }]}
-                                disabled={challengeDays >= 365}
-                            >
-                                <Text style={styles.miniBtnText}>+</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                    <Text style={styles.streakSub}>{t.challengeSub}</Text>
-
-                    <ScrollView style={styles.scrollArea} showsVerticalScrollIndicator={false}>
-                        <View style={styles.streakGrid}>
-                            {renderStreakIcons()}
-                        </View>
-                        <View style={{ height: 10 }} />
-                    </ScrollView>
-                </View>
-
-                {showPicker && (
-                    <DateTimePicker
-                        value={showPicker === 'morning' ? morningTime : eveningTime}
-                        mode="time"
-                        is24Hour={false}
-                        onChange={onTimeChange}
-                    />
-                )}
 
                 <View style={styles.footer}>
-                    <Text style={styles.footerText}>
-                        {t.footer}
-                    </Text>
+                    <Text style={styles.footerText}>{t.footer}</Text>
                 </View>
             </SafeAreaView>
         </ImageBackground>
@@ -324,52 +194,80 @@ const ScheduleDarshanScreen = () => {
 
 const styles = StyleSheet.create({
     background: { flex: 1 },
-    container: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
+    container: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' },
     header: { flexDirection: 'row', alignItems: 'center', padding: 20 },
     backButton: { marginRight: 15 },
     headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#fff' },
     card: {
         backgroundColor: 'rgba(255, 255, 255, 0.95)',
         marginHorizontal: 20,
-        marginVertical: 8,
+        marginVertical: 10,
         borderRadius: 20,
-        padding: 18,
+        padding: 20,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
         shadowRadius: 5,
-        elevation: 5
+        elevation: 8
     },
-    fixedChallengeCard: {
-        flex: 1, // Let this card fill remaining space
-        maxHeight: 320, // Increased from 280
-        paddingBottom: 5,
+    sectionTitle: { fontSize: 14, color: '#666', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: 5 },
+    levelText: { fontSize: 28, fontWeight: 'bold', color: '#5e3a0e', marginBottom: 20 },
+    progressContainer: { marginTop: 10 },
+    progressHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+    progressLabel: { fontSize: 14, color: '#333', fontWeight: '600' },
+    progressValue: { fontSize: 14, color: '#CD9730', fontWeight: 'bold' },
+    progressBarBg: { height: 10, backgroundColor: '#eee', borderRadius: 5, overflow: 'hidden' },
+    progressBarFill: { height: '100%', backgroundColor: '#CD9730' },
+    statsGrid: { flexDirection: 'row', paddingHorizontal: 10 },
+    statCard: { flex: 1, marginHorizontal: 10, alignItems: 'center', padding: 15 },
+    statLabel: { fontSize: 13, color: '#666', fontWeight: 'bold', marginVertical: 8, textAlign: 'center' },
+    statValue: { fontSize: 32, fontWeight: 'bold', color: '#333', marginBottom: 5 },
+    statDesc: { fontSize: 10, color: '#888', textAlign: 'center' },
+    streakHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    streakInfo: { flex: 1 },
+    flameIcon: { backgroundColor: '#FFCCBC', padding: 10, borderRadius: 15 },
+    footer: {
+        paddingHorizontal: 20,
+        paddingBottom: 40,
+        alignItems: 'center',
+        justifyContent: 'center'
     },
-    scrollArea: {
+    footerText: {
+        color: '#fff',
+        fontSize: 15,
+        fontStyle: 'italic',
+        opacity: 0.9,
+        textAlign: 'center'
+    },
+    storeRow: {
+        flexDirection: 'row',
+        paddingHorizontal: 10,
+        marginTop: 5
+    },
+    storeSmallCard: {
         flex: 1,
-        marginTop: 5,
+        marginHorizontal: 10,
+        marginVertical: 5,
+        padding: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'column'
     },
-    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    challengeControls: { flexDirection: 'row', gap: 20 },
-    miniBtn: { backgroundColor: '#CD9730', width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-    miniBtnText: { color: '#fff', fontSize: 24, fontWeight: 'bold' },
-    cardTitle: { fontSize: 18, fontWeight: 'bold', color: '#5e3a0e' },
-    streakSub: { fontSize: 12, color: '#666', marginBottom: 10, marginTop: 2 },
-    streakGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'center' },
-    streakIcon: { alignItems: 'center', justifyContent: 'center', borderRadius: 8, borderWeight: 1, borderColor: '#eee' },
-    streakIconActive: { backgroundColor: '#FFF5E1' },
-    streakDayText: { color: '#999', marginTop: 1 },
-    remindersRow: { flexDirection: 'row', paddingHorizontal: 10 },
-    reminderCard: { flex: 1, marginHorizontal: 10, padding: 15 },
-    reminderHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-    reminderTitle: { fontSize: 16, fontWeight: 'bold', color: '#5e3a0e' },
-    timeButton: { backgroundColor: '#f5f5f5', padding: 10, borderRadius: 10, alignItems: 'center' },
-    timeText: { fontSize: 18, color: '#CD9730', fontWeight: 'bold' },
-    tipHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
-    tipTitle: { fontSize: 16, fontWeight: 'bold', color: '#8b0000', flex: 1 },
-    tipText: { fontSize: 15, color: '#444', fontStyle: 'italic', lineHeight: 20, textAlign: 'center' },
-    footer: { position: 'absolute', bottom: 100, left: 20, right: 20, alignItems: 'center' },
-    footerText: { color: '#fff', textAlign: 'center', fontSize: 18, opacity: 0.8, fontStyle: 'italic' }
+    storeButtonIcon: {
+        width: 36,
+        height: 36,
+        borderRadius: 10,
+        backgroundColor: '#FFF8E1',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 8
+    },
+    storeSmallText: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: '#333',
+        textAlign: 'center'
+    }
 });
 
 export default ScheduleDarshanScreen;
