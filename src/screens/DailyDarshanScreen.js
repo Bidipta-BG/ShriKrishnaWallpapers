@@ -61,7 +61,7 @@ const FallingFlower = ({ index, onComplete }) => {
     useEffect(() => {
         // Target Y: Bottom Shelf area ~ (height - 190 range) - Moved UP by 30px
         // Add random variation to "pile" them naturally
-        const targetY = height - 90 + (Math.random() * 20);
+        const targetY = height - 70 + (Math.random() * 20);
 
         translateY.value = withDelay(
             randomDelay,
@@ -125,7 +125,7 @@ const FallingCoin = ({ index, onComplete }) => {
     const opacity = useSharedValue(1);
 
     useEffect(() => {
-        const targetY = height - 90 + (Math.random() * 20);
+        const targetY = height - 70 + (Math.random() * 20);
 
         translateY.value = withDelay(
             config.delay,
@@ -539,15 +539,6 @@ const DailyDarshanScreen = ({ navigation }) => {
     const [isAartiActive, setIsAartiActive] = useState(false);
     const [isSaveModalVisible, setSaveModalVisible] = useState(false);
 
-    // --- Music Player State (Restored) ---
-    const [sound, setSound] = useState(null);
-    const [isPlaying, setIsPlaying] = useState(false);
-    const [loopMode, setLoopMode] = useState(1); // Default 1 (1 repeat/play)
-    const [playbackStatus, setPlaybackStatus] = useState({ position: 0, duration: 1 });
-
-    const playCountRef = useRef(0); // Track how many times played
-    const currentLoopModeRef = useRef(1); // Store for callback access
-
 
     // --- Favorite Logic ---
     const toggleFavorite = async () => {
@@ -754,85 +745,7 @@ const DailyDarshanScreen = ({ navigation }) => {
     };
 
 
-    // --- Audio Logic ---
-    useEffect(() => {
-        // Enable background audio
-        Audio.setAudioModeAsync({
-            allowsRecordingIOS: false,
-            staysActiveInBackground: true,
-            playsInSilentModeIOS: true,
-            shouldDuckAndroid: true,
-            playThroughEarpieceAndroid: false,
-        });
 
-        return () => {
-            if (sound) {
-                sound.unloadAsync();
-            }
-        };
-    }, [sound]);
-
-    const playMusic = async () => {
-        try {
-            if (sound) {
-                // If loaded, just play/pause
-                if (isPlaying) {
-                    await sound.pauseAsync();
-                    setIsPlaying(false);
-                } else {
-                    await sound.playAsync();
-                    setIsPlaying(true);
-                }
-            } else {
-                // Load Main Music
-                const { sound: newSound } = await Audio.Sound.createAsync(
-                    require('../assets/sounds/main-music.mp3'),
-                    { shouldPlay: true, isLooping: false } // Manual looping
-                );
-
-                setSound(newSound);
-                setIsPlaying(true);
-                playCountRef.current = 1;
-                currentLoopModeRef.current = loopMode;
-
-                newSound.setOnPlaybackStatusUpdate(status => {
-                    if (status.isLoaded) {
-                        setPlaybackStatus({
-                            position: status.positionMillis,
-                            duration: status.durationMillis || 1
-                        });
-
-                        if (status.didJustFinish) {
-                            if (playCountRef.current < currentLoopModeRef.current) {
-                                playCountRef.current += 1;
-                                newSound.replayAsync();
-                            } else {
-                                setIsPlaying(false);
-                                newSound.stopAsync(); // Stop and reset
-                                playCountRef.current = 1;
-                            }
-                        }
-                    }
-                });
-            }
-        } catch (error) {
-            console.log('Error playing music:', error);
-        }
-    };
-
-    const toggleLoopMode = async () => {
-        // Cycle 1 -> 2 -> 3 -> 4 -> 1
-        setLoopMode(prev => {
-            const next = prev >= 4 ? 1 : prev + 1;
-            currentLoopModeRef.current = next; // Update ref instantaneously
-            return next;
-        });
-        // Logic handled in callback via ref
-    };
-
-    const togglePlayPause = () => {
-        playMusic();
-    };
 
     const performAarti = () => {
         if (isAartiActive) return;
@@ -1088,97 +1001,81 @@ const DailyDarshanScreen = ({ navigation }) => {
                 </View>
             </View>
 
-            {/* 5. Bottom Controls */}
-            <View style={styles.bottomSection}>
-                {/* Tab Bar */}
-                <View style={styles.tabBar}>
-                    <TouchableOpacity
-                        onPress={() => navigation.navigate('Gallery')}
-                        style={{ padding: 8, zIndex: 100 }}
-                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    >
-                        <Text style={styles.tabItem}>{t.allImages}</Text>
-                    </TouchableOpacity>
-
-                    {/* Streak Counter (Center) */}
-                    <View style={{ alignItems: 'center', minWidth: 100 }}>
-                        <Text style={{ fontSize: 16, color: '#8b0000', fontWeight: 'bold' }}>
+            {/* 5. New Tech Bottom Navigation */}
+            <View style={styles.bottomNavContainer}>
+                {/* 5.1 Middle Bar (Restored: Streak & Quick Links) */}
+                <View style={styles.streakBar}>
+                    {/* Streak Counter (Now on the Left) */}
+                    <View style={{ alignItems: 'flex-start', minWidth: 100, paddingLeft: 15 }}>
+                        <Text style={{ fontSize: 16, color: '#000', fontWeight: 'bold', textShadowColor: '#fff', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 1 }}>
                             {language === 'hi' ? `दिन ${streak}/${challengeGoal}` : `Day ${streak}/${challengeGoal}`}
                         </Text>
-                        <Text style={{ fontSize: 10, color: '#5e3a0e', fontWeight: '600' }}>
+                        <Text style={{ fontSize: 10, color: '#2b1803', fontWeight: 'bold', textShadowColor: '#fff', textShadowOffset: { width: 0.5, height: 0.5 }, textShadowRadius: 0.5 }}>
                             {language === 'hi' ? 'चैलेंज' : 'Challenge'}
                         </Text>
                     </View>
 
-                    <TouchableOpacity
-                        onPress={() => navigation.navigate('ScheduleDarshan')}
-                        style={{ padding: 8 }}
-                    >
-                        <Text style={styles.tabItem}>{t.scheduleDarshan}</Text>
-                    </TouchableOpacity>
-                </View>
+                    {/* Center (Now Blank) */}
+                    <View style={{ flex: 1 }} />
 
-
-
-                {/* Player Bar */}
-                {/* Player Bar */}
-                {/* Player Bar */}
-                {/* Progress Bar (Moved to Top of Yellow Section) */}
-                <View style={styles.progressBarContainerTop}>
-                    <View
-                        style={[
-                            styles.progressBarFill,
-                            { width: `${(playbackStatus.position / playbackStatus.duration) * 100}%` }
-                        ]}
-                    />
-                </View>
-
-                {/* Player Bar */}
-                <View style={styles.playerBar}>
-                    {/* Controls container (Left Side) */}
-                    <View style={styles.controlsContainer}>
-                        {/* Play Button */}
-                        <TouchableOpacity style={styles.playButton} onPress={togglePlayPause}>
-                            <Text style={styles.playIcon}>{isPlaying ? "⏸️" : "▶️"}</Text>
-                            <Text style={styles.playLabel}>{isPlaying ? t.pause : t.play}</Text>
-                        </TouchableOpacity>
-
-                        {/* Loop Button */}
-                        <TouchableOpacity style={styles.loopButton} onPress={toggleLoopMode}>
-                            <View style={styles.loopContent}>
-                                <Text style={styles.loopNumber}>{loopMode}</Text>
-                                <Text style={styles.loopText}>{t.repeat}</Text>
-                            </View>
-                        </TouchableOpacity>
-
-
+                    {/* Punya Points (On the Right) */}
+                    <View style={{ alignItems: 'flex-end', minWidth: 100, paddingRight: 15 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Ionicons name="star" size={16} color="#FFD700" style={{ marginRight: 4 }} />
+                            <Text style={{ fontSize: 16, color: '#000', fontWeight: 'bold', textShadowColor: '#fff', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 1 }}>
+                                {streak * 50}
+                            </Text>
+                        </View>
+                        <Text style={{ fontSize: 10, color: '#2b1803', fontWeight: 'bold', textShadowColor: '#fff', textShadowOffset: { width: 0.5, height: 0.5 }, textShadowRadius: 0.5 }}>
+                            {language === 'hi' ? 'पुण्य मुद्रा' : 'Punya Coins'}
+                        </Text>
                     </View>
+                </View>
 
-                    {/* Spacer for Diya */}
-                    <View style={{ width: 60 }} />
+                {/* Progress Bar (Subtle tech line) */}
+                <View style={styles.techProgressBar} />
 
-                    <TouchableOpacity
-                        style={styles.moreButton}
-                        onPress={() => navigation.navigate('About')}
-                    >
-                        <Text style={styles.moreIcon}>ℹ️</Text>
-                        <Text style={styles.moreText}>{t.about}</Text>
+                <View style={styles.navBar}>
+                    <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Gallery')}>
+                        <Ionicons name="images-outline" size={24} color="#FFF" />
+                        <Text style={styles.navLabel}>Image</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Reels')}>
+                        <Ionicons name="videocam-outline" size={24} color="#FFF" />
+                        <Text style={styles.navLabel}>Reels</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.navItem} onPress={() => { /* Already on Puja */ }}>
+                        <View style={styles.pujaActiveIndicator} />
+                        <Ionicons name="flower-outline" size={26} color="#00E676" />
+                        <Text style={[styles.navLabel, { color: '#00E676' }]}>Puja</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Generate')}>
+                        <Ionicons name="color-palette-outline" size={24} color="#FFF" />
+                        <Text style={styles.navLabel}>Generate</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Saved')}>
+                        <Ionicons name="bookmark-outline" size={24} color="#FFF" />
+                        <Text style={styles.navLabel}>Saved</Text>
                     </TouchableOpacity>
                 </View>
 
-                {/* Central Big Diya */}
-                <View style={[styles.centerThaliContainer]} pointerEvents="box-none">
-                    <TouchableOpacity onPress={performAarti} activeOpacity={0.8}>
-                        <Animated.Image
-                            source={require('../assets/images/my_diya.png')} // Change filename here
-                            style={[styles.thaliImage, diyaStyle]}
-                            resizeMode="contain"
-                        />
-                    </TouchableOpacity>
-                </View>
+                {/* Safe Area Spacer - Moved to bottom of container */}
+                <SafeAreaView edges={['bottom']} style={{ backgroundColor: '#000' }} />
+            </View>
 
-                {/* Safe Area Spacer for Bottom */}
-                <SafeAreaView edges={['bottom']} style={{ backgroundColor: '#CD9730' }} />
+            {/* Central Big Diya Layered Above EVERYTING - Now outside bottomNav to avoid pushing layout */}
+            <View style={styles.centerThaliContainer} pointerEvents="box-none">
+                <TouchableOpacity onPress={performAarti} activeOpacity={0.8}>
+                    <Animated.Image
+                        source={require('../assets/images/my_diya.png')}
+                        style={[styles.thaliImage, diyaStyle]}
+                        resizeMode="contain"
+                    />
+                </TouchableOpacity>
             </View>
 
             {/* --- Save Options Modal --- */}
@@ -1302,112 +1199,76 @@ const styles = StyleSheet.create({
     },
 
     thaliImage: {
-        width: 140,  // Adjust size as needed
-        height: 140, // Adjust size as needed
+        width: 120,
+        height: 120,
     },
-    // --- Bottom Section ---
-    bottomSection: {
+    centerThaliContainer: {
+        position: 'absolute',
+        bottom: 33,
+        left: 0,
+        right: 0,
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 50,
+        pointerEvents: 'none',
+    },
+    // --- Bottom Section Redesign ---
+    bottomNavContainer: {
         position: 'absolute',
         bottom: 0,
         left: 0,
         right: 0,
         zIndex: 30,
     },
-    tabBar: {
+    techProgressBar: {
+        width: '100%',
+        height: 2,
+        backgroundColor: '#00E676', // Techy Green glow
+        shadowColor: '#00E676',
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.8,
+        shadowRadius: 4,
+        elevation: 10,
+    },
+    navBar: {
         flexDirection: 'row',
         justifyContent: 'space-around',
         alignItems: 'center',
         paddingVertical: 6,
-        backgroundColor: 'rgba(255, 255, 255, 0.8)', // Semi-transparent track
-        zIndex: 60, // Ensure it's above the centerThaliContainer (zIndex 50)
+        backgroundColor: '#000', // Black background moved here
     },
-    tabItem: {
+    // --- Restored Styles for Middle Bar ---
+    streakBar: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        alignItems: 'center',
+        paddingVertical: 6,
+        backgroundColor: 'rgba(255, 255, 255, 0.5)', // Even more transparent
+    },
+    streakItem: {
         color: '#5e3a0e', // Dark brown
         fontWeight: 'bold',
         fontSize: 16,
     },
-    centerThaliContainer: {
-        position: 'absolute',
-        bottom: -25, // Moved down for better positioning
-        left: 0,
-        right: 0,
+    navItem: {
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: 50,
-        pointerEvents: 'none', // Allow clicks to pass through if needed, or remove if interactive
+        flex: 1,
     },
-    thaliEmoji: {
-        fontSize: 80,
-    },
-    playerBar: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        backgroundColor: '#CD9730', // Gold/DarkYellow bar
-        paddingVertical: 10,
-        paddingHorizontal: 30,
-    },
-    playButton: {
-        alignItems: 'center',
-        marginRight: 10,
-    },
-    playIcon: {
-        fontSize: 32, // Increased size
-        color: '#fff',
-    },
-    playLabel: {
-        color: '#8b0000',
-        fontSize: 12,
+    navLabel: {
+        color: '#FFF',
+        fontSize: 10,
+        marginTop: 4,
         fontWeight: 'bold',
-        marginTop: -1, // Adjusted for larger icon
+        textTransform: 'uppercase',
     },
-    loopButton: {
-        marginRight: 10,
-        backgroundColor: 'rgba(255,255,255,0.2)', // Slight bg for shape
-        borderRadius: 8,
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-    },
-    loopContent: {
-        alignItems: 'center',
-    },
-    loopNumber: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#8b0000', // Matches theme
-    },
-    loopText: {
-        fontSize: 8,
-        color: '#5e3a0e', // Dark brown
-        fontWeight: '600',
-    },
-    controlsContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        // flex: 1, // Removed flex to pack buttons to the left
-        marginRight: 10,
-    },
-    progressBarContainerTop: {
-        width: '100%',
+    pujaActiveIndicator: {
+        position: 'absolute',
+        top: -10,
+        width: 4,
         height: 4,
-        backgroundColor: 'rgba(255, 255, 255, 0.3)', // Semi-transparent track
-        // No border radius for full width look, or keep it if desired
-    },
-    progressBarFill: {
-        height: '100%',
-        backgroundColor: '#8b0000', // Deep Red fill
-    },
-    moreButton: {
-        alignItems: 'center',
-    },
-    moreIcon: {
-        fontSize: 30,
-        color: '#8b0000',
-    },
-    moreText: {
-        color: '#8b0000',
-        fontSize: 12,
-        fontWeight: 'bold',
+        borderRadius: 2,
+        backgroundColor: '#00E676',
     },
     flower: {
         position: 'absolute',
