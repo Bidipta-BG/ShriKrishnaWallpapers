@@ -3,10 +3,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useRoute } from '@react-navigation/native';
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
-import * as MediaLibrary from 'expo-media-library';
-import * as Sharing from 'expo-sharing';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Dimensions, Image, Modal, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, Image, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, {
     cancelAnimation,
     Easing,
@@ -210,25 +208,7 @@ const TRANSLATIONS = {
         scheduleDarshan: 'Daily Darshan',
         play: 'Play',
         pause: 'Pause',
-        like: 'Like',
-        favourite: 'Favourite',
-        downloaded: 'Image Saved!',
-        downloadSuccess: 'The image has been saved to your gallery.',
-        permissionRequired: 'Permission Required',
-        permissionMsg: 'Please grant permission to save images.',
         repeat: 'repeat',
-        limitReachedTitle: 'Limit Reached',
-        limitReachedMsg: 'You can only save up to 10 favorite images.',
-        favAddedTitle: 'Added to Favorites',
-        favAddedMsg: 'Saved to your Favorite Tab.',
-        favErrorTitle: 'Error',
-        favErrorMsg: 'Could not update favorites.',
-        wallpaperSetTitle: 'Wallpaper Set!',
-        wallpaperSetMsg: 'Would you like to go back to the main screen or stay here?',
-        ok: 'OK',
-        goBack: 'Go Back',
-        noFavsYet: 'No Favorites Yet',
-        noFavsSub: 'Tap the ❤️ icon on Daily Darshan to add here.',
     },
     hi: {
         flowers: 'पुष्प',
@@ -238,37 +218,15 @@ const TRANSLATIONS = {
         slokas: 'श्लोक',
         chanting: 'जाप',
         share: 'साझा करें',
-        about: 'बारे में',
+        about: 'मेरे बारे में',
         allImages: 'सभी चित्र',
         allMantras: 'सभी मंत्र/गीत',
-        download: 'डाउनलोड',
-        saveImage: 'सहेजें',
-        setHomeWallpaper: 'होम स्क्रीन सेट करें',
-        setLockWallpaper: 'लॉक स्क्रीन सेट करें',
         cancel: 'रद्द करें',
         alarm: 'अलार्म',
         scheduleDarshan: 'दैनिक दर्शन',
         play: 'चलाएं',
         pause: 'रोकें',
-        like: 'पसंद',
-        favourite: 'पसंदीदा',
-        downloaded: 'छवि सहेजी गई!',
-        downloadSuccess: 'छवि आपकी गैलरी में सहेजी गई है।',
-        permissionRequired: 'अनुमति आवश्यक है',
-        permissionMsg: 'कृपया चित्र सहेजने के लिए अनुमति दें।',
         repeat: 'दोहराएं',
-        limitReachedTitle: 'सीमा समाप्त',
-        limitReachedMsg: 'आप केवल 10 पसंदीदा चित्र सहेज सकते हैं।',
-        favAddedTitle: 'पसंदीदा में जोड़ा गया',
-        favAddedMsg: 'आपकी पसंदीदा टैब में सहेजा गया।',
-        favErrorTitle: 'त्रुटि',
-        favErrorMsg: 'पसंदीदा अपडेट नहीं किया जा सका।',
-        wallpaperSetTitle: 'वॉलपेपर सेट!',
-        wallpaperSetMsg: 'क्या आप मुख्य स्क्रीन पर वापस जाना चाहते हैं या यहीं रहना चाहते हैं?',
-        ok: 'ठीक है',
-        goBack: 'वापस जाएं',
-        noFavsYet: 'अभी तक कोई पसंदीदा नहीं',
-        noFavsSub: 'जोड़ने के लिए दैनिक दर्शन पर ❤️ आइकन दबाएं।',
     },
     // Add other languages as needed, defaulting to English for now
 };
@@ -314,16 +272,10 @@ const DailyDarshanScreen = ({ navigation }) => {
     };
 
     // --- Daily Streak Logic ---
+    const [isPlaying, setIsPlaying] = useState(false);
     const [streak, setStreak] = useState(1);
     const [challengeGoal, setChallengeGoal] = useState(100);
     const [streakDataLoaded, setStreakDataLoaded] = useState(false);
-
-    // --- Like & User Identity ---
-    const [deviceId, setDeviceId] = useState(null);
-    const [likeCount, setLikeCount] = useState(108); // Mock total
-    const [isLiked, setIsLiked] = useState(false); // Does THIS device like it?
-
-    const [isFavourite, setIsFavourite] = useState(false);
 
     useFocusEffect(
         useCallback(() => {
@@ -537,143 +489,7 @@ const DailyDarshanScreen = ({ navigation }) => {
     const aartiRotation = useSharedValue(0);
     const aartiScale = useSharedValue(1);
     const [isAartiActive, setIsAartiActive] = useState(false);
-    const [isSaveModalVisible, setSaveModalVisible] = useState(false);
-
-
-    // --- Favorite Logic ---
-    const toggleFavorite = async () => {
-        try {
-            // 1. Load Current List
-            const storedFavs = await AsyncStorage.getItem('favourite_images_list');
-            let favList = storedFavs ? JSON.parse(storedFavs) : [];
-
-            // 2. Check if already favorite
-            const existingIndex = favList.findIndex(item =>
-                item.uri === backgroundImage || item.original === backgroundImage
-            );
-
-            if (existingIndex !== -1) {
-                // ALREADY FAVORITE -> REMOVE
-                favList.splice(existingIndex, 1);
-                await AsyncStorage.setItem('favourite_images_list', JSON.stringify(favList));
-                setIsFavourite(false);
-                // Optional: Delete local file (skipped for simplicity, cache will auto-clear eventually or can implement later)
-            } else {
-                // NOT FAVORITE -> ADD
-                if (favList.length >= 10) {
-                    Alert.alert(t.limitReachedTitle, t.limitReachedMsg);
-                    return;
-                }
-
-                // Download specific file for persistent storage
-                const filename = `fav_${Date.now()}.jpg`;
-                const fileUri = `${FileSystem.documentDirectory}${filename}`;
-
-                // Download or Copy file depending on source
-                let uri;
-                if (backgroundImage.startsWith('http')) {
-                    const result = await FileSystem.downloadAsync(backgroundImage, fileUri);
-                    uri = result.uri;
-                } else {
-                    // It's already a local file (e.g. from gallery cache), so just copy it
-                    await FileSystem.copyAsync({ from: backgroundImage, to: fileUri });
-                    uri = fileUri;
-                }
-
-                const newFav = {
-                    id: Date.now().toString(),
-                    uri: uri, // Save Local Path
-                    original: backgroundImage
-                };
-
-                favList.push(newFav);
-                await AsyncStorage.setItem('favourite_images_list', JSON.stringify(favList));
-                setIsFavourite(true);
-                Alert.alert(t.favAddedTitle, t.favAddedMsg);
-            }
-        } catch (e) {
-            console.log("Fav Error:", e);
-            Alert.alert(t.favErrorTitle, t.favErrorMsg);
-        }
-    };
-
-    // Check if current image is favorite on load/change
-    useEffect(() => {
-        const checkFavStatus = async () => {
-            const storedFavs = await AsyncStorage.getItem('favourite_images_list');
-            if (storedFavs) {
-                const favList = JSON.parse(storedFavs);
-                // Check if current background URL or a vaguely matching ID exists
-                // Since background changes dynamic, check by URI string match
-                const exists = favList.some(item => item.original === backgroundImage || item.uri === backgroundImage);
-                setIsFavourite(exists);
-            }
-        };
-        checkFavStatus();
-    }, [backgroundImage]);
-
-
-    // --- Like Logic (Mock Device-based) ---
-    useEffect(() => {
-        const initIdentity = async () => {
-            try {
-                let id = await AsyncStorage.getItem('user_device_id');
-                if (!id) {
-                    id = `user_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-                    await AsyncStorage.setItem('user_device_id', id);
-                }
-                setDeviceId(id);
-            } catch (e) {
-                console.log("Identity Error:", e);
-            }
-        };
-        initIdentity();
-    }, []);
-
-    const checkLikeStatus = async () => {
-        try {
-            const likedImages = await AsyncStorage.getItem('liked_images_list');
-            const list = likedImages ? JSON.parse(likedImages) : [];
-            const liked = list.includes(backgroundImage);
-            setIsLiked(liked);
-
-            // Mock random total count for demo
-            setLikeCount(liked ? 109 : 108);
-        } catch (e) {
-            console.log("Check Like Error:", e);
-        }
-    };
-
-    useEffect(() => {
-        checkLikeStatus();
-    }, [backgroundImage]);
-
-    const handleLike = async () => {
-        try {
-            const likedImages = await AsyncStorage.getItem('liked_images_list');
-            let list = likedImages ? JSON.parse(likedImages) : [];
-
-            if (isLiked) {
-                // UNLIKE
-                list = list.filter(url => url !== backgroundImage);
-                setIsLiked(false);
-                setLikeCount(prev => prev - 1);
-            } else {
-                // LIKE
-                list.push(backgroundImage);
-                setIsLiked(true);
-                setLikeCount(prev => prev + 1);
-            }
-
-            await AsyncStorage.setItem('liked_images_list', JSON.stringify(list));
-
-            // Note: In real backend, you'd send { imageId, deviceId } here.
-            console.log(`Syncing with backend: Device ${deviceId} liked ${backgroundImage}`);
-
-        } catch (e) {
-            console.log("Like Error:", e);
-        }
-    };
+    const [rewardPoints, setRewardPoints] = useState(0); // For Punya Coins demo
 
 
     const handleSetAlarm = () => {
@@ -694,55 +510,6 @@ const DailyDarshanScreen = ({ navigation }) => {
         }
     }
 
-    const handleSaveOption = async (option) => {
-        setSaveModalVisible(false);
-
-        if (option === 'download') {
-            await downloadImage();
-        } else if (option === 'share') {
-            await shareImage();
-        }
-    };
-
-    const downloadImage = async () => {
-        try {
-            // Request WRITE-ONLY permissions to avoid needing READ_AUDIO/READ_VIDEO causing manifest errors
-            const { status } = await MediaLibrary.requestPermissionsAsync(true);
-            if (status !== 'granted') {
-                Alert.alert(t.permissionRequired, t.permissionMsg);
-                return;
-            }
-
-            const uri = await downloadToCache();
-            if (uri) {
-                // Modified: Using createAssetAsync instead of deprecated saveToLibraryAsync
-                const asset = await MediaLibrary.createAssetAsync(uri);
-                // On Android, createAssetAsync automatically saves to "Pictures" or "DCIM".
-                // We could also move it to a specific album using createAlbumAsync if desired,
-                // but createAssetAsync is sufficient for "Download" behavior.
-
-                if (asset) {
-                    Alert.alert(t.downloaded, t.downloadSuccess);
-                } else {
-                    throw new Error("Could not create asset.");
-                }
-            }
-        } catch (e) {
-            console.log("Download Error:", e);
-            Alert.alert("Error", e.message || "Failed to save image.");
-        }
-    };
-
-    const shareImage = async () => {
-        const uri = await downloadToCache();
-        if (uri) {
-            if (!(await Sharing.isAvailableAsync())) {
-                Alert.alert("Error", "Sharing is not available on this device");
-                return;
-            }
-            await Sharing.shareAsync(uri);
-        }
-    };
 
 
 
@@ -949,23 +716,17 @@ const DailyDarshanScreen = ({ navigation }) => {
 
             {/* 4. Side Icons Layer */}
             <View style={styles.sidesContainer}>
-                {/* Left Column - 4 buttons */}
+                {/* Left Column - 3 buttons */}
                 <View style={styles.leftColumn}>
                     <SideIcon
-                        iconName={isLiked ? "thumbs-up" : "thumbs-up-outline"}
-                        iconColor={isLiked ? "#3498DB" : "#fff"}
-                        label={`${likeCount} ${t.like}`}
-                        onPress={handleLike}
-                    />
-                    <SideIcon
                         iconName="flower-outline"
-                        label={t.flowers}
+                        label={t.flowers || 'Flowers'}
                         onPress={triggerFlowerShower}
                     />
 
                     <SideIcon
                         iconName="cash-outline"
-                        label={t.coins}
+                        label={t.coins || 'Coins'}
                         onPress={triggerCoinShower}
                     />
                     <SideIcon
@@ -975,14 +736,8 @@ const DailyDarshanScreen = ({ navigation }) => {
                     />
                 </View>
 
-                {/* Right Column - 4 buttons */}
+                {/* Right Column - 3 buttons */}
                 <View style={styles.rightColumn}>
-                    <SideIcon
-                        iconName={isFavourite ? "heart" : "heart-outline"}
-                        iconColor={isFavourite ? "#E74C3C" : "#fff"}
-                        label={t.favourite}
-                        onPress={toggleFavorite}
-                    />
                     <SideIcon
                         iconName="book-outline"
                         label={t.slokas}
@@ -994,9 +749,9 @@ const DailyDarshanScreen = ({ navigation }) => {
                         onPress={() => navigation.navigate('MantraSelection')}
                     />
                     <SideIcon
-                        iconName="download-outline"
-                        label={t.saveImage}
-                        onPress={() => setSaveModalVisible(true)}
+                        iconName="information-circle-outline"
+                        label={t.about || 'About'}
+                        onPress={() => Alert.alert("Account Details", "This feature is coming soon!")}
                     />
                 </View>
             </View>
@@ -1006,20 +761,28 @@ const DailyDarshanScreen = ({ navigation }) => {
                 {/* 5.1 Middle Bar (Restored: Streak & Quick Links) */}
                 <View style={styles.streakBar}>
                     {/* Streak Counter (Now on the Left) */}
-                    <View style={{ alignItems: 'flex-start', minWidth: 100, paddingLeft: 15 }}>
+                    <TouchableOpacity
+                        activeOpacity={0.7}
+                        onPress={() => navigation.navigate('ScheduleDarshan')}
+                        style={{ alignItems: 'flex-start', minWidth: 100, paddingLeft: 15 }}
+                    >
                         <Text style={{ fontSize: 16, color: '#000', fontWeight: 'bold', textShadowColor: '#fff', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 1 }}>
                             {language === 'hi' ? `दिन ${streak}/${challengeGoal}` : `Day ${streak}/${challengeGoal}`}
                         </Text>
                         <Text style={{ fontSize: 10, color: '#2b1803', fontWeight: 'bold', textShadowColor: '#fff', textShadowOffset: { width: 0.5, height: 0.5 }, textShadowRadius: 0.5 }}>
                             {language === 'hi' ? 'चैलेंज' : 'Challenge'}
                         </Text>
-                    </View>
+                    </TouchableOpacity>
 
                     {/* Center (Now Blank) */}
                     <View style={{ flex: 1 }} />
 
                     {/* Punya Points (On the Right) */}
-                    <View style={{ alignItems: 'flex-end', minWidth: 100, paddingRight: 15 }}>
+                    <TouchableOpacity
+                        activeOpacity={0.7}
+                        onPress={() => navigation.navigate('ScheduleDarshan')}
+                        style={{ alignItems: 'flex-end', minWidth: 100, paddingRight: 15 }}
+                    >
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                             <Ionicons name="star" size={16} color="#FFD700" style={{ marginRight: 4 }} />
                             <Text style={{ fontSize: 16, color: '#000', fontWeight: 'bold', textShadowColor: '#fff', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 1 }}>
@@ -1029,7 +792,7 @@ const DailyDarshanScreen = ({ navigation }) => {
                         <Text style={{ fontSize: 10, color: '#2b1803', fontWeight: 'bold', textShadowColor: '#fff', textShadowOffset: { width: 0.5, height: 0.5 }, textShadowRadius: 0.5 }}>
                             {language === 'hi' ? 'पुण्य मुद्रा' : 'Punya Coins'}
                         </Text>
-                    </View>
+                    </TouchableOpacity>
                 </View>
 
                 {/* Progress Bar (Subtle tech line) */}
@@ -1078,38 +841,6 @@ const DailyDarshanScreen = ({ navigation }) => {
                 </TouchableOpacity>
             </View>
 
-            {/* --- Save Options Modal --- */}
-            <Modal
-                transparent={true}
-                visible={isSaveModalVisible}
-                animationType="fade"
-                statusBarTranslucent={true}
-                onRequestClose={() => setSaveModalVisible(false)}
-            >
-                <TouchableOpacity
-                    style={styles.modalOverlay}
-                    activeOpacity={1}
-                    onPress={() => setSaveModalVisible(false)}
-                >
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>{t.saveImage}</Text>
-
-                        <TouchableOpacity style={styles.modalButton} onPress={() => handleSaveOption('download')}>
-                            <Text style={styles.modalButtonText}>⬇️  {t.download}</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={styles.modalButton} onPress={() => handleSaveOption('share')}>
-                            <Text style={styles.modalButtonText}>📤  {t.share}</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={[styles.modalButton, styles.cancelButton]} onPress={() => setSaveModalVisible(false)}>
-                            <Text style={styles.cancelButtonText}>{t.cancel}</Text>
-                        </TouchableOpacity>
-                    </View>
-                </TouchableOpacity>
-            </Modal>
-
-            {/* --- Playlist Modal Removed --- */}
         </View >
     );
 };

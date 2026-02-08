@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { useCallback, useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
+import { useState } from 'react';
 import { Alert, Dimensions, FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '../context/LanguageContext';
@@ -10,28 +10,20 @@ const TRANSLATIONS = {
     en: {
         allImages: 'All Images',
         newImage: 'New Image',
-        popularImage: 'Popular Image',
-        favouriteImage: 'Favourite Image',
         wallpaperSetTitle: 'Wallpaper Set!',
         wallpaperSetMsg: 'Would you like to go back to the main screen or stay here?',
         ok: 'OK',
         goBack: 'Go Back',
-        noFavsYet: 'No Favorites Yet',
-        noFavsSub: 'Tap the ❤️ icon on Daily Darshan to add here.',
         error: 'Error',
         failedSetting: 'Failed to set wallpaper.',
     },
     hi: {
         allImages: 'सभी चित्र',
         newImage: 'नया चित्र',
-        popularImage: 'लोकप्रिय चित्र',
-        favouriteImage: 'पसंदीदा चित्र',
         wallpaperSetTitle: 'वॉलपेपर सेट!',
         wallpaperSetMsg: 'क्या आप मुख्य स्क्रीन पर वापस जाना चाहते हैं या यहीं रहना चाहते हैं?',
         ok: 'ठीक है',
         goBack: 'वापस जाएं',
-        noFavsYet: 'अभी तक कोई पसंदीदा नहीं',
-        noFavsSub: 'जोड़ने के लिए दैनिक दर्शन पर ❤️ आइकन दबाएं।',
         error: 'त्रुटि',
         failedSetting: 'वॉलपेपर सेट करने में विफल।',
     }
@@ -45,10 +37,8 @@ const GalleryScreen = () => {
     const { language } = useLanguage();
     const t = TRANSLATIONS[language] || TRANSLATIONS['en'];
 
-    const [activeTab, setActiveTab] = useState('New'); // 'New', 'Popular', 'Favourite'
-    const [favoriteImages, setFavoriteImages] = useState([]);
-
-    const tabs = ['New', 'Popular', 'Favourite'];
+    const [activeTab, setActiveTab] = useState('New'); // Only 'New' remains
+    const tabs = ['New'];
 
     // Gallery Data
     const imageUrls = [
@@ -79,49 +69,10 @@ const GalleryScreen = () => {
         }))
     ];
 
-    const loadFavorites = async () => {
-        try {
-            const storedFavs = await AsyncStorage.getItem('favourite_images_list');
-            if (storedFavs) {
-                setFavoriteImages(JSON.parse(storedFavs));
-            } else {
-                setFavoriteImages([]);
-            }
-        } catch (error) {
-            console.log("Error loading favorites:", error);
-        }
-    };
-
-    useFocusEffect(
-        useCallback(() => {
-            loadFavorites();
-        }, [])
-    );
-
-    // Reload when tab changes to Favourite
-    useFocusEffect(
-        useCallback(() => {
-            if (activeTab === 'Favourite') {
-                loadFavorites();
-            }
-        }, [activeTab])
-    );
 
     // Determine data source and sort
     const getDisplayedImages = () => {
-        if (activeTab === 'Favourite') {
-            return favoriteImages;
-        }
-
-        const data = [...dummyImages];
-        if (activeTab === 'New') {
-            // Sort by latest added at top
-            return data.sort((a, b) => b.addedAt - a.addedAt);
-        } else if (activeTab === 'Popular') {
-            // Sort by most likes at top
-            return data.sort((a, b) => b.likes - a.likes);
-        }
-        return data;
+        return [...dummyImages]; // No sorting or filtering needed anymore
     };
 
     const displayedImages = getDisplayedImages();
@@ -141,11 +92,11 @@ const GalleryScreen = () => {
             {tabs.map((tab) => (
                 <TouchableOpacity
                     key={tab}
-                    style={[styles.tabItem, activeTab === tab && styles.activeTabItem]}
-                    onPress={() => setActiveTab(tab)}
+                    style={[styles.tabItem, styles.activeTabItem]}
+                    activeOpacity={1}
                 >
-                    <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
-                        {tab === 'New' ? t.newImage : tab === 'Popular' ? t.popularImage : t.favouriteImage}
+                    <Text style={[styles.tabText, styles.activeTabText]}>
+                        {t.allImages}
                     </Text>
                 </TouchableOpacity>
             ))}
@@ -184,12 +135,6 @@ const GalleryScreen = () => {
         </TouchableOpacity>
     );
 
-    const renderEmptyState = () => (
-        <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>{t.noFavsYet}</Text>
-            <Text style={styles.emptySubText}>{t.noFavsSub}</Text>
-        </View>
-    );
 
     return (
         <View style={styles.container}>
@@ -206,7 +151,7 @@ const GalleryScreen = () => {
                     numColumns={2}
                     contentContainerStyle={styles.gridContainer}
                     showsVerticalScrollIndicator={false}
-                    ListEmptyComponent={activeTab === 'Favourite' ? renderEmptyState : null}
+                    ListEmptyComponent={null}
                 />
             </View>
         </View>
