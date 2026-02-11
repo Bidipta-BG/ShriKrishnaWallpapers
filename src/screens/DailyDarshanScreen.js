@@ -16,7 +16,8 @@ import Animated, {
     withSequence,
     withTiming
 } from 'react-native-reanimated';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import BottomNav from '../components/BottomNav';
 import { useLanguage } from '../context/LanguageContext';
 
 const { width, height } = Dimensions.get('window');
@@ -852,39 +853,7 @@ const DailyDarshanScreen = ({ navigation }) => {
                     </TouchableOpacity>
                 </View>
 
-                {/* Progress Bar (Subtle tech line) */}
-                <View style={styles.techProgressBar} />
-
-                <View style={styles.navBar}>
-                    <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Gallery')}>
-                        <Ionicons name="images-outline" size={24} color="#FFF" />
-                        <Text style={styles.navLabel}>Image</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Reels')}>
-                        <Ionicons name="videocam-outline" size={24} color="#FFF" />
-                        <Text style={styles.navLabel}>Reels</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity style={styles.navItem} onPress={() => { /* Already on Puja */ }}>
-                        <View style={styles.pujaActiveIndicator} />
-                        <Ionicons name="flower-outline" size={26} color="#00E676" />
-                        <Text style={[styles.navLabel, { color: '#00E676' }]}>Puja</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Generate')}>
-                        <Ionicons name="color-palette-outline" size={24} color="#FFF" />
-                        <Text style={styles.navLabel}>Generate</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Saved')}>
-                        <Ionicons name="bookmark-outline" size={24} color="#FFF" />
-                        <Text style={styles.navLabel}>Saved</Text>
-                    </TouchableOpacity>
-                </View>
-
-                {/* Safe Area Spacer - Moved to bottom of container */}
-                <SafeAreaView edges={['bottom']} style={{ backgroundColor: '#000' }} />
+                <BottomNav navigation={navigation} activeTab="Puja" />
             </View>
 
             {/* Central Big Diya Layered Above EVERYTING - Now outside bottomNav to avoid pushing layout */}
@@ -913,7 +882,7 @@ const DailyDarshanScreen = ({ navigation }) => {
                         <Text style={[styles.modalTitle, { textAlign: 'center' }]}>{t.shieldTitle}</Text>
                         <Text style={{ textAlign: 'center', color: '#666', marginBottom: 20 }}>{t.shieldMsg}</Text>
                         <TouchableOpacity
-                            style={[styles.modalButton, { backgroundColor: '#CD9730', justifyContent: 'center' }]}
+                            style={[styles.modalButton, { backgroundColor: '#9c6ce6', justifyContent: 'center' }]}
                             onPress={() => setShieldPopupVisible(false)}
                         >
                             <Text style={[styles.modalButtonText, { color: '#fff' }]}>{t.ok}</Text>
@@ -1034,8 +1003,8 @@ const styles = StyleSheet.create({
     techProgressBar: {
         width: '100%',
         height: 2,
-        backgroundColor: '#00E676', // Techy Green glow
-        shadowColor: '#00E676',
+        backgroundColor: '#4dabf7', // Techy Green glow
+        shadowColor: '#4dabf7',
         shadowOffset: { width: 0, height: -2 },
         shadowOpacity: 0.8,
         shadowRadius: 4,
@@ -1079,7 +1048,7 @@ const styles = StyleSheet.create({
         width: 4,
         height: 4,
         borderRadius: 2,
-        backgroundColor: '#00E676',
+        backgroundColor: '#4dabf7',
     },
     flower: {
         position: 'absolute',
@@ -1166,7 +1135,7 @@ const styles = StyleSheet.create({
         color: '#333',
     },
     activeTrackText: {
-        color: '#CD9730', // Gold/DarkYellow
+        color: '#9c6ce6', // Gold/DarkYellow
         fontWeight: 'bold',
     },
     // --- Gallery Styles ---
@@ -1191,7 +1160,7 @@ const styles = StyleSheet.create({
         borderRadius: 15,
     },
     galleryTabActive: {
-        backgroundColor: '#CD9730',
+        backgroundColor: '#9c6ce6',
     },
     galleryTabText: {
         color: '#555',
@@ -1220,7 +1189,7 @@ const styles = StyleSheet.create({
         resizeMode: 'cover',
     },
     tabItemActive: {
-        color: '#CD9730', // Highlight active bottom tab
+        color: '#9c6ce6', // Highlight active bottom tab
         textDecorationLine: 'underline',
     },
 

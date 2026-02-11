@@ -1,158 +1,222 @@
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
-import { useState } from 'react';
-import { Alert, Dimensions, FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import {
+    Dimensions,
+    FlatList,
+    Image,
+    Linking,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useLanguage } from '../context/LanguageContext';
-
-const TRANSLATIONS = {
-    en: {
-        allImages: 'All Images',
-        newImage: 'New Image',
-        wallpaperSetTitle: 'Wallpaper Set!',
-        wallpaperSetMsg: 'Would you like to go back to the main screen or stay here?',
-        ok: 'OK',
-        goBack: 'Go Back',
-        error: 'Error',
-        failedSetting: 'Failed to set wallpaper.',
-    },
-    hi: {
-        allImages: 'सभी चित्र',
-        newImage: 'नया चित्र',
-        wallpaperSetTitle: 'वॉलपेपर सेट!',
-        wallpaperSetMsg: 'क्या आप मुख्य स्क्रीन पर वापस जाना चाहते हैं या यहीं रहना चाहते हैं?',
-        ok: 'ठीक है',
-        goBack: 'वापस जाएं',
-        error: 'त्रुटि',
-        failedSetting: 'वॉलपेपर सेट करने में विफल।',
-    }
-};
+import BottomNav from '../components/BottomNav';
 
 const { width } = Dimensions.get('window');
+// Padding: 20 (List) + 8 (Card Margin) = 28 total offset from left.
+// We want 1.0 item + 0.7 item + 16px gap to fit in the remaining width.
+const ITEM_WIDTH = (width - 44) / 1.7;
+
+// This structure mirrors a typical backend response
+const GALLERY_DATA = {
+    promoBanner: {
+        isVisible: true,
+        title: "Maha Shivratri is Coming! 🔱",
+        subtitle: "Deepen your devotion. Install our Divine Shivji App for Aarti & Mantras.",
+        actionText: "Install Now",
+        daysLeft: 5,
+        targetUrl: "https://play.google.com/store/apps/details?id=com.shrikrishna.daily.puja.aarti", // Example URL
+        colors: ['#4e54c8', '#8f94fb'], // Deep purple/blue gradient
+    },
+    heroSections: [
+        {
+            id: 'shivratri',
+            title: 'Maha Shivratri 2026',
+            items: [
+                { id: '1', source: require('../assets/images/test_img1.jpg'), globalIndex: 0 },
+                { id: '2', source: require('../assets/images/test_img2.jpg'), globalIndex: 1 },
+                { id: '3', source: require('../assets/images/test_img3.jpg'), globalIndex: 2 },
+            ]
+        },
+        {
+            id: 'monday',
+            title: 'Monday Special',
+            items: [
+                { id: '4', source: require('../assets/images/test_img4.jpg'), globalIndex: 3 },
+                { id: '5', source: require('../assets/images/test_img5.jpg'), globalIndex: 4 },
+                { id: '6', source: require('../assets/images/test_img6.jpg'), globalIndex: 5 },
+            ]
+        }
+    ],
+    categories: [
+        {
+            id: '1',
+            title: 'Nanha Kanhiya',
+            source: require('../assets/images/test_img1.jpg'),
+            globalIndex: 0,
+            items: [
+                { id: 'c1_1', source: require('../assets/images/test_img1.jpg'), globalIndex: 0 },
+                { id: 'c1_2', source: require('../assets/images/test_img2.jpg'), globalIndex: 1 },
+                { id: 'c1_3', source: require('../assets/images/test_img3.jpg'), globalIndex: 2 },
+                { id: 'c1_4', source: require('../assets/images/test_img4.jpg'), globalIndex: 3 },
+            ]
+        },
+        {
+            id: '2',
+            title: 'Radha Krishna',
+            source: require('../assets/images/test_img6.jpg'),
+            globalIndex: 5,
+            items: [
+                { id: 'c2_1', source: require('../assets/images/test_img6.jpg'), globalIndex: 5 },
+                { id: 'c2_2', source: require('../assets/images/test_img7.jpg'), globalIndex: 6 },
+                { id: 'c2_3', source: require('../assets/images/test_img8.jpg'), globalIndex: 7 },
+            ]
+        },
+        {
+            id: '3',
+            title: 'Makkhan Chor',
+            source: require('../assets/images/test_img3.jpg'),
+            globalIndex: 2,
+            items: [
+                { id: 'c3_1', source: require('../assets/images/test_img3.jpg'), globalIndex: 2 },
+                { id: 'c3_2', source: require('../assets/images/test_img4.jpg'), globalIndex: 3 },
+            ]
+        },
+        { id: '4', title: 'Govardhan Nath', source: require('../assets/images/test_img5.jpg'), globalIndex: 4, items: [] },
+        { id: '5', title: 'Banke Bihari', source: require('../assets/images/test_img8.jpg'), globalIndex: 7, items: [] },
+        { id: '6', title: 'Dwarkadhish', source: require('../assets/images/test_img10.jpg'), globalIndex: 9, items: [] },
+    ]
+};
 
 const GalleryScreen = () => {
     const navigation = useNavigation();
     const insets = useSafeAreaInsets();
-    const { language } = useLanguage();
-    const t = TRANSLATIONS[language] || TRANSLATIONS['en'];
 
-    const [activeTab, setActiveTab] = useState('New'); // Only 'New' remains
-    const tabs = ['New'];
-
-    // Gallery Data
-    const imageUrls = [
-        'https://i.pinimg.com/736x/bf/4e/03/bf4e03638e1707736dca726fc9cdf3af.jpg',
-        'https://i.pinimg.com/736x/fe/3f/e3/fe3fe3e0e766cec2de8ef7b72168552d.jpg',
-        'https://i.pinimg.com/474x/7c/c4/11/7cc4114fa476d4c4c1f2230e3d9cccb0.jpg',
-        'https://i.pinimg.com/564x/c5/83/de/c583de229e5c7ab2fef9545c412d683d.jpg',
-        'https://www.wallsnapy.com/img_gallery/sri-krishna-2018-hd-images-3202036.jpg',
-        'https://i.pinimg.com/564x/29/3b/f0/293bf0b598955505d173f6d74cb2a993.jpg',
-        'https://www.wallsnapy.com/img_gallery/sri-krishna-radha-hd-wallpaper-7457884.jpg',
-        'https://m.media-amazon.com/images/I/710cyWZ1oSL._AC_UF894,1000_QL80_.jpg'
-    ];
-
-    // Mock Backend Data with Metadata
-    const dummyImages = [
-        // Bundled Local Image (Offline Support)
-        {
-            id: 'default_local',
-            uri: Image.resolveAssetSource(require('../assets/images/default_darshan.jpg')).uri,
-            likes: 1250,
-            addedAt: Date.now()
-        },
-        ...imageUrls.map((url, index) => ({
-            id: `img_${index}`,
-            uri: url,
-            likes: Math.floor(Math.random() * 500),
-            addedAt: Date.now() - (index * 1000 * 60 * 60 * 24) // offset by days
-        }))
-    ];
-
-
-    // Determine data source and sort
-    const getDisplayedImages = () => {
-        return [...dummyImages]; // No sorting or filtering needed anymore
-    };
-
-    const displayedImages = getDisplayedImages();
-
-    const renderHeader = () => (
-        <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                <Ionicons name="arrow-back" size={26} color="#fff" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>{t.allImages}</Text>
-            <View style={{ width: 40 }} />
-        </View>
-    );
-
-    const renderTabs = () => (
-        <View style={styles.tabContainer}>
-            {tabs.map((tab) => (
-                <TouchableOpacity
-                    key={tab}
-                    style={[styles.tabItem, styles.activeTabItem]}
-                    activeOpacity={1}
-                >
-                    <Text style={[styles.tabText, styles.activeTabText]}>
-                        {t.allImages}
-                    </Text>
-                </TouchableOpacity>
-            ))}
-        </View>
-    );
-
-    const handleImageSelect = async (item) => {
-        try {
-            await AsyncStorage.setItem('saved_background_image', item.uri);
-            Alert.alert(
-                t.wallpaperSetTitle,
-                t.wallpaperSetMsg,
-                [
-                    {
-                        text: t.ok,
-                        style: "cancel"
-                    },
-                    {
-                        text: t.goBack,
-                        onPress: () => navigation.goBack()
-                    }
-                ]
-            );
-        } catch (error) {
-            console.log("Error saving image:", error);
-            Alert.alert(t.error, t.failedSetting);
-        }
-    };
-
-    const renderImageItem = ({ item }) => (
+    const renderHorizontalItem = ({ item }) => (
         <TouchableOpacity
-            style={styles.imageContainer}
-            onPress={() => handleImageSelect(item)}
+            style={styles.horizontalCard}
+            onPress={() => navigation.navigate('FullImage', { initialIndex: item.globalIndex })}
         >
-            <Image source={{ uri: item.uri }} style={styles.image} />
+            <Image source={item.source} style={styles.cardImage} />
         </TouchableOpacity>
     );
 
+    const renderExploreItem = (item) => (
+        <TouchableOpacity
+            key={item.id}
+            style={styles.exploreCard}
+            onPress={() => navigation.navigate('CategoryGrid', { title: item.title, items: item.items })}
+        >
+            <View style={styles.exploreCardLeft}>
+                <Image source={item.source} style={styles.exploreThumb} />
+                <Text style={styles.exploreTitle}>{item.title}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#9c6ce6" />
+        </TouchableOpacity>
+    );
 
     return (
         <View style={styles.container}>
-            {renderHeader()}
+            <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
-            <View style={styles.content}>
-                {renderTabs()}
+            {/* Header */}
+            <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+                <TouchableOpacity style={styles.headerIcon}>
+                    <Ionicons name="information-circle-outline" size={26} color="#fff" />
+                </TouchableOpacity>
 
-                <FlatList
-                    data={displayedImages}
-                    renderItem={renderImageItem}
-                    keyExtractor={(item) => item.id || Math.random().toString()}
-                    key={2} // Force re-render when columns change
-                    numColumns={2}
-                    contentContainerStyle={styles.gridContainer}
-                    showsVerticalScrollIndicator={false}
-                    ListEmptyComponent={null}
-                />
+                <Text style={styles.headerTitle}>Shri Krishna</Text>
+
+                <TouchableOpacity style={styles.noAdsContainer}>
+                    <View style={styles.noAdsCircle}>
+                        <Ionicons name="ban" size={14} color="#ff4444" />
+                        <Text style={styles.adsText}>NO ADS</Text>
+                    </View>
+                </TouchableOpacity>
+            </View>
+
+            <ScrollView
+                style={styles.content}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: 110 }}
+            >
+                {/* Dynamic Festival Promotion Banner */}
+                {GALLERY_DATA.promoBanner.isVisible && (
+                    <TouchableOpacity
+                        activeOpacity={0.9}
+                        onPress={() => Linking.openURL(GALLERY_DATA.promoBanner.targetUrl)}
+                        style={styles.bannerContainer}
+                    >
+                        <LinearGradient
+                            colors={GALLERY_DATA.promoBanner.colors}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={styles.bannerGradient}
+                        >
+                            <View style={styles.bannerContent}>
+                                <View style={styles.bannerLeft}>
+                                    <View style={styles.festBadge}>
+                                        <Text style={styles.festBadgeText}>
+                                            {GALLERY_DATA.promoBanner.daysLeft} DAYS LEFT
+                                        </Text>
+                                    </View>
+                                    <Text style={styles.bannerTitle}>{GALLERY_DATA.promoBanner.title}</Text>
+                                    <Text style={styles.bannerSubtitle}>{GALLERY_DATA.promoBanner.subtitle}</Text>
+                                </View>
+
+                                <View style={styles.bannerRight}>
+                                    <View style={styles.installBtn}>
+                                        <Text style={styles.installBtnText}>{GALLERY_DATA.promoBanner.actionText}</Text>
+                                        <Ionicons name="cloud-download-outline" size={16} color="#fff" />
+                                    </View>
+                                </View>
+                            </View>
+                        </LinearGradient>
+                    </TouchableOpacity>
+                )}
+
+                {/* Dynamic Hero Sections (Horizontal) */}
+                {GALLERY_DATA.heroSections.map(section => (
+                    <View key={section.id} style={styles.section}>
+                        <View style={styles.sectionHeader}>
+                            <Text style={styles.sectionTitle}>{section.title}</Text>
+                            <TouchableOpacity
+                                style={styles.viewAllBtn}
+                                onPress={() => navigation.navigate('CategoryGrid', { title: section.title, items: section.items })}
+                            >
+                                <Text style={styles.viewAllText}>View All</Text>
+                                <Ionicons name="chevron-forward" size={14} color="#fff" />
+                            </TouchableOpacity>
+                        </View>
+                        <FlatList
+                            data={section.items}
+                            renderItem={renderHorizontalItem}
+                            keyExtractor={item => item.id}
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.horizontalList}
+                            snapToInterval={ITEM_WIDTH + 16}
+                            decelerationRate="fast"
+                        />
+                    </View>
+                ))}
+
+                {/* All Categories (Vertical Cards) */}
+                <View style={styles.section}>
+                    <Text style={[styles.sectionTitle, { marginLeft: 20, marginBottom: 15, color: '#9c6ce6' }]}>All Category</Text>
+                    <View style={styles.exploreGrid}>
+                        {GALLERY_DATA.categories.map(renderExploreItem)}
+                    </View>
+                </View>
+            </ScrollView>
+
+            {/* Bottom Nav */}
+            <View style={styles.bottomNavContainer}>
+                <BottomNav navigation={navigation} activeTab="Image" />
             </View>
         </View>
     );
@@ -161,92 +225,198 @@ const GalleryScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FFF8E1', // Light cream background
+        backgroundColor: '#000',
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 15,
-        paddingVertical: 15,
-        backgroundColor: '#CD9730', // Gold/DarkYellow
-        elevation: 5,
-        top: 0
+        paddingHorizontal: 20,
+        paddingBottom: 20,
+        backgroundColor: '#000',
     },
-    backButton: {
-        padding: 5,
-    },
-    backIcon: {
-        fontSize: 24,
-        color: '#fff',
+    headerIcon: {
+        width: 40,
+        height: 40,
+        justifyContent: 'center',
     },
     headerTitle: {
         fontSize: 20,
         fontWeight: 'bold',
+        color: '#4dabf7', // Neon blue primary
+        letterSpacing: 0.5,
+    },
+    noAdsContainer: {
+        width: 40,
+        alignItems: 'flex-end',
+    },
+    noAdsCircle: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 2,
+    },
+    adsText: {
         color: '#fff',
+        fontSize: 10,
+        fontWeight: 'bold',
     },
     content: {
         flex: 1,
     },
-    tabContainer: {
+    section: {
+        marginTop: 25,
+    },
+    sectionHeader: {
         flexDirection: 'row',
-        justifyContent: 'space-around',
-        paddingVertical: 15,
-        backgroundColor: '#fff',
-        marginBottom: 10,
-        elevation: 2,
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        marginBottom: 15,
     },
-    tabItem: {
-        paddingVertical: 8,
-        paddingHorizontal: 15,
-        borderRadius: 20,
-        backgroundColor: '#f0f0f0',
+    sectionTitle: {
+        fontSize: 18,
+        fontWeight: '800',
+        color: '#4dabf7',
     },
-    activeTabItem: {
-        backgroundColor: '#CD9730',
+    viewAllBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#9c6ce6', // Vibrant purple
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 12,
+        gap: 4,
     },
-    tabText: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#555',
-    },
-    activeTabText: {
+    viewAllText: {
         color: '#fff',
-        fontWeight: 'bold',
+        fontSize: 13,
+        fontWeight: '600',
     },
-    gridContainer: {
-        padding: 5,
+    horizontalList: {
+        paddingHorizontal: 20,
     },
-    imageContainer: {
-        flex: 1 / 2, // 2 columns
-        aspectRatio: 1,
-        margin: 5,
-        borderRadius: 10,
+    horizontalCard: {
+        width: ITEM_WIDTH,
+        height: ITEM_WIDTH * 1.3,
+        marginHorizontal: 8,
+        borderRadius: 20,
         overflow: 'hidden',
-        elevation: 2,
-        backgroundColor: '#fff',
+        backgroundColor: '#1A1A1A',
     },
-    image: {
+    cardImage: {
         width: '100%',
         height: '100%',
         resizeMode: 'cover',
     },
-    emptyContainer: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingTop: 50,
+    exploreGrid: {
+        paddingHorizontal: 20,
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
     },
-    emptyText: {
+    exploreCard: {
+        width: '48%',
+        backgroundColor: '#121212',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: 10,
+        borderRadius: 15,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: '#1f1f1f',
+    },
+    exploreCardLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+    },
+    exploreThumb: {
+        width: 40,
+        height: 40,
+        borderRadius: 8,
+    },
+    exploreTitle: {
+        color: '#e0e0e0',
+        fontSize: 12,
+        fontWeight: '700',
+    },
+    bottomNavContainer: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: '#000',
+    },
+    // Banner Styles
+    bannerContainer: {
+        marginHorizontal: 20,
+        marginTop: 10,
+        borderRadius: 20,
+        overflow: 'hidden',
+        elevation: 8,
+        shadowColor: '#4e54c8',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+    },
+    bannerGradient: {
+        padding: 20,
+    },
+    bannerContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    bannerLeft: {
+        flex: 1,
+        marginRight: 15,
+    },
+    festBadge: {
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        alignSelf: 'flex-start',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 6,
+        marginBottom: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.3)',
+    },
+    festBadgeText: {
+        color: '#fff',
+        fontSize: 10,
+        fontWeight: 'bold',
+        letterSpacing: 1,
+    },
+    bannerTitle: {
+        color: '#fff',
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#555',
-        marginBottom: 10,
+        marginBottom: 5,
     },
-    emptySubText: {
+    bannerSubtitle: {
+        color: 'rgba(255, 255, 255, 0.8)',
+        fontSize: 12,
+        lineHeight: 18,
+    },
+    bannerRight: {
+        alignItems: 'center',
+    },
+    installBtn: {
+        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+        paddingHorizontal: 15,
+        paddingVertical: 10,
+        borderRadius: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.2)',
+    },
+    installBtnText: {
+        color: '#fff',
         fontSize: 14,
-        color: '#888',
-        textAlign: 'center',
+        fontWeight: 'bold',
     },
 });
 
