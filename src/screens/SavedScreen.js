@@ -45,10 +45,13 @@ const SavedScreen = ({ navigation }) => {
         }
     };
 
-    const renderGridItem = ({ item }) => (
+    const renderGridItem = ({ item, index }) => (
         <TouchableOpacity
             style={styles.gridCard}
-            onPress={() => navigation.navigate('FullImage', { initialIndex: item.globalIndex })}
+            onPress={() => navigation.navigate('FullImage', {
+                initialIndex: index, // Pass globalIndex if displaying all, but here we display only saved
+                images: savedImages
+            })}
         >
             <Image source={item.source} style={styles.cardImage} />
         </TouchableOpacity>

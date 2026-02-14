@@ -26,7 +26,7 @@ const BottomNav = ({ navigation, activeTab }) => {
 
                 <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Generate')}>
                     <Ionicons
-                        name={activeTab === 'Generate' ? 'color-palette' : 'color-palette-outline'}
+                        name={activeTab === 'Generate' ? 'sparkles' : 'sparkles-outline'}
                         size={24}
                         color={activeTab === 'Generate' ? '#9c6ce6' : '#FFF'}
                     />

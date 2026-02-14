@@ -809,7 +809,7 @@ const DailyDarshanScreen = ({ navigation }) => {
                     <SideIcon
                         iconName="information-circle-outline"
                         label={t.about || 'About'}
-                        onPress={() => Alert.alert("Account Details", "This feature is coming soon!")}
+                        onPress={() => navigation.navigate('Settings')}
                     />
                 </View>
             </View>

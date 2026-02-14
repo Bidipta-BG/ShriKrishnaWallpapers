@@ -24,7 +24,7 @@ const ITEM_WIDTH = (width - 44) / 1.7;
 // This structure mirrors a typical backend response
 const GALLERY_DATA = {
     promoBanner: {
-        isVisible: true,
+        isVisible: false,
         title: "Maha Shivratri is Coming! 🔱",
         subtitle: "Deepen your devotion. Install our Divine Shivji App for Aarti & Mantras.",
         actionText: "Install Now",
@@ -125,7 +125,10 @@ const GalleryScreen = () => {
 
             {/* Header */}
             <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-                <TouchableOpacity style={styles.headerIcon}>
+                <TouchableOpacity
+                    style={styles.headerIcon}
+                    onPress={() => navigation.navigate('Settings')}
+                >
                     <Ionicons name="information-circle-outline" size={26} color="#fff" />
                 </TouchableOpacity>
 

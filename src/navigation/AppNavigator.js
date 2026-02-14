@@ -13,6 +13,7 @@ import MantraSelectionScreen from '../screens/MantraSelectionScreen';
 import ReelsScreen from '../screens/ReelsScreen';
 import SavedScreen from '../screens/SavedScreen';
 import ScheduleDarshanScreen from '../screens/ScheduleDarshanScreen';
+import SettingsScreen from '../screens/SettingsScreen';
 import SlokasScreen from '../screens/SlokasScreen';
 
 const Stack = createStackNavigator();
@@ -39,6 +40,7 @@ const AppNavigator = ({ initialRouteName = 'LanguageSelection' }) => {
             <Stack.Screen name="Reels" component={ReelsScreen} />
             <Stack.Screen name="Generate" component={GenerateScreen} />
             <Stack.Screen name="Saved" component={SavedScreen} />
+            <Stack.Screen name="Settings" component={SettingsScreen} />
             <Stack.Screen name="ImageShare" component={ImageShareScreen} />
             <Stack.Screen name="ImageDownload" component={ImageDownloadScreen} />
         </Stack.Navigator>

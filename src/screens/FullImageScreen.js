@@ -27,8 +27,14 @@ const FullImageScreen = () => {
     const insets = useSafeAreaInsets();
     const { width, height } = useWindowDimensions();
 
+    // Use passed images or fallback to full gallery
+    const images = route.params?.images ?? GALLERY_IMAGES;
     const initialIndex = route.params?.initialIndex ?? 0;
-    const [currentIndex, setCurrentIndex] = useState(initialIndex);
+
+    // Ensure initialIndex is valid for the current data source
+    const validInitialIndex = (initialIndex >= 0 && initialIndex < images.length) ? initialIndex : 0;
+
+    const [currentIndex, setCurrentIndex] = useState(validInitialIndex);
     const [savedIds, setSavedIds] = useState([]);
     const [saveCapacity, setSaveCapacity] = useState(5);
     const [divyaCoins, setDivyaCoins] = useState(0);
@@ -128,7 +134,7 @@ const FullImageScreen = () => {
     const handleScroll = (event) => {
         const contentOffset = event.nativeEvent.contentOffset.y;
         const index = Math.round(contentOffset / height);
-        if (index !== currentIndex && index >= 0 && index < GALLERY_IMAGES.length) {
+        if (index !== currentIndex && index >= 0 && index < images.length) {
             setCurrentIndex(index);
         }
     };
@@ -143,7 +149,10 @@ const FullImageScreen = () => {
         </View>
     );
 
-    const currentItem = GALLERY_IMAGES[currentIndex];
+    const currentItem = images[currentIndex];
+    // Safeguard in case currentIndex is out of bounds (though it shouldn't be with checks)
+    if (!currentItem) return null;
+
     const isSaved = savedIds.includes(currentItem.id);
 
     return (
@@ -152,7 +161,7 @@ const FullImageScreen = () => {
 
             <FlatList
                 ref={flatListRef}
-                data={GALLERY_IMAGES}
+                data={images}
                 renderItem={renderItem}
                 keyExtractor={(item) => item.id}
                 pagingEnabled
@@ -166,7 +175,7 @@ const FullImageScreen = () => {
                     offset: height * index,
                     index,
                 })}
-                initialScrollIndex={initialIndex}
+                initialScrollIndex={validInitialIndex}
             />
 
             {/* Top Overlay UI */}
