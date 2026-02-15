@@ -27,7 +27,7 @@ const CategoryGridScreen = () => {
             style={styles.gridCard}
             onPress={() => navigation.navigate('FullImage', { initialIndex: item.globalIndex })}
         >
-            <Image source={item.source} style={styles.cardImage} />
+            <Image source={{ uri: item.imageUrl }} style={styles.cardImage} />
         </TouchableOpacity>
     );
 

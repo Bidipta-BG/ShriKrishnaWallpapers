@@ -5,7 +5,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useState } from 'react';
 import {
     Alert,
+    Linking,
+    Platform,
     ScrollView,
+    Share,
     StatusBar,
     StyleSheet,
     Text,
@@ -39,6 +42,60 @@ const SettingsScreen = () => {
     const handleBuy = () => {
         Alert.alert('Coming Soon', 'Payments are being integrated.');
     };
+
+    // --- New Feature Handlers ---
+
+    const handleShare = async () => {
+        try {
+            await Share.share({
+                message:
+                    'Check out this amazing Shri Krishna Daily Puja & Aarti app! 🌸 Perform daily rituals and get beautiful wallpapers. Download now: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnadailypujaaarti',
+            });
+        } catch (error) {
+            console.error('Error sharing:', error);
+        }
+    };
+
+    const handleRate = () => {
+        const packageName = 'com.thevibecoder.shrikrishnadailypujaaarti';
+        const url = Platform.OS === 'android'
+            ? `market://details?id=${packageName}`
+            : `https://play.google.com/store/apps/details?id=${packageName}`; // Fallback for now, iOS ID needed later
+
+        Linking.openURL(url).catch(err => {
+            console.error('Error opening store:', err);
+            // Fallback to web link if market:// fails
+            Linking.openURL(`https://play.google.com/store/apps/details?id=${packageName}`);
+        });
+    };
+
+    const handleContact = () => {
+        // Replace with your actual support email
+        Linking.openURL('mailto:support@axomitlab.com?subject=Shri Krishna App Feedback');
+    };
+
+    const handlePrivacy = () => {
+        // Replace with your actual privacy policy URL
+        Linking.openURL('https://bidipta-bg.github.io/ShriKrishnaWallpapers/privacy-policy.html');
+    };
+
+    const handleAbout = () => {
+        navigation.navigate('About');
+    };
+
+    const handleLanguage = () => {
+        navigation.navigate('LanguageSelection'); // Using existing screen
+    };
+
+    const MenuOption = ({ icon, title, onPress, color = '#fff' }) => (
+        <TouchableOpacity style={styles.menuOption} onPress={onPress}>
+            <View style={[styles.iconContainer, { backgroundColor: '#1a1a1a' }]}>
+                <Ionicons name={icon} size={22} color={color} />
+            </View>
+            <Text style={styles.menuText}>{title}</Text>
+            <Ionicons name="chevron-forward" size={20} color="#666" />
+        </TouchableOpacity>
+    );
 
     return (
         <View style={styles.container}>
@@ -126,6 +183,50 @@ const SettingsScreen = () => {
                     </TouchableOpacity>
                 </View>
 
+                {/* New Feature List */}
+                <View style={styles.menuSection}>
+                    <Text style={styles.sectionHeader}>Support & Info</Text>
+
+                    <MenuOption
+                        icon="share-social"
+                        title="Share the Devotion"
+                        onPress={handleShare}
+                        color="#4dabf7"
+                    />
+                    <MenuOption
+                        icon="star"
+                        title="Rate Us"
+                        onPress={handleRate}
+                        color="#FFD700"
+                    />
+                    <MenuOption
+                        icon="mail"
+                        title="Contact / Feedback"
+                        onPress={handleContact}
+                        color="#ff6b6b"
+                    />
+                    {/* <MenuOption
+                        icon="language"
+                        title="Change Language"
+                        onPress={handleLanguage}
+                        color="#9c6ce6"
+                    /> */}
+                    <MenuOption
+                        icon="shield-checkmark"
+                        title="Privacy Policy"
+                        onPress={handlePrivacy}
+                        color="#4caf50"
+                    />
+                    <MenuOption
+                        icon="information-circle"
+                        title="About Us"
+                        onPress={handleAbout}
+                        color="#fff"
+                    />
+                </View>
+
+                <Text style={styles.versionText}>Version 1.0.0</Text>
+
             </ScrollView>
         </View>
     );
@@ -142,8 +243,6 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: 15,
         paddingBottom: 15,
-        // borderBottomWidth: 1,
-        // borderBottomColor: '#1A1A1A',
     },
     backButton: {
         width: 40,
@@ -153,7 +252,7 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 22,
         fontWeight: 'bold',
-        color: '#9c6ce6', // Purple title as in screenshot
+        color: '#9c6ce6',
         textAlign: 'center',
         flex: 1,
     },
@@ -170,7 +269,7 @@ const styles = StyleSheet.create({
     },
     cardHeader: {
         flexDirection: 'row',
-        alignItems: 'center', // Align properly
+        alignItems: 'center',
         marginBottom: 15,
     },
     iconCircleRed: {
@@ -243,7 +342,7 @@ const styles = StyleSheet.create({
         lineHeight: 20,
     },
     buyButton: {
-        backgroundColor: '#4caf50', // Green
+        backgroundColor: '#4caf50',
         paddingVertical: 12,
         borderRadius: 25,
         alignItems: 'center',
@@ -256,7 +355,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
     },
     coinsCard: {
-        backgroundColor: '#1a1a10', // Slight gold tint bg
+        backgroundColor: '#1a1a10',
         borderColor: '#333',
     },
     coinBalance: {
@@ -264,38 +363,46 @@ const styles = StyleSheet.create({
         fontSize: 24,
         fontWeight: 'bold',
     },
-    settingsList: {
-        marginTop: 10,
+    // New Styles for Menu
+    menuSection: {
+        marginBottom: 20,
     },
-    settingItem: {
+    sectionHeader: {
+        color: '#666',
+        fontSize: 14,
+        fontWeight: 'bold',
+        marginBottom: 15,
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+    },
+    menuOption: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 16,
-        // borderBottomWidth: 1,
-        // borderBottomColor: '#1A1A1A',
         backgroundColor: '#111',
+        padding: 16,
+        borderRadius: 16,
         marginBottom: 10,
-        paddingHorizontal: 15,
-        borderRadius: 15,
+        borderWidth: 1,
+        borderColor: '#1a1a1a',
     },
-    settingIconContainer: {
+    iconContainer: {
         width: 36,
         height: 36,
-        borderRadius: 12,
+        borderRadius: 10,
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 15,
     },
-    settingText: {
+    menuText: {
         color: '#fff',
         fontSize: 16,
         flex: 1,
         fontWeight: '500',
     },
     versionText: {
-        color: '#555',
+        color: '#444',
         textAlign: 'center',
-        marginTop: 20,
+        marginBottom: 30,
         fontSize: 12,
     },
 });

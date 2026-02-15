@@ -253,6 +253,8 @@ const DailyDarshanScreen = ({ navigation }) => {
                     const saved = await AsyncStorage.getItem('saved_background_image');
                     if (saved) {
                         setBackgroundImage(saved);
+                        // TEST: Force a broken URL to verify fallback
+                        // setBackgroundImage('https://this-url-does-not-exist.com/broken.jpg');
                     } else {
                         // Fallback to local bundled image
                         setBackgroundImage(Image.resolveAssetSource(require('../assets/images/default_darshan.jpg')).uri);
@@ -748,6 +750,10 @@ const DailyDarshanScreen = ({ navigation }) => {
                 source={{ uri: backgroundImage }}
                 style={styles.background}
                 resizeMode="cover"
+                onError={() => {
+                    // Fallback to local default if remote URL fails (offline/cache cleared)
+                    setBackgroundImage(Image.resolveAssetSource(require('../assets/images/default_darshan.jpg')).uri);
+                }}
             />
 
             {/* 2. Top Layer: Hanging Bells */}

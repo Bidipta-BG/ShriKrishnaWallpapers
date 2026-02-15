@@ -15,7 +15,6 @@ import {
     View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import GALLERY_IMAGES from '../data/galleryData';
 
 const SAVED_IMAGES_KEY = 'saved_images_ids';
 const SAVE_CAPACITY_KEY = 'save_capacity';
@@ -27,12 +26,13 @@ const FullImageScreen = () => {
     const insets = useSafeAreaInsets();
     const { width, height } = useWindowDimensions();
 
-    // Use passed images or fallback to full gallery
-    const images = route.params?.images ?? GALLERY_IMAGES;
+    const [allImages, setAllImages] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
     const initialIndex = route.params?.initialIndex ?? 0;
 
-    // Ensure initialIndex is valid for the current data source
-    const validInitialIndex = (initialIndex >= 0 && initialIndex < images.length) ? initialIndex : 0;
+
+    // Ensure initialIndex is valid
+    const validInitialIndex = (initialIndex >= 0 && initialIndex < allImages.length) ? initialIndex : 0;
 
     const [currentIndex, setCurrentIndex] = useState(validInitialIndex);
     const [savedIds, setSavedIds] = useState([]);
@@ -43,8 +43,49 @@ const FullImageScreen = () => {
     const flatListRef = useRef(null);
 
     useEffect(() => {
+        loadGalleryImages();
         loadData();
     }, []);
+
+    const loadGalleryImages = async () => {
+        try {
+            const response = await fetch('https://api.thevibecoderagency.online/api/srikrishna-aarti/gallery');
+            const data = await response.json();
+
+            // Build a flat array of all images from heroSections and categories
+            const flatImages = [];
+            const seenIds = new Set();
+
+            // Add images from hero sections
+            data.heroSections.forEach(section => {
+                section.items.forEach(item => {
+                    if (!seenIds.has(item.id)) {
+                        flatImages.push(item);
+                        seenIds.add(item.id);
+                    }
+                });
+            });
+
+            // Add images from categories
+            data.categories.forEach(category => {
+                category.items.forEach(item => {
+                    if (!seenIds.has(item.id)) {
+                        flatImages.push(item);
+                        seenIds.add(item.id);
+                    }
+                });
+            });
+
+            // Sort by globalIndex to maintain order
+            flatImages.sort((a, b) => a.globalIndex - b.globalIndex);
+
+            setAllImages(flatImages);
+            setIsLoading(false);
+        } catch (error) {
+            console.error('Failed to load images:', error);
+            setIsLoading(false);
+        }
+    };
 
     const loadData = async () => {
         try {
@@ -134,7 +175,7 @@ const FullImageScreen = () => {
     const handleScroll = (event) => {
         const contentOffset = event.nativeEvent.contentOffset.y;
         const index = Math.round(contentOffset / height);
-        if (index !== currentIndex && index >= 0 && index < images.length) {
+        if (index !== currentIndex && index >= 0 && index < allImages.length) {
             setCurrentIndex(index);
         }
     };
@@ -142,15 +183,33 @@ const FullImageScreen = () => {
     const renderItem = ({ item }) => (
         <View style={[styles.imageContainer, { width, height }]}>
             <Image
-                source={item.source}
+                source={{ uri: item.imageUrl }}
                 style={styles.fullImage}
                 resizeMode="contain"
             />
         </View>
     );
 
-    const currentItem = images[currentIndex];
-    // Safeguard in case currentIndex is out of bounds (though it shouldn't be with checks)
+    const currentItem = allImages[currentIndex];
+
+    // Loading state
+    if (isLoading || allImages.length === 0) {
+        return (
+            <View style={styles.container}>
+                <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
+                <View style={[styles.header, { top: insets.top + 10 }]}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
+                        <Ionicons name="arrow-back" size={28} color="#fff" />
+                    </TouchableOpacity>
+                </View>
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <Text style={{ color: '#fff' }}>Loading...</Text>
+                </View>
+            </View>
+        );
+    }
+
+    // Safeguard in case currentIndex is out of bounds
     if (!currentItem) return null;
 
     const isSaved = savedIds.includes(currentItem.id);
@@ -161,7 +220,7 @@ const FullImageScreen = () => {
 
             <FlatList
                 ref={flatListRef}
-                data={images}
+                data={allImages}
                 renderItem={renderItem}
                 keyExtractor={(item) => item.id}
                 pagingEnabled
@@ -202,7 +261,7 @@ const FullImageScreen = () => {
                 <View style={styles.buttonRow}>
                     <TouchableOpacity
                         style={styles.actionButton}
-                        onPress={() => setPujaBackground(currentItem.source)}
+                        onPress={() => setPujaBackground(currentItem.imageUrl)}
                     >
                         <View style={styles.iconCircle}>
                             <Ionicons name="image-outline" size={24} color="#4dabf7" />
@@ -229,7 +288,7 @@ const FullImageScreen = () => {
                     <TouchableOpacity
                         style={styles.actionButton}
                         onPress={() => navigation.navigate('ImageShare', {
-                            imageSource: currentItem.source,
+                            imageSource: currentItem.imageUrl,
                             imageId: currentItem.id
                         })}
                     >
@@ -245,7 +304,7 @@ const FullImageScreen = () => {
                     <TouchableOpacity
                         style={styles.actionButton}
                         onPress={() => navigation.navigate('ImageDownload', {
-                            imageSource: currentItem.source,
+                            imageSource: currentItem.imageUrl,
                             imageId: currentItem.id
                         })}
                     >

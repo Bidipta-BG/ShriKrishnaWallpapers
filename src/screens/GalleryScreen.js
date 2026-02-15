@@ -1,7 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useCallback, useState } from 'react';
 import {
+    ActivityIndicator,
     Dimensions,
     FlatList,
     Image,
@@ -21,87 +23,44 @@ const { width } = Dimensions.get('window');
 // We want 1.0 item + 0.7 item + 16px gap to fit in the remaining width.
 const ITEM_WIDTH = (width - 44) / 1.7;
 
-// This structure mirrors a typical backend response
-const GALLERY_DATA = {
-    promoBanner: {
-        isVisible: false,
-        title: "Maha Shivratri is Coming! 🔱",
-        subtitle: "Deepen your devotion. Install our Divine Shivji App for Aarti & Mantras.",
-        actionText: "Install Now",
-        daysLeft: 5,
-        targetUrl: "https://play.google.com/store/apps/details?id=com.shrikrishna.daily.puja.aarti", // Example URL
-        colors: ['#4e54c8', '#8f94fb'], // Deep purple/blue gradient
-    },
-    heroSections: [
-        {
-            id: 'shivratri',
-            title: 'Maha Shivratri 2026',
-            items: [
-                { id: '1', source: require('../assets/images/test_img1.jpg'), globalIndex: 0 },
-                { id: '2', source: require('../assets/images/test_img2.jpg'), globalIndex: 1 },
-                { id: '3', source: require('../assets/images/test_img3.jpg'), globalIndex: 2 },
-            ]
-        },
-        {
-            id: 'monday',
-            title: 'Monday Special',
-            items: [
-                { id: '4', source: require('../assets/images/test_img4.jpg'), globalIndex: 3 },
-                { id: '5', source: require('../assets/images/test_img5.jpg'), globalIndex: 4 },
-                { id: '6', source: require('../assets/images/test_img6.jpg'), globalIndex: 5 },
-            ]
-        }
-    ],
-    categories: [
-        {
-            id: '1',
-            title: 'Nanha Kanhiya',
-            source: require('../assets/images/test_img1.jpg'),
-            globalIndex: 0,
-            items: [
-                { id: 'c1_1', source: require('../assets/images/test_img1.jpg'), globalIndex: 0 },
-                { id: 'c1_2', source: require('../assets/images/test_img2.jpg'), globalIndex: 1 },
-                { id: 'c1_3', source: require('../assets/images/test_img3.jpg'), globalIndex: 2 },
-                { id: 'c1_4', source: require('../assets/images/test_img4.jpg'), globalIndex: 3 },
-            ]
-        },
-        {
-            id: '2',
-            title: 'Radha Krishna',
-            source: require('../assets/images/test_img6.jpg'),
-            globalIndex: 5,
-            items: [
-                { id: 'c2_1', source: require('../assets/images/test_img6.jpg'), globalIndex: 5 },
-                { id: 'c2_2', source: require('../assets/images/test_img7.jpg'), globalIndex: 6 },
-                { id: 'c2_3', source: require('../assets/images/test_img8.jpg'), globalIndex: 7 },
-            ]
-        },
-        {
-            id: '3',
-            title: 'Makkhan Chor',
-            source: require('../assets/images/test_img3.jpg'),
-            globalIndex: 2,
-            items: [
-                { id: 'c3_1', source: require('../assets/images/test_img3.jpg'), globalIndex: 2 },
-                { id: 'c3_2', source: require('../assets/images/test_img4.jpg'), globalIndex: 3 },
-            ]
-        },
-        { id: '4', title: 'Govardhan Nath', source: require('../assets/images/test_img5.jpg'), globalIndex: 4, items: [] },
-        { id: '5', title: 'Banke Bihari', source: require('../assets/images/test_img8.jpg'), globalIndex: 7, items: [] },
-        { id: '6', title: 'Dwarkadhish', source: require('../assets/images/test_img10.jpg'), globalIndex: 9, items: [] },
-    ]
-};
-
 const GalleryScreen = () => {
     const navigation = useNavigation();
     const insets = useSafeAreaInsets();
+
+    const [galleryData, setGalleryData] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    // Load gallery data when screen comes into focus
+    useFocusEffect(
+        useCallback(() => {
+            loadGalleryData();
+        }, [])
+    );
+
+    const loadGalleryData = async () => {
+        try {
+            setIsLoading(true);
+            setError(null);
+
+            const response = await fetch('https://api.thevibecoderagency.online/api/srikrishna-aarti/gallery');
+            const data = await response.json();
+
+            setGalleryData(data);
+        } catch (err) {
+            console.error('Failed to load gallery:', err);
+            setError('Failed to load gallery. Please check your connection.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const renderHorizontalItem = ({ item }) => (
         <TouchableOpacity
             style={styles.horizontalCard}
             onPress={() => navigation.navigate('FullImage', { initialIndex: item.globalIndex })}
         >
-            <Image source={item.source} style={styles.cardImage} />
+            <Image source={{ uri: item.imageUrl }} style={styles.cardImage} />
         </TouchableOpacity>
     );
 
@@ -112,12 +71,71 @@ const GalleryScreen = () => {
             onPress={() => navigation.navigate('CategoryGrid', { title: item.title, items: item.items })}
         >
             <View style={styles.exploreCardLeft}>
-                <Image source={item.source} style={styles.exploreThumb} />
+                <Image source={{ uri: item.thumbnailUrl }} style={styles.exploreThumb} />
                 <Text style={styles.exploreTitle}>{item.title}</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#9c6ce6" />
         </TouchableOpacity>
     );
+
+    // Loading state
+    if (isLoading) {
+        return (
+            <View style={styles.container}>
+                <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+                <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+                    <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.navigate('Settings')}>
+                        <Ionicons name="information-circle-outline" size={26} color="#fff" />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>Shri Krishna</Text>
+                    <View style={styles.noAdsContainer}>
+                        <View style={styles.noAdsCircle}>
+                            <Ionicons name="ban" size={14} color="#ff4444" />
+                            <Text style={styles.adsText}>NO ADS</Text>
+                        </View>
+                    </View>
+                </View>
+                <View style={styles.centerContent}>
+                    <ActivityIndicator size="large" color="#4dabf7" />
+                    <Text style={styles.loadingText}>Loading divine content...</Text>
+                </View>
+                <View style={styles.bottomNavContainer}>
+                    <BottomNav navigation={navigation} activeTab="Image" />
+                </View>
+            </View>
+        );
+    }
+
+    // Error state
+    if (error || !galleryData) {
+        return (
+            <View style={styles.container}>
+                <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+                <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+                    <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.navigate('Settings')}>
+                        <Ionicons name="information-circle-outline" size={26} color="#fff" />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>Shri Krishna</Text>
+                    <View style={styles.noAdsContainer}>
+                        <View style={styles.noAdsCircle}>
+                            <Ionicons name="ban" size={14} color="#ff4444" />
+                            <Text style={styles.adsText}>NO ADS</Text>
+                        </View>
+                    </View>
+                </View>
+                <View style={styles.centerContent}>
+                    <Ionicons name="cloud-offline-outline" size={60} color="#9c6ce6" />
+                    <Text style={styles.errorText}>{error || 'Failed to load content'}</Text>
+                    <TouchableOpacity style={styles.retryButton} onPress={loadGalleryData}>
+                        <Text style={styles.retryButtonText}>Retry</Text>
+                    </TouchableOpacity>
+                </View>
+                <View style={styles.bottomNavContainer}>
+                    <BottomNav navigation={navigation} activeTab="Image" />
+                </View>
+            </View>
+        );
+    }
 
     return (
         <View style={styles.container}>
@@ -148,14 +166,14 @@ const GalleryScreen = () => {
                 contentContainerStyle={{ paddingBottom: 110 }}
             >
                 {/* Dynamic Festival Promotion Banner */}
-                {GALLERY_DATA.promoBanner.isVisible && (
+                {galleryData.promoBanner.isVisible && (
                     <TouchableOpacity
                         activeOpacity={0.9}
-                        onPress={() => Linking.openURL(GALLERY_DATA.promoBanner.targetUrl)}
+                        onPress={() => Linking.openURL(galleryData.promoBanner.targetUrl)}
                         style={styles.bannerContainer}
                     >
                         <LinearGradient
-                            colors={GALLERY_DATA.promoBanner.colors}
+                            colors={galleryData.promoBanner.colors}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 1 }}
                             style={styles.bannerGradient}
@@ -164,16 +182,16 @@ const GalleryScreen = () => {
                                 <View style={styles.bannerLeft}>
                                     <View style={styles.festBadge}>
                                         <Text style={styles.festBadgeText}>
-                                            {GALLERY_DATA.promoBanner.daysLeft} DAYS LEFT
+                                            {galleryData.promoBanner.daysLeft} DAYS LEFT
                                         </Text>
                                     </View>
-                                    <Text style={styles.bannerTitle}>{GALLERY_DATA.promoBanner.title}</Text>
-                                    <Text style={styles.bannerSubtitle}>{GALLERY_DATA.promoBanner.subtitle}</Text>
+                                    <Text style={styles.bannerTitle}>{galleryData.promoBanner.title}</Text>
+                                    <Text style={styles.bannerSubtitle}>{galleryData.promoBanner.subtitle}</Text>
                                 </View>
 
                                 <View style={styles.bannerRight}>
                                     <View style={styles.installBtn}>
-                                        <Text style={styles.installBtnText}>{GALLERY_DATA.promoBanner.actionText}</Text>
+                                        <Text style={styles.installBtnText}>{galleryData.promoBanner.actionText}</Text>
                                         <Ionicons name="cloud-download-outline" size={16} color="#fff" />
                                     </View>
                                 </View>
@@ -183,7 +201,7 @@ const GalleryScreen = () => {
                 )}
 
                 {/* Dynamic Hero Sections (Horizontal) */}
-                {GALLERY_DATA.heroSections.map(section => (
+                {galleryData.heroSections.map(section => (
                     <View key={section.id} style={styles.section}>
                         <View style={styles.sectionHeader}>
                             <Text style={styles.sectionTitle}>{section.title}</Text>
@@ -212,7 +230,7 @@ const GalleryScreen = () => {
                 <View style={styles.section}>
                     <Text style={[styles.sectionTitle, { marginLeft: 20, marginBottom: 15, color: '#9c6ce6' }]}>All Category</Text>
                     <View style={styles.exploreGrid}>
-                        {GALLERY_DATA.categories.map(renderExploreItem)}
+                        {galleryData.categories.map(renderExploreItem)}
                     </View>
                 </View>
             </ScrollView>
@@ -419,6 +437,36 @@ const styles = StyleSheet.create({
     installBtnText: {
         color: '#fff',
         fontSize: 14,
+        fontWeight: 'bold',
+    },
+    centerContent: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 15,
+    },
+    loadingText: {
+        color: '#fff',
+        fontSize: 16,
+        marginTop: 10,
+    },
+    errorText: {
+        color: '#ff6b6b',
+        fontSize: 16,
+        textAlign: 'center',
+        marginTop: 10,
+        paddingHorizontal: 40,
+    },
+    retryButton: {
+        backgroundColor: '#9c6ce6',
+        paddingHorizontal: 30,
+        paddingVertical: 12,
+        borderRadius: 25,
+        marginTop: 20,
+    },
+    retryButtonText: {
+        color: '#fff',
+        fontSize: 16,
         fontWeight: 'bold',
     },
 });

@@ -1,4 +1,5 @@
 import { createStackNavigator } from '@react-navigation/stack';
+import AboutScreen from '../screens/AboutScreen';
 import CategoryGridScreen from '../screens/CategoryGridScreen';
 import ChantingScreen from '../screens/ChantingScreen';
 import DailyDarshanScreen from '../screens/DailyDarshanScreen';
@@ -43,6 +44,7 @@ const AppNavigator = ({ initialRouteName = 'LanguageSelection' }) => {
             <Stack.Screen name="Settings" component={SettingsScreen} />
             <Stack.Screen name="ImageShare" component={ImageShareScreen} />
             <Stack.Screen name="ImageDownload" component={ImageDownloadScreen} />
+            <Stack.Screen name="About" component={AboutScreen} />
         </Stack.Navigator>
     );
 };
