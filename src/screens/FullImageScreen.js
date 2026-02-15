@@ -16,6 +16,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+const PLACEHOLDER_IMAGE = require('../assets/images/default_darshan.jpg');
+
 const SAVED_IMAGES_KEY = 'saved_images_ids';
 const SAVE_CAPACITY_KEY = 'save_capacity';
 const COINS_KEY = 'divyaCoins';
@@ -29,6 +31,7 @@ const FullImageScreen = () => {
     const [allImages, setAllImages] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const initialIndex = route.params?.initialIndex ?? 0;
+    const passedImages = route.params?.allImages;
 
 
     // Ensure initialIndex is valid
@@ -49,6 +52,16 @@ const FullImageScreen = () => {
 
     const loadGalleryImages = async () => {
         try {
+            // If images were passed from GalleryScreen, use them directly
+            if (passedImages && passedImages.length > 0) {
+                console.log('Using passed images (no API call needed)');
+                setAllImages(passedImages);
+                setIsLoading(false);
+                return;
+            }
+
+            // Otherwise, fetch from API (fallback for deep links)
+            console.log('Fetching images from API');
             const response = await fetch('https://api.thevibecoderagency.online/api/srikrishna-aarti/gallery');
             const data = await response.json();
 
@@ -181,11 +194,13 @@ const FullImageScreen = () => {
     };
 
     const renderItem = ({ item }) => (
-        <View style={[styles.imageContainer, { width, height }]}>
+        <View style={{ width, height }}>
             <Image
                 source={{ uri: item.imageUrl }}
                 style={styles.fullImage}
                 resizeMode="contain"
+                defaultSource={PLACEHOLDER_IMAGE}
+                onError={(e) => console.log('Full image failed to load:', item.imageUrl)}
             />
         </View>
     );

@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+const PLACEHOLDER_IMAGE = require('../assets/images/default_darshan.jpg');
 const { width } = Dimensions.get('window');
 const COLUMN_WIDTH = (width - 45) / 2;
 
@@ -20,14 +21,22 @@ const CategoryGridScreen = () => {
     const route = useRoute();
     const insets = useSafeAreaInsets();
 
-    const { title, items } = route.params || { title: 'Category', items: [] };
+    const { title, items, allImages } = route.params || { title: 'Category', items: [], allImages: [] };
 
     const renderGridItem = ({ item }) => (
         <TouchableOpacity
             style={styles.gridCard}
-            onPress={() => navigation.navigate('FullImage', { initialIndex: item.globalIndex })}
+            onPress={() => navigation.navigate('FullImage', {
+                initialIndex: item.globalIndex,
+                allImages: allImages // Pass the pre-built array
+            })}
         >
-            <Image source={{ uri: item.imageUrl }} style={styles.cardImage} />
+            <Image
+                source={{ uri: item.imageUrl }}
+                style={styles.cardImage}
+                defaultSource={PLACEHOLDER_IMAGE}
+                onError={(e) => console.log('Image failed to load:', item.imageUrl)}
+            />
         </TouchableOpacity>
     );
 

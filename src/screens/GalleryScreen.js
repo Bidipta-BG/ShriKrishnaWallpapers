@@ -18,6 +18,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BottomNav from '../components/BottomNav';
 
+const PLACEHOLDER_IMAGE = require('../assets/images/default_darshan.jpg');
+
 const { width } = Dimensions.get('window');
 // Padding: 20 (List) + 8 (Card Margin) = 28 total offset from left.
 // We want 1.0 item + 0.7 item + 16px gap to fit in the remaining width.
@@ -38,29 +40,123 @@ const GalleryScreen = () => {
         }, [])
     );
 
+    // Validate API response structure
+    const validateGalleryData = (data) => {
+        if (!data) throw new Error('No data received from server');
+
+        if (!data.promoBanner || typeof data.promoBanner !== 'object') {
+            throw new Error('Invalid promoBanner data');
+        }
+
+        if (!Array.isArray(data.heroSections)) {
+            throw new Error('Invalid heroSections data');
+        }
+
+        if (!Array.isArray(data.categories)) {
+            throw new Error('Invalid categories data');
+        }
+
+        // Validate each hero section has required fields
+        data.heroSections.forEach((section, index) => {
+            if (!section.id || !section.title || !Array.isArray(section.items)) {
+                throw new Error(`Invalid hero section at index ${index}`);
+            }
+        });
+
+        // Validate each category has required fields
+        data.categories.forEach((category, index) => {
+            if (!category.id || !category.title || !Array.isArray(category.items)) {
+                throw new Error(`Invalid category at index ${index}`);
+            }
+        });
+
+        return true;
+    };
+
     const loadGalleryData = async () => {
         try {
             setIsLoading(true);
             setError(null);
 
             const response = await fetch('https://api.thevibecoderagency.online/api/srikrishna-aarti/gallery');
+
+            if (!response.ok) {
+                throw new Error(`Server error: ${response.status}`);
+            }
+
             const data = await response.json();
+
+            // Validate the response
+            validateGalleryData(data);
 
             setGalleryData(data);
         } catch (err) {
             console.error('Failed to load gallery:', err);
-            setError('Failed to load gallery. Please check your connection.');
+
+            // User-friendly error messages
+            let errorMessage = 'Unable to load gallery content.';
+
+            if (err.message.includes('Network request failed') || err.name === 'TypeError') {
+                errorMessage = 'No internet connection. Please check your network and try again.';
+            } else if (err.message.includes('Server error')) {
+                errorMessage = 'Server is temporarily unavailable. Please try again later.';
+            } else if (err.message.includes('Invalid')) {
+                errorMessage = 'Received invalid data from server. Please try again.';
+            }
+
+            setError(errorMessage);
         } finally {
             setIsLoading(false);
         }
     };
 
+    // Build flat array of all images for FullImageScreen
+    const buildFlatImageArray = () => {
+        if (!galleryData) return [];
+
+        const flatImages = [];
+        const seenIds = new Set();
+
+        // Add images from hero sections
+        galleryData.heroSections.forEach(section => {
+            section.items.forEach(item => {
+                if (!seenIds.has(item.id)) {
+                    flatImages.push(item);
+                    seenIds.add(item.id);
+                }
+            });
+        });
+
+        // Add images from categories
+        galleryData.categories.forEach(category => {
+            category.items.forEach(item => {
+                if (!seenIds.has(item.id)) {
+                    flatImages.push(item);
+                    seenIds.add(item.id);
+                }
+            });
+        });
+
+        // Sort by globalIndex
+        flatImages.sort((a, b) => a.globalIndex - b.globalIndex);
+
+        return flatImages;
+    };
+
     const renderHorizontalItem = ({ item }) => (
         <TouchableOpacity
             style={styles.horizontalCard}
-            onPress={() => navigation.navigate('FullImage', { initialIndex: item.globalIndex })}
+            onPress={() => navigation.navigate('FullImage', {
+                initialIndex: item.globalIndex,
+                allImages: buildFlatImageArray() // Pass pre-built array
+            })}
         >
-            <Image source={{ uri: item.imageUrl }} style={styles.cardImage} />
+            <Image
+                source={{ uri: item.imageUrl }}
+                style={styles.cardImage}
+                defaultSource={PLACEHOLDER_IMAGE}
+                onError={(e) => console.log('Image failed to load:', item.imageUrl)}
+            />
         </TouchableOpacity>
     );
 
@@ -68,10 +164,19 @@ const GalleryScreen = () => {
         <TouchableOpacity
             key={item.id}
             style={styles.exploreCard}
-            onPress={() => navigation.navigate('CategoryGrid', { title: item.title, items: item.items })}
+            onPress={() => navigation.navigate('CategoryGrid', {
+                title: item.title,
+                items: item.items,
+                allImages: buildFlatImageArray() // Pass for FullImage navigation
+            })}
         >
             <View style={styles.exploreCardLeft}>
-                <Image source={{ uri: item.thumbnailUrl }} style={styles.exploreThumb} />
+                <Image
+                    source={{ uri: item.thumbnailUrl }}
+                    style={styles.exploreThumb}
+                    defaultSource={PLACEHOLDER_IMAGE}
+                    onError={(e) => console.log('Thumbnail failed to load:', item.thumbnailUrl)}
+                />
                 <Text style={styles.exploreTitle}>{item.title}</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#9c6ce6" />

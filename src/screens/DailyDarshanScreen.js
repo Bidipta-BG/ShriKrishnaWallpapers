@@ -21,6 +21,7 @@ import BottomNav from '../components/BottomNav';
 import { useLanguage } from '../context/LanguageContext';
 
 const { width, height } = Dimensions.get('window');
+const PUJA_DURATION = 18000; // 18 seconds for a complete experience
 
 // --- Falling Flower Component ---
 const FLOWER_IMAGES = [
@@ -60,7 +61,7 @@ const FallingFlower = ({ index, onComplete }) => {
     useEffect(() => {
         // Target Y: Bottom Shelf area ~ (height - 190 range) - Moved UP by 30px
         // Add random variation to "pile" them naturally
-        const targetY = height - 70 + (Math.random() * 20);
+        const targetY = height - 160 + (Math.random() * 20);
 
         translateY.value = withDelay(
             randomDelay,
@@ -124,7 +125,7 @@ const FallingCoin = ({ index, onComplete }) => {
     const opacity = useSharedValue(1);
 
     useEffect(() => {
-        const targetY = height - 70 + (Math.random() * 20);
+        const targetY = height - 160 + (Math.random() * 20);
 
         translateY.value = withDelay(
             config.delay,
@@ -244,6 +245,7 @@ const DailyDarshanScreen = ({ navigation }) => {
     const route = useRoute();
 
     const [backgroundImage, setBackgroundImage] = useState(Image.resolveAssetSource(require('../assets/images/default_darshan.jpg')).uri);
+
 
     // Load saved background whenever screen gains focus
     useFocusEffect(
@@ -434,44 +436,45 @@ const DailyDarshanScreen = ({ navigation }) => {
         };
     }, []);
 
+    const stopBell = async () => {
+        cancelAnimation(bellRotation);
+        bellRotation.value = withTiming(0, { duration: 500 });
+        if (soundRef.current) {
+            try {
+                await soundRef.current.stopAsync();
+                await soundRef.current.unloadAsync();
+            } catch (e) { }
+            soundRef.current = null;
+        }
+        setIsRinging(false);
+    };
+
     const ringBell = async () => {
         if (isRinging) return;
         setIsRinging(true);
 
         try {
-            // 1. Start Sound
-            // Using local file at src/assets/sounds/bell_sound.mp3
             const { sound } = await Audio.Sound.createAsync(
                 require('../assets/sounds/bell-sound.mp3'),
                 { shouldPlay: true, isLooping: true }
             );
             soundRef.current = sound;
 
-            // 2. Start Animation
             bellRotation.value = withRepeat(
                 withSequence(
                     withTiming(15, { duration: 500, easing: Easing.inOut(Easing.ease) }),
                     withTiming(-15, { duration: 500, easing: Easing.inOut(Easing.ease) })
                 ),
-                -1, // Infinite loop
-                true // Auto-reverse
+                -1,
+                true
             );
 
-            // 3. Stop after Aarti duration (~13.5s)
-            setTimeout(async () => {
-                // Stop Animation
-                cancelAnimation(bellRotation);
-                bellRotation.value = withTiming(0, { duration: 500 });
-
-                // Stop Sound
-                if (soundRef.current) {
-                    await soundRef.current.stopAsync();
-                    await soundRef.current.unloadAsync();
-                    soundRef.current = null;
-                }
-                setIsRinging(false);
-            }, 13500);
-
+            // If NOT part of a full Aarti, start a local timer to stop
+            if (!isAartiActive) {
+                setTimeout(() => {
+                    if (!isAartiActive) stopBell();
+                }, PUJA_DURATION);
+            }
         } catch (error) {
             console.log('Error playing sound:', error);
             setIsRinging(false);
@@ -574,36 +577,66 @@ const DailyDarshanScreen = ({ navigation }) => {
 
 
 
+    const stopAllPujaEffects = useCallback(() => {
+        console.log('--- CLEANUP TRIGGERED ---');
+
+        // 1. Stop Bell
+        stopBell();
+
+        // 2. Stop Shankh
+        if (shankhSoundRef.current) {
+            shankhSoundRef.current.stopAsync().catch(() => { });
+            shankhSoundRef.current.unloadAsync().catch(() => { });
+            shankhSoundRef.current = null;
+        }
+        setIsShankhPlaying(false);
+
+        // 3. Stop Interval Generation
+        if (showerIntervalRef.current) {
+            clearInterval(showerIntervalRef.current);
+            showerIntervalRef.current = null;
+        }
+        if (coinIntervalRef.current) {
+            clearInterval(coinIntervalRef.current);
+            coinIntervalRef.current = null;
+        }
+    }, []);
+
+    // FAIL-SAFE 1: Watch isAartiActive for the stop signal
+    useEffect(() => {
+        if (!isAartiActive) {
+            stopAllPujaEffects();
+        }
+    }, [isAartiActive, stopAllPujaEffects]);
+
     const performAarti = () => {
         if (isAartiActive) return;
         setIsAartiActive(true);
 
-        // --- Grand Puja Mode ---
-        // Trigger all other effects
+        // Trigger all effects
         playShankh();
-        ringBell(); // Add Bells to the Puja!
+        ringBell();
         triggerFlowerShower();
         triggerCoinShower();
 
-        // 1. Scale Up slightly
         aartiScale.value = withTiming(1.5, { duration: 500 });
 
-        // 2. Start Circular Motion (0 -> 360 * 4 rounds)
-        // Speed check: 3 rounds took 10s (3.33s/round).
-        // 4 rounds should take ~13.33s to keep same speed.
-        aartiRotation.value = withTiming(360 * 4, {
-            duration: 13333,
+        aartiRotation.value = withTiming(360 * 6, {
+            duration: PUJA_DURATION,
             easing: Easing.linear
         }, (finished) => {
             if (finished) {
-                // Instantly reset rotation (since 360*4 == 0 degrees)
                 aartiRotation.value = 0;
-
-                // Animate scale back down
                 aartiScale.value = withTiming(1, { duration: 1000 });
                 runOnJS(setIsAartiActive)(false);
             }
         });
+
+        // FAIL-SAFE 2: Hard stop after 19 seconds (JS Side)
+        setTimeout(() => {
+            setIsAartiActive(false);
+            stopAllPujaEffects();
+        }, PUJA_DURATION + 1000);
     };
 
     const diyaStyle = useAnimatedStyle(() => {
@@ -630,36 +663,36 @@ const DailyDarshanScreen = ({ navigation }) => {
             ]
         };
     });
-
     // --- Flower Shower State ---
     const [activeFlowers, setActiveFlowers] = useState([]);
     const showerIntervalRef = useRef(null);
 
+    const stopFlowerShower = () => {
+        if (showerIntervalRef.current) {
+            clearInterval(showerIntervalRef.current);
+            showerIntervalRef.current = null;
+        }
+    };
+
     const triggerFlowerShower = () => {
-        // Prevent multiple intervals
         if (showerIntervalRef.current) return;
 
-        // Function to add a small batch of flowers
+        const startTime = Date.now();
         const addBatch = () => {
+            // FAIL-SAFE 3: Self-terminating interval
+            if (Date.now() - startTime > (PUJA_DURATION - 5000)) {
+                stopFlowerShower();
+                return;
+            }
+
             const newFlowers = Array.from({ length: 2 }, (_, i) => ({
-                id: `${Date.now()}-${i}-${Math.random()}`, // Ensure unique ID
+                id: `${Date.now()}-${i}-${Math.random()}`,
             }));
             setActiveFlowers(prev => [...prev, ...newFlowers]);
         };
 
-        // Start immediate batch
         addBatch();
-
-        // Continue adding batches every 300ms for 10 seconds (Continuous flow)
         showerIntervalRef.current = setInterval(addBatch, 300);
-
-        // Stop generating after 10 seconds
-        setTimeout(() => {
-            if (showerIntervalRef.current) {
-                clearInterval(showerIntervalRef.current);
-                showerIntervalRef.current = null;
-            }
-        }, 10000);
     };
 
     const removeFlower = (index) => {
@@ -675,28 +708,39 @@ const DailyDarshanScreen = ({ navigation }) => {
         };
     }, []);
 
-    // Clear flowers state completely after 15s (10s generation + 5s fall time)
+    // Clear flowers state after intervals stop and items finish falling
     useEffect(() => {
-        if (activeFlowers.length > 0) {
+        if (activeFlowers.length > 0 && !showerIntervalRef.current) {
             const timer = setTimeout(() => {
-                // Only clear if no new generation (simple check)
-                if (!showerIntervalRef.current) {
-                    setActiveFlowers([]);
-                }
-            }, 15000);
+                setActiveFlowers([]);
+            }, 8000); // Give time for last batch to fall
             return () => clearTimeout(timer);
         }
-    }, [activeFlowers]);
+    }, [activeFlowers.length, showerIntervalRef.current]);
 
     // --- Coin Shower State ---
     const [activeCoins, setActiveCoins] = useState([]);
     const coinIntervalRef = useRef(null);
 
+
+    const stopCoinShower = () => {
+        if (coinIntervalRef.current) {
+            clearInterval(coinIntervalRef.current);
+            coinIntervalRef.current = null;
+        }
+    };
+
     const triggerCoinShower = () => {
         if (coinIntervalRef.current) return;
 
-        // ... existing coin logic ...
+        const startTime = Date.now();
         const addBatch = () => {
+            // FAIL-SAFE 3: Self-terminating interval
+            if (Date.now() - startTime > (PUJA_DURATION - 5000)) {
+                stopCoinShower();
+                return;
+            }
+
             const newCoins = Array.from({ length: 2 }, (_, i) => ({
                 id: `${Date.now()}-${i}-${Math.random()}`,
             }));
@@ -705,13 +749,6 @@ const DailyDarshanScreen = ({ navigation }) => {
 
         addBatch();
         coinIntervalRef.current = setInterval(addBatch, 300);
-
-        setTimeout(() => {
-            if (coinIntervalRef.current) {
-                clearInterval(coinIntervalRef.current);
-                coinIntervalRef.current = null;
-            }
-        }, 10000);
     };
 
     const removeCoin = (index) => { };
@@ -722,14 +759,15 @@ const DailyDarshanScreen = ({ navigation }) => {
         };
     }, []);
 
+    // Clear coins state after intervals stop and items finish falling
     useEffect(() => {
-        if (activeCoins.length > 0) {
+        if (activeCoins.length > 0 && !coinIntervalRef.current) {
             const timer = setTimeout(() => {
-                if (!coinIntervalRef.current) setActiveCoins([]);
-            }, 15000);
+                setActiveCoins([]);
+            }, 8000); // Give time for last batch to fall
             return () => clearTimeout(timer);
         }
-    }, [activeCoins]);
+    }, [activeCoins.length, coinIntervalRef.current]);
 
     return (
         <View style={styles.container}>
@@ -779,7 +817,7 @@ const DailyDarshanScreen = ({ navigation }) => {
 
 
             {/* 4. Side Icons Layer */}
-            <View style={styles.sidesContainer}>
+            <View style={[styles.sidesContainer, { bottom: insets.bottom + 145 }]}>
                 {/* Left Column - 3 buttons */}
                 <View style={styles.leftColumn}>
                     <SideIcon
@@ -863,7 +901,7 @@ const DailyDarshanScreen = ({ navigation }) => {
             </View>
 
             {/* Central Big Diya Layered Above EVERYTING - Now outside bottomNav to avoid pushing layout */}
-            <View style={styles.centerThaliContainer} pointerEvents="box-none">
+            <View style={[styles.centerThaliContainer, { bottom: insets.bottom + 35 }]} pointerEvents="box-none">
                 <TouchableOpacity onPress={performAarti} activeOpacity={0.8}>
                     <Animated.Image
                         source={require('../assets/images/my_diya.png')}
@@ -935,7 +973,7 @@ const styles = StyleSheet.create({
     // --- Side Icons ---
     sidesContainer: {
         position: 'absolute',
-        bottom: 145, // Increased to move icons up so labels don't hide behind tab bar
+        bottom: 180, // Increased to move icons up so labels don't hide behind tab bar
         left: 0,
         right: 0,
         flexDirection: 'row',
@@ -990,7 +1028,7 @@ const styles = StyleSheet.create({
     },
     centerThaliContainer: {
         position: 'absolute',
-        bottom: 33,
+        bottom: 80,
         left: 0,
         right: 0,
         alignItems: 'center',
