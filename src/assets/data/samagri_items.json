@@ -1,0 +1,252 @@
+[
+    {
+        "category": "🌸 Flowers & Leaves",
+        "items": [
+            {
+                "id": "f1",
+                "name": "Marigold",
+                "price": 5
+            },
+            {
+                "id": "f2",
+                "name": "Rose",
+                "price": 10
+            },
+            {
+                "id": "f3",
+                "name": "Bel Patra",
+                "price": 5
+            },
+            {
+                "id": "f4",
+                "name": "Vaijayanti",
+                "price": 15
+            },
+            {
+                "id": "f5",
+                "name": "Jasmine",
+                "price": 10
+            },
+            {
+                "id": "f6",
+                "name": "Madhumalti",
+                "price": 10
+            },
+            {
+                "id": "f7",
+                "name": "Hibiscus",
+                "price": 5
+            },
+            {
+                "id": "f8",
+                "name": "White Rose",
+                "price": 10
+            },
+            {
+                "id": "f9",
+                "name": "Agastya",
+                "price": 15
+            },
+            {
+                "id": "f10",
+                "name": "Lajvanti",
+                "price": 10
+            },
+            {
+                "id": "f11",
+                "name": "Lotus",
+                "price": 20
+            },
+            {
+                "id": "f12",
+                "name": "Neelkamal",
+                "price": 25
+            }
+        ]
+    },
+    {
+        "category": "🔔 Sound",
+        "items": [
+            {
+                "id": "s1",
+                "name": "Shankh",
+                "price": 50
+            },
+            {
+                "id": "s2",
+                "name": "Bell",
+                "price": 30
+            },
+            {
+                "id": "s3",
+                "name": "Majira",
+                "price": 40
+            },
+            {
+                "id": "s4",
+                "name": "Drum",
+                "price": 60
+            }
+        ]
+    },
+    {
+        "category": "🌺 Garlands",
+        "items": [
+            {
+                "id": "g1",
+                "name": "Normal Garland",
+                "price": 15
+            },
+            {
+                "id": "g2",
+                "name": "Marigold Garland",
+                "price": 20
+            },
+            {
+                "id": "g3",
+                "name": "Rose Garland",
+                "price": 30
+            },
+            {
+                "id": "g4",
+                "name": "White Aak Garland",
+                "price": 25
+            }
+        ]
+    },
+    {
+        "category": "🪔 Thali",
+        "items": [
+            {
+                "id": "t1",
+                "name": "Classic Thali",
+                "price": 100
+            },
+            {
+                "id": "t2",
+                "name": "Silver Thali",
+                "price": 500
+            },
+            {
+                "id": "t3",
+                "name": "Gold Plated Thali",
+                "price": 1000
+            },
+            {
+                "id": "t4",
+                "name": "Kundan Thali",
+                "price": 800
+            }
+        ]
+    },
+    {
+        "category": "🕯 Dhup & Diya",
+        "items": [
+            {
+                "id": "dd1",
+                "name": "Oil Diya",
+                "price": 5
+            },
+            {
+                "id": "dd2",
+                "name": "Camphor",
+                "price": 5
+            },
+            {
+                "id": "dd3",
+                "name": "Dhup",
+                "price": 5
+            },
+            {
+                "id": "dd4",
+                "name": "Ghee Diya",
+                "price": 10
+            },
+            {
+                "id": "dd5",
+                "name": "Five-Faced Diya",
+                "price": 25
+            }
+        ]
+    },
+    {
+        "category": "🍬 Samagri",
+        "items": [
+            {
+                "id": "sa1",
+                "name": "Nariyal Barfi",
+                "price": 20
+            },
+            {
+                "id": "sa2",
+                "name": "Panchamrit",
+                "price": 15
+            },
+            {
+                "id": "sa3",
+                "name": "Gangajal",
+                "price": 10
+            },
+            {
+                "id": "sa4",
+                "name": "Sandalwood",
+                "price": 15
+            },
+            {
+                "id": "sa5",
+                "name": "Besan Laddoo",
+                "price": 20
+            },
+            {
+                "id": "sa6",
+                "name": "Boondi Laddoo",
+                "price": 20
+            },
+            {
+                "id": "sa7",
+                "name": "Fruits",
+                "price": 30
+            },
+            {
+                "id": "sa8",
+                "name": "Kheer",
+                "price": 25
+            },
+            {
+                "id": "sa9",
+                "name": "Halwa",
+                "price": 25
+            },
+            {
+                "id": "sa10",
+                "name": "Chappan Bhog",
+                "price": 200
+            }
+        ]
+    },
+    {
+        "category": "💰 Coins",
+        "items": [
+            {
+                "id": "c1",
+                "name": "Normal Coins",
+                "price": 0
+            },
+            {
+                "id": "c2",
+                "name": "Bronze Coins",
+                "price": 50
+            },
+            {
+                "id": "c3",
+                "name": "Silver Coins",
+                "price": 100
+            },
+            {
+                "id": "c4",
+                "name": "Gold Coins",
+                "price": 250
+            }
+        ]
+    }
+]

@@ -11,7 +11,7 @@ import ImageDownloadScreen from '../screens/ImageDownloadScreen';
 import ImageShareScreen from '../screens/ImageShareScreen';
 import LanguageSelectionScreen from '../screens/LanguageSelectionScreen';
 import MantraSelectionScreen from '../screens/MantraSelectionScreen';
-import ReelsScreen from '../screens/ReelsScreen';
+import SamagriScreen from '../screens/SamagriScreen';
 import SavedScreen from '../screens/SavedScreen';
 import ScheduleDarshanScreen from '../screens/ScheduleDarshanScreen';
 import SettingsScreen from '../screens/SettingsScreen';
@@ -38,7 +38,7 @@ const AppNavigator = ({ initialRouteName = 'LanguageSelection' }) => {
             <Stack.Screen name="FullImage" component={FullImageScreen} />
             <Stack.Screen name="Chanting" component={ChantingScreen} />
             <Stack.Screen name="ScheduleDarshan" component={ScheduleDarshanScreen} />
-            <Stack.Screen name="Reels" component={ReelsScreen} />
+            <Stack.Screen name="Samagri" component={SamagriScreen} />
             <Stack.Screen name="Generate" component={GenerateScreen} />
             <Stack.Screen name="Saved" component={SavedScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
