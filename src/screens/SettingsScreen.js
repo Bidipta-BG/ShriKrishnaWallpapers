@@ -21,26 +21,53 @@ const SettingsScreen = () => {
     const navigation = useNavigation();
     const insets = useSafeAreaInsets();
     const [coins, setCoins] = useState(0);
+    const [isWatchingAd, setIsWatchingAd] = useState(false);
+    const [adFreeUntil, setAdFreeUntil] = useState(null);
 
     useFocusEffect(
         useCallback(() => {
-            loadCoins();
+            loadData();
         }, [])
     );
 
-    const loadCoins = async () => {
+    const loadData = async () => {
         try {
-            const storedCoins = await AsyncStorage.getItem('divyaCoins');
-            if (storedCoins) {
-                setCoins(parseInt(storedCoins));
-            }
+            const [storedCoins, storedAdFree] = await Promise.all([
+                AsyncStorage.getItem('divyaCoins'),
+                AsyncStorage.getItem('ad_free_expiry')
+            ]);
+
+            if (storedCoins) setCoins(parseInt(storedCoins));
+            if (storedAdFree) setAdFreeUntil(parseInt(storedAdFree));
+
         } catch (error) {
-            console.error('Error loading coins:', error);
+            console.error('Error loading data:', error);
         }
     };
 
-    const handleBuy = () => {
-        Alert.alert('Coming Soon', 'Payments are being integrated.');
+    const handleWatchAd = async (type) => {
+        setIsWatchingAd(true);
+
+        // Simulate ad watching duration (3 seconds)
+        setTimeout(async () => {
+            try {
+                if (type === 'coins') {
+                    const newCoins = coins + 2;
+                    setCoins(newCoins);
+                    await AsyncStorage.setItem('divyaCoins', newCoins.toString());
+                    Alert.alert('Blessed!', 'You earned 2 Divya Coins for your devotion.');
+                } else if (type === 'no_ads') {
+                    const expiry = Date.now() + 30 * 60 * 1000; // 30 minutes
+                    setAdFreeUntil(expiry);
+                    await AsyncStorage.setItem('ad_free_expiry', expiry.toString());
+                    Alert.alert('Divine Serenity', 'Ads have been removed for the next 30 minutes.');
+                }
+            } catch (error) {
+                console.error('Error rewarding:', error);
+            } finally {
+                setIsWatchingAd(false);
+            }
+        }, 3000);
     };
 
     // --- New Feature Handlers ---
@@ -114,49 +141,6 @@ const SettingsScreen = () => {
                 contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 20 }]}
                 showsVerticalScrollIndicator={false}
             >
-                {/* Remove Ads Card */}
-                <LinearGradient
-                    colors={['#1a1a1a', '#2d2d2d']}
-                    style={styles.card}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                >
-                    <View style={styles.cardHeader}>
-                        <View style={styles.iconCircleRed}>
-                            <Text style={styles.adsIconText}>ADS</Text>
-                            <View style={styles.strikeThrough} />
-                        </View>
-                        <View style={styles.cardTitleContainer}>
-                            <Text style={styles.cardTitle}>Remove Ads – Lifetime</Text>
-                            <View style={styles.priceRow}>
-                                <Text style={styles.price}>₹49.00</Text>
-                                <View style={styles.tagContainer}>
-                                    <Text style={styles.tagText}>One-time payment</Text>
-                                </View>
-                            </View>
-                        </View>
-                    </View>
-
-                    <View style={styles.featuresList}>
-                        <View style={styles.featureItem}>
-                            <Ionicons name="checkmark-circle" size={20} color="#9c6ce6" />
-                            <Text style={styles.featureText}>Clean & distraction-free experience</Text>
-                        </View>
-                        <View style={styles.featureItem}>
-                            <Ionicons name="checkmark-circle" size={20} color="#9c6ce6" />
-                            <Text style={styles.featureText}>Remove ads forever</Text>
-                        </View>
-                        <View style={styles.featureItem}>
-                            <Ionicons name="checkmark-circle" size={20} color="#9c6ce6" />
-                            <Text style={styles.featureText}>No subscriptions</Text>
-                        </View>
-                    </View>
-
-                    <TouchableOpacity style={styles.buyButton} onPress={handleBuy}>
-                        <Text style={styles.buyButtonText}>BUY</Text>
-                    </TouchableOpacity>
-                </LinearGradient>
-
                 {/* Coins Card */}
                 <View style={[styles.card, styles.coinsCard]}>
                     <View style={styles.cardHeader}>
@@ -178,10 +162,60 @@ const SettingsScreen = () => {
                         </View>
                     </View>
 
-                    <TouchableOpacity style={[styles.buyButton, { backgroundColor: '#4caf50' }]} onPress={handleBuy}>
-                        <Text style={styles.buyButtonText}>BUY</Text>
+                    <TouchableOpacity style={[styles.buyButton, { backgroundColor: '#4caf50' }]} onPress={() => handleWatchAd('coins')}>
+                        <Text style={styles.buyButtonText}>WATCH AD (+2)</Text>
                     </TouchableOpacity>
                 </View>
+
+                {/* Remove Ads Card */}
+                <LinearGradient
+                    colors={['#1a1a1a', '#2d2d2d']}
+                    style={styles.card}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                >
+                    <View style={styles.cardHeader}>
+                        <View style={styles.iconCircleRed}>
+                            <Text style={styles.adsIconText}>ADS</Text>
+                            <View style={styles.strikeThrough} />
+                        </View>
+                        <View style={styles.cardTitleContainer}>
+                            <Text style={styles.cardTitle}>Remove Ads – 30 Minutes</Text>
+                            <View style={styles.priceRow}>
+                                <Text style={styles.price}>FREE</Text>
+                                <View style={styles.tagContainer}>
+                                    <Text style={styles.tagText}>Watch ad to unlock</Text>
+                                </View>
+                            </View>
+                        </View>
+                    </View>
+
+                    <View style={styles.featuresList}>
+                        <View style={styles.featureItem}>
+                            <Ionicons name="checkmark-circle" size={20} color="#9c6ce6" />
+                            <Text style={styles.featureText}>Clean & distraction-free experience</Text>
+                        </View>
+                        <View style={styles.featureItem}>
+                            <Ionicons name="checkmark-circle" size={20} color="#9c6ce6" />
+                            <Text style={styles.featureText}>Remove ads forever</Text>
+                        </View>
+                        <View style={styles.featureItem}>
+                            <Ionicons name="checkmark-circle" size={20} color="#9c6ce6" />
+                            <Text style={styles.featureText}>No subscriptions</Text>
+                        </View>
+                    </View>
+
+                    <TouchableOpacity
+                        style={[styles.buyButton, adFreeUntil > Date.now() && styles.disabledButton]}
+                        onPress={() => handleWatchAd('no_ads')}
+                        disabled={adFreeUntil > Date.now()}
+                    >
+                        <Text style={styles.buyButtonText}>
+                            {adFreeUntil > Date.now() ? 'ACTIVE' : 'WATCH AD'}
+                        </Text>
+                    </TouchableOpacity>
+                </LinearGradient>
+
 
                 {/* New Feature List */}
                 <View style={styles.menuSection}>
@@ -404,6 +438,32 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginBottom: 30,
         fontSize: 12,
+    },
+    disabledButton: {
+        backgroundColor: '#444',
+        opacity: 0.7,
+    },
+    // Ad Overlay
+    adOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.9)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 1000,
+    },
+    adContainer: {
+        alignItems: 'center',
+        gap: 15,
+    },
+    adText: {
+        color: '#fff',
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginTop: 10,
+    },
+    adSubText: {
+        color: '#aaa',
+        fontSize: 14,
     },
 });
 

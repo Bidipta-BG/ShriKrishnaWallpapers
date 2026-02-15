@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useState } from 'react';
 import {
+    ActivityIndicator,
     Dimensions,
     FlatList,
     Image,
@@ -13,7 +14,6 @@ import {
     View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import GALLERY_IMAGES from '../data/galleryData';
 
 const { width } = Dimensions.get('window');
 const COLUMN_WIDTH = (width - 45) / 2;
@@ -22,6 +22,7 @@ const SAVED_IMAGES_KEY = 'saved_images_ids';
 const SavedScreen = ({ navigation }) => {
     const insets = useSafeAreaInsets();
     const [savedImages, setSavedImages] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
 
     useFocusEffect(
         useCallback(() => {
@@ -31,17 +32,39 @@ const SavedScreen = ({ navigation }) => {
 
     const loadSavedImages = async () => {
         try {
-            const storedIds = await AsyncStorage.getItem(SAVED_IMAGES_KEY);
+            setIsLoading(true);
+            const [storedIds, response] = await Promise.all([
+                AsyncStorage.getItem(SAVED_IMAGES_KEY),
+                fetch('https://api.thevibecoderagency.online/api/srikrishna-aarti/gallery')
+            ]);
+
+            if (!response.ok) throw new Error('Failed to fetch gallery');
+            const data = await response.json();
+
+            // Flatten all images from API
+            const allImages = [];
+            const seenIds = new Set();
+
+            [...data.heroSections, ...data.categories].forEach(section => {
+                section.items.forEach(item => {
+                    if (!seenIds.has(item.id)) {
+                        allImages.push(item);
+                        seenIds.add(item.id);
+                    }
+                });
+            });
+
             if (storedIds) {
                 const ids = JSON.parse(storedIds);
-                // Filter GALLERY_IMAGES to find the ones that match saved IDs
-                const filtered = GALLERY_IMAGES.filter(img => ids.includes(img.id));
+                const filtered = allImages.filter(img => ids.includes(img.id));
                 setSavedImages(filtered);
             } else {
                 setSavedImages([]);
             }
         } catch (error) {
             console.error('Error loading saved images:', error);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -49,11 +72,15 @@ const SavedScreen = ({ navigation }) => {
         <TouchableOpacity
             style={styles.gridCard}
             onPress={() => navigation.navigate('FullImage', {
-                initialIndex: index, // Pass globalIndex if displaying all, but here we display only saved
-                images: savedImages
+                initialIndex: index,
+                allImages: savedImages
             })}
         >
-            <Image source={item.source} style={styles.cardImage} />
+            <Image
+                source={{ uri: item.imageUrl }}
+                style={styles.cardImage}
+                defaultSource={require('../assets/images/default_darshan.jpg')}
+            />
         </TouchableOpacity>
     );
 
@@ -69,7 +96,12 @@ const SavedScreen = ({ navigation }) => {
                 <View style={{ width: 40 }} />
             </View>
 
-            {savedImages.length > 0 ? (
+            {isLoading ? (
+                <View style={styles.emptyContainer}>
+                    <ActivityIndicator size="large" color="#4dabf7" />
+                    <Text style={styles.emptySubText}>Fetching divine collection...</Text>
+                </View>
+            ) : savedImages.length > 0 ? (
                 <FlatList
                     data={savedImages}
                     renderItem={renderGridItem}

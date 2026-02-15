@@ -1,23 +1,59 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import { useState } from 'react';
-import { FlatList, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useCallback, useRef, useState } from 'react';
+import { Dimensions, FlatList, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import samagriItems from '../assets/data/samagri_items.json';
 import BottomNav from '../components/BottomNav';
+
+const REWARD_ITEM_IDS = ['f1', 's1', 't1', 'c1'];
 
 const SamagriScreen = () => {
     const navigation = useNavigation();
     const insets = useSafeAreaInsets();
     const [selectedCategory, setSelectedCategory] = useState(samagriItems[0].category);
+    const [isRewardActive, setIsRewardActive] = useState(false);
+    const mainListRef = useRef(null);
+    const categoryListRef = useRef(null);
 
-    const renderCategoryItem = ({ item }) => (
+    useFocusEffect(
+        useCallback(() => {
+            const checkRewardStatus = async () => {
+                try {
+                    const expiry = await AsyncStorage.getItem('samagri_unlock_expiry');
+                    if (expiry) {
+                        const now = Date.now();
+                        setIsRewardActive(now < parseInt(expiry));
+                    }
+                } catch (e) {
+                    console.error('Error checking reward status:', e);
+                }
+            };
+            checkRewardStatus();
+        }, [])
+    );
+
+    const onCategoryPress = (index, categoryName) => {
+        setSelectedCategory(categoryName);
+        mainListRef.current?.scrollToIndex({ index, animated: true });
+    };
+
+    const onScrollEnd = (e) => {
+        const index = Math.round(e.nativeEvent.contentOffset.x / e.nativeEvent.layoutMeasurement.width);
+        if (samagriItems[index]) {
+            setSelectedCategory(samagriItems[index].category);
+            categoryListRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.5 });
+        }
+    };
+
+    const renderCategoryItem = ({ item, index }) => (
         <TouchableOpacity
             style={[
                 styles.categoryButton,
                 selectedCategory === item.category && styles.selectedCategoryButton
             ]}
-            onPress={() => setSelectedCategory(item.category)}
+            onPress={() => onCategoryPress(index, item.category)}
         >
             <Text style={[
                 styles.categoryButtonText,
@@ -28,25 +64,52 @@ const SamagriScreen = () => {
         </TouchableOpacity>
     );
 
-    const renderStoreItem = ({ item }) => (
-        <View style={styles.itemCard}>
-            <View style={styles.itemImageContainer}>
-                <Ionicons
-                    name={getIconByCategory(selectedCategory)}
-                    size={40}
-                    color="#9c6ce6"
-                />
-            </View>
-            <View style={styles.itemInfo}>
-                <Text style={styles.itemName}>{item.name}</Text>
-                <View style={styles.priceContainer}>
-                    <Ionicons name="flash" size={14} color="#ffd700" />
-                    <Text style={styles.itemPrice}>{item.price} Divya Coins</Text>
+    const renderStoreItem = ({ item }) => {
+        const isUnlocked = isRewardActive && REWARD_ITEM_IDS.includes(item.id);
+
+        return (
+            <View style={[styles.itemCard, isUnlocked && styles.unlockedItemCard]}>
+                {isUnlocked && (
+                    <View style={styles.rewardBadge}>
+                        <Ionicons name="gift" size={10} color="#FFF" />
+                    </View>
+                )}
+                <View style={[styles.itemImageContainer, isUnlocked && { borderColor: '#ffd700' }]}>
+                    <Ionicons
+                        name={getIconByCategory(selectedCategory)}
+                        size={40}
+                        color={isUnlocked ? "#ffd700" : "#9c6ce6"}
+                    />
                 </View>
+                <View style={styles.itemInfo}>
+                    <Text style={styles.itemName}>{item.name}</Text>
+                    <View style={styles.priceContainer}>
+                        <Ionicons name="flash" size={14} color="#ffd700" />
+                        <Text style={styles.itemPrice}>{isUnlocked ? 'FREE' : `${item.price} Divya Coins`}</Text>
+                    </View>
+                </View>
+                <TouchableOpacity
+                    style={[styles.buyButton, isUnlocked && styles.activeButton]}
+                    disabled={isUnlocked}
+                >
+                    <Text style={[styles.buyButtonText, isUnlocked && styles.activeButtonText]}>
+                        {isUnlocked ? 'Active' : 'Get'}
+                    </Text>
+                </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.buyButton}>
-                <Text style={styles.buyButtonText}>Get</Text>
-            </TouchableOpacity>
+        );
+    };
+
+    const renderCategoryGrid = ({ item: categoryData }) => (
+        <View style={{ width: Dimensions.get('window').width }}>
+            <FlatList
+                data={categoryData.items}
+                renderItem={renderStoreItem}
+                keyExtractor={item => item.id}
+                numColumns={3}
+                contentContainerStyle={[styles.itemsList, { paddingBottom: insets.bottom + 100 }]}
+                showsVerticalScrollIndicator={false}
+            />
         </View>
     );
 
@@ -60,8 +123,6 @@ const SamagriScreen = () => {
         if (category.includes('Coins')) return 'cash';
         return 'star';
     };
-
-    const currentItems = samagriItems.find(c => c.category === selectedCategory)?.items || [];
 
     return (
         <View style={styles.container}>
@@ -82,6 +143,7 @@ const SamagriScreen = () => {
             {/* Categories Horizontal List */}
             <View style={styles.categoriesContainer}>
                 <FlatList
+                    ref={categoryListRef}
                     data={samagriItems}
                     renderItem={renderCategoryItem}
                     keyExtractor={item => item.category}
@@ -91,15 +153,22 @@ const SamagriScreen = () => {
                 />
             </View>
 
-            {/* Items Vertical Grid/List */}
+            {/* Main Swipeable Pager */}
             <FlatList
-                data={currentItems}
-                renderItem={renderStoreItem}
-                keyExtractor={item => item.id}
-                numColumns={3}
-                key={`store-grid-3`} // Force re-render when numColumns changes
-                contentContainerStyle={[styles.itemsList, { paddingBottom: insets.bottom + 100 }]}
-                showsVerticalScrollIndicator={false}
+                ref={mainListRef}
+                data={samagriItems}
+                renderItem={renderCategoryGrid}
+                keyExtractor={item => item.category}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                onMomentumScrollEnd={onScrollEnd}
+                getItemLayout={(data, index) => ({
+                    length: Dimensions.get('window').width,
+                    offset: Dimensions.get('window').width * index,
+                    index,
+                })}
+                removeClippedSubviews={false} // Important for rendering columns in paging
             />
 
             {/* Bottom Nav */}
@@ -248,6 +317,26 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
+    },
+    unlockedItemCard: {
+        borderColor: '#ffd700',
+        backgroundColor: '#1a1a10',
+    },
+    rewardBadge: {
+        position: 'absolute',
+        top: -5,
+        right: -5,
+        backgroundColor: '#ffd700',
+        padding: 4,
+        borderRadius: 10,
+        zIndex: 10,
+    },
+    activeButton: {
+        backgroundColor: '#ffd700',
+        borderColor: '#ffd700',
+    },
+    activeButtonText: {
+        color: '#000',
     },
 });
 

@@ -86,14 +86,14 @@ const BottomNav = ({ navigation, activeTab }) => {
                     <Text style={[styles.navLabel, activeTab === 'Samagri' && { color: '#9c6ce6' }]}>Samagri</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Saved')}>
-                    {/* Saved works offline if we have cached data, so no guard here for now */}
+                <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Settings')}>
+                    {/* Settings/More tab */}
                     <Ionicons
-                        name={activeTab === 'Saved' ? 'bookmark' : 'bookmark-outline'}
+                        name={activeTab === 'Settings' ? 'settings' : 'settings-outline'}
                         size={24}
-                        color={activeTab === 'Saved' ? '#9c6ce6' : '#FFF'}
+                        color={activeTab === 'Settings' ? '#9c6ce6' : '#FFF'}
                     />
-                    <Text style={[styles.navLabel, activeTab === 'Saved' && { color: '#9c6ce6' }]}>Saved</Text>
+                    <Text style={[styles.navLabel, activeTab === 'Settings' && { color: '#9c6ce6' }]}>More</Text>
                 </TouchableOpacity>
             </View>
 

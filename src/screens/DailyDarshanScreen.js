@@ -386,11 +386,13 @@ const DailyDarshanScreen = ({ navigation }) => {
 
             // Persist Data
             if (lastDate !== today) {
+                const expiry = Date.now() + 24 * 60 * 60 * 1000;
                 await AsyncStorage.setItem('lastDarshanDate', today);
                 await AsyncStorage.setItem('currentStreak', newStreak.toString());
                 await AsyncStorage.setItem('streakGoal', newGoal.toString());
                 await AsyncStorage.setItem('divyaCoins', newCoins.toString());
                 await AsyncStorage.setItem('punyaDays', newShields.toString());
+                await AsyncStorage.setItem('samagri_unlock_expiry', expiry.toString());
             }
 
             if (shouldAutoPlay) {

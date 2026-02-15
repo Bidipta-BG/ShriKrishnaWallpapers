@@ -262,11 +262,12 @@ const FullImageScreen = () => {
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                    style={styles.noAdsContainer}
+                    style={styles.savedButtonContainer}
+                    onPress={() => navigation.navigate('Saved')}
                 >
-                    <View style={styles.noAdsCircle}>
-                        <Ionicons name="ban" size={14} color="#ff4444" />
-                        <Text style={styles.adsText}>NO ADS</Text>
+                    <View style={styles.savedButtonCircle}>
+                        <Ionicons name="bookmark" size={14} color="#ffd700" />
+                        <Text style={styles.savedText}>SAVED</Text>
                     </View>
                 </TouchableOpacity>
             </View>
@@ -451,21 +452,22 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         backgroundColor: 'rgba(0,0,0,0.3)',
     },
-    noAdsContainer: {
-        width: 100,
+    savedButtonContainer: {
+        width: 80,
         alignItems: 'flex-end',
-        justifyContent: 'center',
     },
-    noAdsCircle: {
+    savedButtonCircle: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 5,
+        gap: 2,
         backgroundColor: 'rgba(0,0,0,0.3)',
-        paddingHorizontal: 12,
+        paddingHorizontal: 10,
         paddingVertical: 6,
         borderRadius: 15,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.2)',
     },
-    adsText: {
+    savedText: {
         color: '#fff',
         fontSize: 10,
         fontWeight: 'bold',

@@ -193,12 +193,12 @@ const GalleryScreen = () => {
                         <Ionicons name="information-circle-outline" size={26} color="#fff" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Shri Krishna</Text>
-                    <View style={styles.noAdsContainer}>
-                        <View style={styles.noAdsCircle}>
-                            <Ionicons name="ban" size={14} color="#ff4444" />
-                            <Text style={styles.adsText}>NO ADS</Text>
+                    <TouchableOpacity style={styles.savedButtonContainer} onPress={() => navigation.navigate('Saved')}>
+                        <View style={styles.savedButtonCircle}>
+                            <Ionicons name="bookmark" size={14} color="#ffd700" />
+                            <Text style={styles.savedText}>SAVED</Text>
                         </View>
-                    </View>
+                    </TouchableOpacity>
                 </View>
                 <View style={styles.centerContent}>
                     <ActivityIndicator size="large" color="#4dabf7" />
@@ -257,10 +257,13 @@ const GalleryScreen = () => {
 
                 <Text style={styles.headerTitle}>Shri Krishna</Text>
 
-                <TouchableOpacity style={styles.noAdsContainer}>
-                    <View style={styles.noAdsCircle}>
-                        <Ionicons name="ban" size={14} color="#ff4444" />
-                        <Text style={styles.adsText}>NO ADS</Text>
+                <TouchableOpacity
+                    style={styles.savedButtonContainer}
+                    onPress={() => navigation.navigate('Saved')}
+                >
+                    <View style={styles.savedButtonCircle}>
+                        <Ionicons name="bookmark" size={14} color="#ffd700" />
+                        <Text style={styles.savedText}>SAVED</Text>
                     </View>
                 </TouchableOpacity>
             </View>
@@ -372,16 +375,22 @@ const styles = StyleSheet.create({
         color: '#4dabf7', // Neon blue primary
         letterSpacing: 0.5,
     },
-    noAdsContainer: {
-        width: 40,
+    savedButtonContainer: {
+        width: 60,
         alignItems: 'flex-end',
     },
-    noAdsCircle: {
+    savedButtonCircle: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 2,
+        backgroundColor: '#1a1a1a',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#333',
     },
-    adsText: {
+    savedText: {
         color: '#fff',
         fontSize: 10,
         fontWeight: 'bold',
