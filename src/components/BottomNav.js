@@ -1,10 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useLoading } from '../contexts/LoadingContext';
 
 const BottomNav = ({ navigation, activeTab }) => {
+    const { showLoading, hideLoading } = useLoading();
 
     const handleProtectedNavigation = async (screen, params = {}) => {
+        showLoading('Loading...');
         // Simple connectivity check using a HEAD request to the API
         // This is fast and doesn't download large data.
         try {
@@ -21,11 +24,15 @@ const BottomNav = ({ navigation, activeTab }) => {
                 } else {
                     navigation.navigate(screen, params);
                 }
+                // Hide loading after a short delay to allow screen to mount
+                setTimeout(() => hideLoading(), 300);
             } else {
+                hideLoading();
                 throw new Error('Offline');
             }
         } catch (error) {
             // Offline or network error
+            hideLoading();
             Alert.alert(
                 "No Internet Connection",
                 "You are currently offline. Please connect to the internet to access the divine gallery and features.",

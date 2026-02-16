@@ -3,7 +3,9 @@ import { NavigationContainer } from '@react-navigation/native';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import LoadingOverlay from './src/components/LoadingOverlay';
 import { LanguageProvider, useLanguage } from './src/context/LanguageContext';
+import { LoadingProvider } from './src/contexts/LoadingContext';
 import AppNavigator from './src/navigation/AppNavigator';
 
 const AppContent = () => {
@@ -50,6 +52,7 @@ const AppContent = () => {
         <NavigationContainer key={language ? 'user' : 'guest'}>
             {/* Always start with DailyDarshan, language choice happens via Alert on top */}
             <AppNavigator initialRouteName="DailyDarshan" />
+            <LoadingOverlay />
         </NavigationContainer>
     );
 };
@@ -57,9 +60,11 @@ const AppContent = () => {
 export default function App() {
     return (
         <SafeAreaProvider>
-            <LanguageProvider>
-                <AppContent />
-            </LanguageProvider>
+            <LoadingProvider>
+                <LanguageProvider>
+                    <AppContent />
+                </LanguageProvider>
+            </LoadingProvider>
         </SafeAreaProvider>
     );
 }

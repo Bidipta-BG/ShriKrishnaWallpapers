@@ -580,7 +580,7 @@ const DailyDarshanScreen = ({ navigation }) => {
 
 
     const stopAllPujaEffects = useCallback(() => {
-        console.log('--- CLEANUP TRIGGERED ---');
+        // console.log('--- CLEANUP TRIGGERED ---');
 
         // 1. Stop Bell
         stopBell();
