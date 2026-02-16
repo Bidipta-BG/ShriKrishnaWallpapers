@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
     Alert,
     Linking,
@@ -30,6 +30,17 @@ const SettingsScreen = () => {
         }, [])
     );
 
+    // Check ad-free expiry every minute
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (adFreeUntil && adFreeUntil < Date.now()) {
+                setAdFreeUntil(null);
+            }
+        }, 60000); // Check every minute
+
+        return () => clearInterval(interval);
+    }, [adFreeUntil]);
+
     const loadData = async () => {
         try {
             const [storedCoins, storedAdFree] = await Promise.all([
@@ -52,15 +63,15 @@ const SettingsScreen = () => {
         setTimeout(async () => {
             try {
                 if (type === 'coins') {
-                    const newCoins = coins + 2;
+                    const newCoins = coins + 5;
                     setCoins(newCoins);
                     await AsyncStorage.setItem('divyaCoins', newCoins.toString());
-                    Alert.alert('Blessed!', 'You earned 2 Divya Coins for your devotion.');
+                    Alert.alert('Blessed!', 'You earned 5 Divya Coins for your devotion.');
                 } else if (type === 'no_ads') {
-                    const expiry = Date.now() + 30 * 60 * 1000; // 30 minutes
+                    const expiry = Date.now() + 5 * 60 * 1000; // 5 minutes for testing
                     setAdFreeUntil(expiry);
                     await AsyncStorage.setItem('ad_free_expiry', expiry.toString());
-                    Alert.alert('Divine Serenity', 'Ads have been removed for the next 30 minutes.');
+                    Alert.alert('Divine Serenity', 'Ads have been removed for the next 5 minutes.');
                 }
             } catch (error) {
                 console.error('Error rewarding:', error);
@@ -154,18 +165,56 @@ const SettingsScreen = () => {
                     <View style={styles.featuresList}>
                         <View style={styles.featureItem}>
                             <Ionicons name="checkmark-circle" size={20} color="#FFA500" />
-                            <Text style={styles.featureText}>Generate God Images Using AI</Text>
-                        </View>
-                        <View style={styles.featureItem}>
-                            <Ionicons name="checkmark-circle" size={20} color="#FFA500" />
-                            <Text style={styles.featureText}>Generate Child With God Images Using AI</Text>
+                            <Text style={styles.featureText}>Earn coins by watching ads</Text>
                         </View>
                     </View>
 
                     <TouchableOpacity style={[styles.buyButton, { backgroundColor: '#4caf50' }]} onPress={() => handleWatchAd('coins')}>
-                        <Text style={styles.buyButtonText}>WATCH AD (+2)</Text>
+                        <Text style={styles.buyButtonText}>WATCH AD (+5)</Text>
                     </TouchableOpacity>
                 </View>
+
+                {/* Referral Card */}
+                <LinearGradient
+                    colors={['#1a1a1a', '#2d2d2d']}
+                    style={styles.card}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                >
+                    <View style={styles.cardHeader}>
+                        <View style={[styles.iconCircleGold, { backgroundColor: 'rgba(212, 175, 55, 0.2)' }]}>
+                            <Ionicons name="people" size={24} color="#D4AF37" />
+                        </View>
+                        <View style={styles.cardTitleContainer}>
+                            <Text style={styles.cardTitle}>Share & Earn</Text>
+                            <View style={styles.priceRow}>
+                                <Text style={[styles.price, { color: '#D4AF37' }]}>+10 Coins</Text>
+                                <View style={styles.tagContainer}>
+                                    <Text style={styles.tagText}>For you & your friend</Text>
+                                </View>
+                            </View>
+                        </View>
+                    </View>
+
+                    <View style={styles.featuresList}>
+                        <View style={styles.featureItem}>
+                            <Ionicons name="checkmark-circle" size={20} color="#D4AF37" />
+                            <Text style={styles.featureText}>Share with Krishna bhaktas</Text>
+                        </View>
+                        <View style={styles.featureItem}>
+                            <Ionicons name="checkmark-circle" size={20} color="#D4AF37" />
+                            <Text style={styles.featureText}>Both earn 10 Divya Coins on install</Text>
+                        </View>
+                        <View style={styles.featureItem}>
+                            <Ionicons name="checkmark-circle" size={20} color="#D4AF37" />
+                            <Text style={styles.featureText}>Spread devotion, earn rewards</Text>
+                        </View>
+                    </View>
+
+                    <TouchableOpacity style={[styles.buyButton, { backgroundColor: '#D4AF37' }]} onPress={() => Alert.alert('Coming Soon', 'Referral feature will be available soon!')}>
+                        <Text style={[styles.buyButtonText, { color: '#000' }]}>SHARE NOW</Text>
+                    </TouchableOpacity>
+                </LinearGradient>
 
                 {/* Remove Ads Card */}
                 <LinearGradient
@@ -180,7 +229,7 @@ const SettingsScreen = () => {
                             <View style={styles.strikeThrough} />
                         </View>
                         <View style={styles.cardTitleContainer}>
-                            <Text style={styles.cardTitle}>Remove Ads – 30 Minutes</Text>
+                            <Text style={styles.cardTitle}>Remove Ads – 5 Minutes</Text>
                             <View style={styles.priceRow}>
                                 <Text style={styles.price}>FREE</Text>
                                 <View style={styles.tagContainer}>
@@ -194,14 +243,6 @@ const SettingsScreen = () => {
                         <View style={styles.featureItem}>
                             <Ionicons name="checkmark-circle" size={20} color="#9c6ce6" />
                             <Text style={styles.featureText}>Clean & distraction-free experience</Text>
-                        </View>
-                        <View style={styles.featureItem}>
-                            <Ionicons name="checkmark-circle" size={20} color="#9c6ce6" />
-                            <Text style={styles.featureText}>Remove ads forever</Text>
-                        </View>
-                        <View style={styles.featureItem}>
-                            <Ionicons name="checkmark-circle" size={20} color="#9c6ce6" />
-                            <Text style={styles.featureText}>No subscriptions</Text>
                         </View>
                     </View>
 
@@ -221,12 +262,6 @@ const SettingsScreen = () => {
                 <View style={styles.menuSection}>
                     <Text style={styles.sectionHeader}>Support & Info</Text>
 
-                    <MenuOption
-                        icon="share-social"
-                        title="Share the Devotion"
-                        onPress={handleShare}
-                        color="#4dabf7"
-                    />
                     <MenuOption
                         icon="star"
                         title="Rate Us"
@@ -296,15 +331,15 @@ const styles = StyleSheet.create({
     },
     card: {
         borderRadius: 20,
-        padding: 20,
-        marginBottom: 20,
+        padding: 15,
+        marginBottom: 12,
         borderWidth: 1,
         borderColor: '#333',
     },
     cardHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 15,
+        marginBottom: 10,
     },
     iconCircleRed: {
         width: 44,
@@ -317,6 +352,16 @@ const styles = StyleSheet.create({
         borderColor: '#ff4444',
         marginRight: 15,
         position: 'relative',
+    },
+    iconCircleGold: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#D4AF37',
+        marginRight: 15,
     },
     adsIconText: {
         color: '#fff',
@@ -361,8 +406,8 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     featuresList: {
-        gap: 10,
-        marginBottom: 20,
+        gap: 8,
+        marginBottom: 12,
     },
     featureItem: {
         flexDirection: 'row',
@@ -371,9 +416,9 @@ const styles = StyleSheet.create({
     },
     featureText: {
         color: '#ddd',
-        fontSize: 13,
+        fontSize: 12,
         flex: 1,
-        lineHeight: 20,
+        lineHeight: 18,
     },
     buyButton: {
         backgroundColor: '#4caf50',

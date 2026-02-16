@@ -2,35 +2,115 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useCallback, useRef, useState } from 'react';
-import { Dimensions, FlatList, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, FlatList, Image, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import samagriItems from '../assets/data/samagri_items.json';
 import BottomNav from '../components/BottomNav';
+import {
+    isItemSelected,
+    isItemUnlocked,
+    isMultiSelectCategory,
+    loadSelectedPujaItems,
+    loadUnlockedItems,
+    loadUserCoins,
+    toggleItemSelection,
+    unlockItem
+} from '../utils/samagri_helpers';
 
 const REWARD_ITEM_IDS = ['f1', 's1', 't1', 'c1'];
+
+// Icon mapping for all samagri items
+const ITEM_ICONS = {
+    // Flowers & Leaves
+    'f1': require('../assets/images/flowers_leafs/marigold.png'),
+    'f2': require('../assets/images/flowers_leafs/rose.png'),
+    'f3': require('../assets/images/flowers_leafs/bel_patta.png'),
+    'f4': require('../assets/images/flowers_leafs/vaijayanti.png'),
+    'f5': require('../assets/images/flowers_leafs/jasmine.png'),
+    'f6': require('../assets/images/flowers_leafs/madhumalti.png'),
+    'f7': require('../assets/images/flowers_leafs/hibiscus.png'),
+    'f8': require('../assets/images/flowers_leafs/white_rose.png'),
+    'f9': require('../assets/images/flowers_leafs/agastya.png'),
+    'f10': require('../assets/images/flowers_leafs/lajvanti.png'),
+    'f11': require('../assets/images/flowers_leafs/lotus.png'),
+    'f12': require('../assets/images/flowers_leafs/neelkamal.png'),
+    // Sound
+    's1': require('../assets/images/sound/shankh.png'),
+    's2': require('../assets/images/sound/bell.png'),
+    's3': require('../assets/images/sound/majira.png'),
+    's4': require('../assets/images/sound/drum.png'),
+    // Garlands
+    'g1': require('../assets/images/garlands/normal_garland.png'),
+    'g2': require('../assets/images/garlands/marigold_garland.png'),
+    'g3': require('../assets/images/garlands/rose_garland.png'),
+    'g4': require('../assets/images/garlands/whitearc_garland.png'),
+    // Thali
+    't1': require('../assets/images/thali/classic_thali.png'),
+    't2': require('../assets/images/thali/silver_thali.png'),
+    't3': require('../assets/images/thali/gold_thali.png'),
+    't4': require('../assets/images/thali/kundan_thali.png'),
+    // Dhup & Diya
+    'dd1': require('../assets/images/dhup_dia/oil_dia.png'),
+    'dd2': require('../assets/images/dhup_dia/camphor.png'),
+    'dd3': require('../assets/images/dhup_dia/dhup.png'),
+    'dd4': require('../assets/images/dhup_dia/ghee_dia.png'),
+    'dd5': require('../assets/images/dhup_dia/fivefaced_dia.png'),
+    // Samagri
+    'sa1': require('../assets/images/samagri/nariyal_barfi.png'),
+    'sa2': require('../assets/images/samagri/panchamrit.png'),
+    'sa3': require('../assets/images/samagri/gangajal.png'),
+    'sa4': require('../assets/images/samagri/sandalwood.png'),
+    'sa5': require('../assets/images/samagri/besan_laddoo.png'),
+    'sa6': require('../assets/images/samagri/boondi_laddoo.png'),
+    'sa7': require('../assets/images/samagri/fruits.png'),
+    'sa8': require('../assets/images/samagri/kheer.png'),
+    'sa9': require('../assets/images/samagri/halwa.png'),
+    'sa10': require('../assets/images/samagri/nariyal.png'),
+    'sa11': require('../assets/images/samagri/chappan_bhog.png'),
+    // Coins
+    'c1': require('../assets/images/coins/normal_coins.png'),
+    'c2': require('../assets/images/coins/bronze_coins.png'),
+    'c3': require('../assets/images/coins/silver_coins.png'),
+    'c4': require('../assets/images/coins/gold_coins.png'),
+};
 
 const SamagriScreen = () => {
     const navigation = useNavigation();
     const insets = useSafeAreaInsets();
     const [selectedCategory, setSelectedCategory] = useState(samagriItems[0].category);
     const [isRewardActive, setIsRewardActive] = useState(false);
+    const [userCoins, setUserCoins] = useState(0);
+    const [unlockedItems, setUnlockedItems] = useState({});
+    const [selectedPujaItems, setSelectedPujaItems] = useState({});
     const mainListRef = useRef(null);
     const categoryListRef = useRef(null);
 
     useFocusEffect(
         useCallback(() => {
-            const checkRewardStatus = async () => {
+            const loadSamagriData = async () => {
                 try {
+                    // Load reward status
                     const expiry = await AsyncStorage.getItem('samagri_unlock_expiry');
                     if (expiry) {
                         const now = Date.now();
                         setIsRewardActive(now < parseInt(expiry));
                     }
+
+                    // Load coins, unlocked items, and selected items
+                    const [coins, unlocked, selected] = await Promise.all([
+                        loadUserCoins(),
+                        loadUnlockedItems(),
+                        loadSelectedPujaItems()
+                    ]);
+
+                    setUserCoins(coins);
+                    setUnlockedItems(unlocked);
+                    setSelectedPujaItems(selected);
                 } catch (e) {
-                    console.error('Error checking reward status:', e);
+                    console.error('Error loading samagri data:', e);
                 }
             };
-            checkRewardStatus();
+            loadSamagriData();
         }, [])
     );
 
@@ -44,6 +124,43 @@ const SamagriScreen = () => {
         if (samagriItems[index]) {
             setSelectedCategory(samagriItems[index].category);
             categoryListRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.5 });
+        }
+    };
+
+    // Handle unlocking an item with coins
+    const handleUnlockItem = async (item) => {
+        const result = await unlockItem(item.id, item.price, selectedCategory);
+
+        if (result.success) {
+            // Update local state
+            setUserCoins(result.newCoins);
+            const updatedUnlocked = await loadUnlockedItems();
+            const updatedSelected = await loadSelectedPujaItems();
+            setUnlockedItems(updatedUnlocked);
+            setSelectedPujaItems(updatedSelected);
+
+            // Show success toast
+            Alert.alert(
+                '✨ Unlocked!',
+                `${item.name} unlocked for 24 hours`,
+                [{ text: 'OK' }]
+            );
+        } else {
+            Alert.alert(
+                'Cannot Unlock',
+                result.error === 'Not enough coins'
+                    ? 'You need more Divya Coins. Watch ads in Settings to earn more!'
+                    : result.error,
+                [{ text: 'OK' }]
+            );
+        }
+    };
+
+    // Handle toggling item selection
+    const handleToggleSelection = async (item) => {
+        const result = await toggleItemSelection(item.id, selectedCategory);
+        if (result.success) {
+            setSelectedPujaItems(result.selected);
         }
     };
 
@@ -65,38 +182,75 @@ const SamagriScreen = () => {
     );
 
     const renderStoreItem = ({ item }) => {
-        const isUnlocked = isRewardActive && REWARD_ITEM_IDS.includes(item.id);
+        const itemUnlocked = isItemUnlocked(item.id, unlockedItems);
+        const itemSelected = isItemSelected(item.id, selectedCategory, selectedPujaItems);
+        const isMultiSelect = isMultiSelectCategory(selectedCategory);
 
         return (
-            <View style={[styles.itemCard, isUnlocked && styles.unlockedItemCard]}>
-                {isUnlocked && (
-                    <View style={styles.rewardBadge}>
-                        <Ionicons name="gift" size={10} color="#FFF" />
+            <TouchableOpacity
+                style={[
+                    styles.itemCard,
+                    !itemUnlocked && styles.lockedItemCard,
+                    itemSelected && styles.selectedItemCard
+                ]}
+                onPress={() => {
+                    if (itemUnlocked) {
+                        handleToggleSelection(item);
+                    } else {
+                        handleUnlockItem(item);
+                    }
+                }}
+                activeOpacity={0.7}
+            >
+                {/* Lock badge for locked items */}
+                {!itemUnlocked && (
+                    <View style={styles.lockBadge}>
+                        <Ionicons name="lock-closed" size={12} color="#fff" />
                     </View>
                 )}
-                <View style={[styles.itemImageContainer, isUnlocked && { borderColor: '#ffd700' }]}>
-                    <Ionicons
-                        name={getIconByCategory(selectedCategory)}
-                        size={40}
-                        color={isUnlocked ? "#ffd700" : "#9c6ce6"}
+
+                {/* Selection indicator (checkbox/radio) */}
+                {itemUnlocked && (
+                    <View style={styles.selectionIndicator}>
+                        <Ionicons
+                            name={isMultiSelect
+                                ? (itemSelected ? 'checkbox' : 'square-outline')
+                                : (itemSelected ? 'radio-button-on' : 'radio-button-off')
+                            }
+                            size={20}
+                            color={itemSelected ? '#9c6ce6' : '#666'}
+                        />
+                    </View>
+                )}
+
+                <View style={[styles.itemImageContainer, itemSelected && { borderColor: '#9c6ce6', borderWidth: 2 }]}>
+                    <Image
+                        source={ITEM_ICONS[item.id]}
+                        style={[
+                            styles.itemIcon,
+                            !itemUnlocked && { opacity: 0.8 }
+                        ]}
+                        resizeMode="contain"
                     />
                 </View>
+
                 <View style={styles.itemInfo}>
-                    <Text style={styles.itemName}>{item.name}</Text>
+                    <Text style={[styles.itemName, !itemUnlocked && { color: '#666' }]}>{item.name}</Text>
                     <View style={styles.priceContainer}>
-                        <Ionicons name="flash" size={14} color="#ffd700" />
-                        <Text style={styles.itemPrice}>{isUnlocked ? 'FREE' : `${item.price} Divya Coins`}</Text>
+                        <Ionicons name="flash" size={14} color={itemUnlocked ? "#ffd700" : "#666"} />
+                        <Text style={[styles.itemPrice, !itemUnlocked && { color: '#666' }]}>
+                            {itemUnlocked ? 'Unlocked' : `${item.price} coins`}
+                        </Text>
                     </View>
                 </View>
-                <TouchableOpacity
-                    style={[styles.buyButton, isUnlocked && styles.activeButton]}
-                    disabled={isUnlocked}
-                >
-                    <Text style={[styles.buyButtonText, isUnlocked && styles.activeButtonText]}>
-                        {isUnlocked ? 'Active' : 'Get'}
-                    </Text>
-                </TouchableOpacity>
-            </View>
+
+                {!itemUnlocked && (
+                    <View style={styles.unlockButton}>
+                        <Ionicons name="wallet" size={16} color="#9c6ce6" />
+                        <Text style={styles.unlockButtonText}>{item.price}</Text>
+                    </View>
+                )}
+            </TouchableOpacity>
         );
     };
 
@@ -136,7 +290,7 @@ const SamagriScreen = () => {
                 <Text style={styles.headerTitle}>Divine Samagri Store</Text>
                 <View style={styles.coinBadge}>
                     <Ionicons name="flash" size={16} color="#ffd700" />
-                    <Text style={styles.coinBalance}>0</Text>
+                    <Text style={styles.coinBalance}>{userCoins}</Text>
                 </View>
             </View>
 
@@ -278,6 +432,10 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#333',
     },
+    itemIcon: {
+        width: 45,
+        height: 45,
+    },
     itemInfo: {
         alignItems: 'center',
         marginBottom: 10,
@@ -337,6 +495,51 @@ const styles = StyleSheet.create({
     },
     activeButtonText: {
         color: '#000',
+    },
+    lockBadge: {
+        position: 'absolute',
+        top: 5,
+        left: 5,
+        backgroundColor: 'rgba(255, 107, 107, 0.9)',
+        borderRadius: 10,
+        padding: 4,
+        zIndex: 10,
+    },
+    lockedItemCard: {
+        borderColor: '#ff6b6b',
+        borderWidth: 2,
+    },
+    selectionIndicator: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        zIndex: 10,
+    },
+    selectedItemCard: {
+        borderColor: '#9c6ce6',
+        borderWidth: 2,
+        backgroundColor: '#1a1a2a',
+        shadowColor: '#9c6ce6',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.5,
+        shadowRadius: 8,
+        elevation: 8,
+    },
+    unlockButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(156, 108, 230, 0.2)',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#9c6ce6',
+        gap: 5,
+    },
+    unlockButtonText: {
+        color: '#9c6ce6',
+        fontWeight: 'bold',
+        fontSize: 12,
     },
 });
 
