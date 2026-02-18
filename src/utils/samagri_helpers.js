@@ -19,6 +19,61 @@ const CATEGORY_KEYS = {
     '💰 Coins': 'coins'
 };
 
+// Icon mapping for all samagri items
+export const ITEM_ICONS = {
+    // Flowers & Leaves
+    'f1': require('../assets/images/flowers_leafs/marigold.png'),
+    'f2': require('../assets/images/flowers_leafs/rose.png'),
+    'f3': require('../assets/images/flowers_leafs/bel_patta.png'),
+    'f4': require('../assets/images/flowers_leafs/vaijayanti.png'),
+    'f5': require('../assets/images/flowers_leafs/jasmine.png'),
+    'f6': require('../assets/images/flowers_leafs/madhumalti.png'),
+    'f7': require('../assets/images/flowers_leafs/hibiscus.png'),
+    'f8': require('../assets/images/flowers_leafs/white_rose.png'),
+    'f9': require('../assets/images/flowers_leafs/agastya.png'),
+    'f10': require('../assets/images/flowers_leafs/lajvanti.png'),
+    'f11': require('../assets/images/flowers_leafs/lotus.png'),
+    'f12': require('../assets/images/flowers_leafs/neelkamal.png'),
+    // Sound
+    's1': require('../assets/images/sound/shankh.png'),
+    's2': require('../assets/images/sound/bell.png'),
+    's3': require('../assets/images/sound/majira.png'),
+    's4': require('../assets/images/sound/drum.png'),
+    // Garlands
+    'g1': require('../assets/images/garlands/normal_garland.png'),
+    'g2': require('../assets/images/garlands/marigold_garland.png'),
+    'g3': require('../assets/images/garlands/rose_garland.png'),
+    'g4': require('../assets/images/garlands/whitearc_garland.png'),
+    // Thali
+    't1': require('../assets/images/thali/classic_thali.png'),
+    't2': require('../assets/images/thali/silver_thali.png'),
+    't3': require('../assets/images/thali/gold_thali.png'),
+    't4': require('../assets/images/thali/kundan_thali.png'),
+    // Dhup & Diya
+    'dd1': require('../assets/images/dhup_dia/oil_dia.png'),
+    'dd2': require('../assets/images/dhup_dia/camphor.png'),
+    'dd3': require('../assets/images/dhup_dia/dhup.png'),
+    'dd4': require('../assets/images/dhup_dia/ghee_dia.png'),
+    'dd5': require('../assets/images/dhup_dia/fivefaced_dia.png'),
+    // Samagri
+    'sa1': require('../assets/images/samagri/nariyal_barfi.png'),
+    'sa2': require('../assets/images/samagri/panchamrit.png'),
+    'sa3': require('../assets/images/samagri/gangajal.png'),
+    'sa4': require('../assets/images/samagri/sandalwood.png'),
+    'sa5': require('../assets/images/samagri/besan_laddoo.png'),
+    'sa6': require('../assets/images/samagri/boondi_laddoo.png'),
+    'sa7': require('../assets/images/samagri/fruits.png'),
+    'sa8': require('../assets/images/samagri/kheer.png'),
+    'sa9': require('../assets/images/samagri/halwa.png'),
+    'sa10': require('../assets/images/samagri/nariyal.png'),
+    'sa11': require('../assets/images/samagri/chappan_bhog.png'),
+    // Coins
+    'c1': require('../assets/images/coins/normal_coins.png'),
+    'c2': require('../assets/images/coins/bronze_coins.png'),
+    'c3': require('../assets/images/coins/silver_coins.png'),
+    'c4': require('../assets/images/coins/gold_coins.png'),
+};
+
 // Multi-select categories
 const MULTI_SELECT_CATEGORIES = ['flowers', 'samagri', 'coins'];
 
@@ -89,35 +144,34 @@ export const loadUnlockedItems = async () => {
  * Load selected puja items
  */
 export const loadSelectedPujaItems = async () => {
+    const defaults = {
+        flowers: ['f1'],    // Marigold
+        sound: 's1',        // Shankh
+        garlands: '',
+        thali: 't1',        // Classic Thali
+        dhup: '',
+        samagri: [],
+        coins: ['c1']       // Normal Coins
+    };
+
     try {
         const data = await AsyncStorage.getItem(SELECTED_PUJA_ITEMS_KEY);
-        const selected = data ? JSON.parse(data) : {};
+        if (!data) return defaults;
 
-        // Initialize with defaults if empty
-        if (Object.keys(selected).length === 0) {
-            return {
-                flowers: ['f1'],    // Marigold
-                sound: 's1',        // Shankh
-                garlands: '',
-                thali: 't1',        // Classic Thali
-                dhup: '',
-                samagri: [],
-                coins: ['c1']       // Normal Coins
-            };
-        }
+        const selected = JSON.parse(data);
 
-        return selected;
+        // Ensure everything is merged with defaults in case of new/missing fields or old format
+        return {
+            ...defaults,
+            ...selected,
+            // Specifically ensure arrays are arrays in case of corrupted data
+            flowers: Array.isArray(selected.flowers) ? selected.flowers : defaults.flowers,
+            samagri: Array.isArray(selected.samagri) ? selected.samagri : defaults.samagri,
+            coins: Array.isArray(selected.coins) ? selected.coins : defaults.coins,
+        };
     } catch (error) {
         console.error('Error loading selected items:', error);
-        return {
-            flowers: ['f1'],
-            sound: 's1',
-            garlands: '',
-            thali: 't1',
-            dhup: '',
-            samagri: [],
-            coins: ['c1']
-        };
+        return defaults;
     }
 };
 

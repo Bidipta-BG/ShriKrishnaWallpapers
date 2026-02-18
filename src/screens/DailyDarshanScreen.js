@@ -19,40 +19,41 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BottomNav from '../components/BottomNav';
 import { useLanguage } from '../context/LanguageContext';
+import {
+    ITEM_ICONS,
+    loadSelectedPujaItems,
+    loadUnlockedItems
+} from '../utils/samagri_helpers';
 
 const { width, height } = Dimensions.get('window');
 const PUJA_DURATION = 18000; // 18 seconds for a complete experience
 
 // --- Falling Flower Component ---
+// ONLY default unlocked flowers for fallback
 const FLOWER_IMAGES = [
-    require('../assets/images/flower1.png'),
-    require('../assets/images/flower2.png'),
-    require('../assets/images/flower3.png')
+    require('../assets/images/flowers_leafs/marigold.png')
 ];
 
+// ONLY default unlocked coins for fallback
 const COIN_IMAGES = [
-    require('../assets/images/coin1.png'),
-    require('../assets/images/coin2.png')
+    require('../assets/images/coins/normal_coins.png')
 ];
 
 // --- Dummy Music Data Removed (Moved to MantrasScreen)
 
 const FLOWER_COUNT = 15;
-const FallingFlower = ({ index, onComplete }) => {
+const FallingFlower = ({ index, onComplete, imageSource }) => {
     // Determine random properties ONCE on mount
     const [config] = useState(() => ({
         x: Math.random() * width,
         delay: Math.random() * 500, // Reduced delay (0-0.5s)
         duration: 4000 + Math.random() * 2000, // 4-6s fall duration
-        // Pick random flower image once
-        imageSource: FLOWER_IMAGES[Math.floor(Math.random() * FLOWER_IMAGES.length)]
     }));
 
     // Use stable config values
     const randomX = config.x;
     const randomDelay = config.delay;
     const randomDuration = config.duration;
-    const imageSource = config.imageSource;
 
     const translateY = useSharedValue(-50);
     const rotate = useSharedValue(0);
@@ -110,13 +111,12 @@ const FallingFlower = ({ index, onComplete }) => {
     );
 };
 
-const FallingCoin = ({ index, onComplete }) => {
+const FallingCoin = ({ index, onComplete, imageSource }) => {
     // Determine random properties ONCE on mount
     const [config] = useState(() => ({
         x: Math.random() * width,
         delay: Math.random() * 500,
         duration: 3000 + Math.random() * 1500, // Coins fall slightly faster (3-4.5s)
-        imageSource: COIN_IMAGES[Math.floor(Math.random() * COIN_IMAGES.length)]
     }));
 
     const translateY = useSharedValue(-50);
@@ -163,7 +163,7 @@ const FallingCoin = ({ index, onComplete }) => {
 
     return (
         <Animated.Image
-            source={config.imageSource}
+            source={imageSource}
             style={[styles.coin, style]}
             resizeMode="contain"
         />
@@ -244,6 +244,40 @@ const DailyDarshanScreen = ({ navigation }) => {
     const insets = useSafeAreaInsets();
     const route = useRoute();
 
+    // --- Samagri Selections for Animations ---
+    // Initialize with defaults to avoid empty shower before fetch
+    const [selectedFlowerIcons, setSelectedFlowerIcons] = useState([require('../assets/images/flowers_leafs/marigold.png')]);
+    const [selectedCoinIcons, setSelectedCoinIcons] = useState([require('../assets/images/coins/normal_coins.png')]);
+
+    // Load user selections on focus
+    useFocusEffect(
+        useCallback(() => {
+            const fetchSelections = async () => {
+                const selected = await loadSelectedPujaItems();
+                const unlocked = await loadUnlockedItems();
+
+                // Map flower IDs to their actual require() sources, checking UNLOCKED status
+                const flowerIcons = (selected.flowers || [])
+                    .filter(id => unlocked[id]) // ONLY if unlocked
+                    .map(id => ITEM_ICONS[id])
+                    .filter(Boolean);
+
+                // Final fallback within state: if array is empty (all expired), use Marigold
+                setSelectedFlowerIcons(flowerIcons.length > 0 ? flowerIcons : [ITEM_ICONS['f1']]);
+
+                // Map coins IDs, checking UNLOCKED status
+                const coinIcons = (selected.coins || [])
+                    .filter(id => unlocked[id]) // ONLY if unlocked
+                    .map(id => ITEM_ICONS[id])
+                    .filter(Boolean);
+
+                setSelectedCoinIcons(coinIcons.length > 0 ? coinIcons : [ITEM_ICONS['c1']]);
+            };
+
+            fetchSelections();
+        }, [])
+    );
+
     const [backgroundImage, setBackgroundImage] = useState(Image.resolveAssetSource(require('../assets/images/default_darshan.jpg')).uri);
 
 
@@ -272,6 +306,8 @@ const DailyDarshanScreen = ({ navigation }) => {
     // Get translations for current language or fallback to English
     const t = TRANSLATIONS[language] || TRANSLATIONS['en'];
     const isHindi = language === 'hi';
+
+
 
     // Apply strict safe area logic to critical containers
     const bellContainerStyle = {
@@ -687,8 +723,12 @@ const DailyDarshanScreen = ({ navigation }) => {
                 return;
             }
 
+            // Fallback if no flowers are selected (shouldn't happen with defaults)
+            const availableIcons = selectedFlowerIcons.length > 0 ? selectedFlowerIcons : FLOWER_IMAGES;
+
             const newFlowers = Array.from({ length: 2 }, (_, i) => ({
                 id: `${Date.now()}-${i}-${Math.random()}`,
+                imageSource: availableIcons[Math.floor(Math.random() * availableIcons.length)]
             }));
             setActiveFlowers(prev => [...prev, ...newFlowers]);
         };
@@ -743,8 +783,12 @@ const DailyDarshanScreen = ({ navigation }) => {
                 return;
             }
 
+            // Fallback if no coins are selected (shouldn't happen with defaults)
+            const availableIcons = selectedCoinIcons.length > 0 ? selectedCoinIcons : COIN_IMAGES;
+
             const newCoins = Array.from({ length: 2 }, (_, i) => ({
                 id: `${Date.now()}-${i}-${Math.random()}`,
+                imageSource: availableIcons[Math.floor(Math.random() * availableIcons.length)]
             }));
             setActiveCoins(prev => [...prev, ...newCoins]);
         };
@@ -777,12 +821,12 @@ const DailyDarshanScreen = ({ navigation }) => {
 
             {/* Falling Flowers Layer */}
             {activeFlowers.map((flower, index) => (
-                <FallingFlower key={flower.id} index={index} onComplete={removeFlower} />
+                <FallingFlower key={flower.id} index={index} onComplete={removeFlower} imageSource={flower.imageSource} />
             ))}
 
             {/* Falling Coins Layer */}
             {activeCoins.map((coin, index) => (
-                <FallingCoin key={coin.id} index={index} onComplete={removeCoin} />
+                <FallingCoin key={coin.id} index={index} onComplete={removeCoin} imageSource={coin.imageSource} />
             ))}
 
             {/* 1. Background Wallpaper (Replaces Gradient & Center Content) */}
