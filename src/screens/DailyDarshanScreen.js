@@ -18,6 +18,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BottomNav from '../components/BottomNav';
+import GarlandMala from '../components/GarlandMala';
+import PrasadDisplay from '../components/PrasadDisplay';
 import { useLanguage } from '../context/LanguageContext';
 import {
     ITEM_ICONS,
@@ -102,6 +104,8 @@ const FallingFlower = ({ index, onComplete, imageSource }) => {
         opacity: opacity.value
     }));
 
+    if (!imageSource) return null;
+
     return (
         <Animated.Image
             source={imageSource}
@@ -161,6 +165,8 @@ const FallingCoin = ({ index, onComplete, imageSource }) => {
         opacity: opacity.value
     }));
 
+    if (!imageSource) return null;
+
     return (
         <Animated.Image
             source={imageSource}
@@ -175,7 +181,7 @@ const SideIcon = ({ color, emoji, iconName, iconSize = 24, iconColor = "#fff", i
     <TouchableOpacity onPress={onPress}>
         <View style={styles.iconWrapper}>
             <View style={[styles.iconCircle, { backgroundColor: color || 'rgba(0,0,0,0.4)' }]}>
-                {imageSource ? (
+                {imageSource && imageSource !== null ? (
                     <Image source={imageSource} style={{ width: 30, height: 30 }} resizeMode="contain" />
                 ) : iconName ? (
                     <Ionicons name={iconName} size={iconSize} color={iconColor} />
@@ -248,6 +254,11 @@ const DailyDarshanScreen = ({ navigation }) => {
     // Initialize with defaults to avoid empty shower before fetch
     const [selectedFlowerIcons, setSelectedFlowerIcons] = useState([require('../assets/images/flowers_leafs/marigold.png')]);
     const [selectedCoinIcons, setSelectedCoinIcons] = useState([require('../assets/images/coins/normal_coins.png')]);
+    const [selectedPrasadIcons, setSelectedPrasadIcons] = useState([]); // Array of prasad image sources
+    const [isDhupVisible, setIsDhupVisible] = useState(false);
+    const [selectedDhupIcon, setSelectedDhupIcon] = useState(null);
+    const [selectedThaliIcon, setSelectedThaliIcon] = useState(require('../assets/images/my_diya.png'));
+    const dhupTimeoutRef = useRef(null);
 
     // Load user selections on focus
     useFocusEffect(
@@ -256,27 +267,112 @@ const DailyDarshanScreen = ({ navigation }) => {
                 const selected = await loadSelectedPujaItems();
                 const unlocked = await loadUnlockedItems();
 
-                // Map flower IDs to their actual require() sources, checking UNLOCKED status
                 const flowerIcons = (selected.flowers || [])
-                    .filter(id => unlocked[id]) // ONLY if unlocked
+                    .filter(id => unlocked[id])
                     .map(id => ITEM_ICONS[id])
                     .filter(Boolean);
-
-                // Final fallback within state: if array is empty (all expired), use Marigold
                 setSelectedFlowerIcons(flowerIcons.length > 0 ? flowerIcons : [ITEM_ICONS['f1']]);
 
-                // Map coins IDs, checking UNLOCKED status
                 const coinIcons = (selected.coins || [])
-                    .filter(id => unlocked[id]) // ONLY if unlocked
+                    .filter(id => unlocked[id])
                     .map(id => ITEM_ICONS[id])
                     .filter(Boolean);
-
                 setSelectedCoinIcons(coinIcons.length > 0 ? coinIcons : [ITEM_ICONS['c1']]);
+
+                const garlandId = selected.garlands;
+                if (garlandId && unlocked[garlandId]) {
+                    setSelectedGarlandIcon(ITEM_ICONS[garlandId]);
+                } else {
+                    setSelectedGarlandIcon(null);
+                }
+
+                const prasadIcons = (selected.samagri || [])
+                    .filter(id => unlocked[id])
+                    .map(id => ITEM_ICONS[id])
+                    .filter(Boolean);
+                setSelectedPrasadIcons(prasadIcons);
+
+                // Map Dhup/Diya ID, checking UNLOCKED status
+                const dhupId = selected.dhup;
+                if (dhupId && unlocked[dhupId]) {
+                    setSelectedDhupIcon(ITEM_ICONS[dhupId]);
+                } else {
+                    setSelectedDhupIcon(null);
+                }
+
+                // Map Thali ID, checking UNLOCKED status
+                const thaliId = selected.thali;
+                if (thaliId && unlocked[thaliId] && ITEM_ICONS[thaliId]) {
+                    setSelectedThaliIcon(ITEM_ICONS[thaliId]);
+                } else {
+                    // Default fallback to my_diya.png
+                    setSelectedThaliIcon(require('../assets/images/my_diya.png'));
+                }
             };
 
             fetchSelections();
         }, [])
     );
+
+    // --- Garland Visibility ---
+    const [isGarlandVisible, setIsGarlandVisible] = useState(false);
+    const [selectedGarlandIcon, setSelectedGarlandIcon] = useState(null);
+
+    // --- Prasad Visibility ---
+    const [isPrasadVisible, setIsPrasadVisible] = useState(false);
+    const prasadTimeoutRef = useRef(null);
+
+    const togglePrasad = () => {
+        if (selectedPrasadIcons.length === 0) {
+            Alert.alert(
+                language === 'hi' ? "प्रसाद चुनें" : "Select Prasad",
+                language === 'hi' ? "कृपया सामग्री स्टोर से प्रसाद चुनें और अनलॉक करें।" : "Please select and unlock prasad items from the Samagri Store."
+            );
+            return;
+        }
+
+        if (prasadTimeoutRef.current) {
+            clearTimeout(prasadTimeoutRef.current);
+            prasadTimeoutRef.current = null;
+        }
+
+        const nextState = !isPrasadVisible;
+        setIsPrasadVisible(nextState);
+
+        if (nextState) {
+            // Auto hide after 10 seconds
+            prasadTimeoutRef.current = setTimeout(() => {
+                setIsPrasadVisible(false);
+                prasadTimeoutRef.current = null;
+            }, 10000);
+        }
+    };
+
+    const toggleDhup = () => {
+        if (!selectedDhupIcon) {
+            Alert.alert(
+                language === 'hi' ? "धूप/दिया चुनें" : "Select Dhup/Diya",
+                language === 'hi' ? "कृपया सामग्री स्टोर से धूप या दिया चुनें और अनलॉक करें।" : "Please select and unlock Dhup or Diya from the Samagri Store."
+            );
+            return;
+        }
+
+        if (dhupTimeoutRef.current) {
+            clearTimeout(dhupTimeoutRef.current);
+            dhupTimeoutRef.current = null;
+        }
+
+        const nextState = !isDhupVisible;
+        setIsDhupVisible(nextState);
+
+        if (nextState) {
+            // Auto hide after 10 seconds
+            dhupTimeoutRef.current = setTimeout(() => {
+                setIsDhupVisible(false);
+                dhupTimeoutRef.current = null;
+            }, 10000);
+        }
+    };
 
     const [backgroundImage, setBackgroundImage] = useState(Image.resolveAssetSource(require('../assets/images/default_darshan.jpg')).uri);
 
@@ -638,6 +734,9 @@ const DailyDarshanScreen = ({ navigation }) => {
             clearInterval(coinIntervalRef.current);
             coinIntervalRef.current = null;
         }
+        setIsGarlandVisible(false);
+        setIsPrasadVisible(false);
+        setIsDhupVisible(false);
     }, []);
 
     // FAIL-SAFE 1: Watch isAartiActive for the stop signal
@@ -656,6 +755,23 @@ const DailyDarshanScreen = ({ navigation }) => {
         ringBell();
         triggerFlowerShower();
         triggerCoinShower();
+        if (selectedPrasadIcons.length > 0) {
+            setIsPrasadVisible(true);
+            // Clear any manual toggle timeout
+            if (prasadTimeoutRef.current) {
+                clearTimeout(prasadTimeoutRef.current);
+                prasadTimeoutRef.current = null;
+            }
+        }
+
+        if (selectedDhupIcon) {
+            setIsDhupVisible(true);
+            // Clear any manual toggle timeout
+            if (dhupTimeoutRef.current) {
+                clearTimeout(dhupTimeoutRef.current);
+                dhupTimeoutRef.current = null;
+            }
+        }
 
         aartiScale.value = withTiming(1.5, { duration: 500 });
 
@@ -710,10 +826,16 @@ const DailyDarshanScreen = ({ navigation }) => {
             clearInterval(showerIntervalRef.current);
             showerIntervalRef.current = null;
         }
+        setIsGarlandVisible(false);
     };
 
     const triggerFlowerShower = () => {
         if (showerIntervalRef.current) return;
+
+        // Automatically show Mala if one is selected/unlocked
+        if (selectedGarlandIcon) {
+            setIsGarlandVisible(true);
+        }
 
         const startTime = Date.now();
         const addBatch = () => {
@@ -819,26 +941,36 @@ const DailyDarshanScreen = ({ navigation }) => {
         <View style={styles.container}>
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
-            {/* Falling Flowers Layer */}
-            {activeFlowers.map((flower, index) => (
-                <FallingFlower key={flower.id} index={index} onComplete={removeFlower} imageSource={flower.imageSource} />
-            ))}
-
-            {/* Falling Coins Layer */}
-            {activeCoins.map((coin, index) => (
-                <FallingCoin key={coin.id} index={index} onComplete={removeCoin} imageSource={coin.imageSource} />
-            ))}
-
-            {/* 1. Background Wallpaper (Replaces Gradient & Center Content) */}
+            {/* 1. Background Wallpaper */}
             <Image
                 source={{ uri: backgroundImage }}
                 style={styles.background}
                 resizeMode="cover"
                 onError={() => {
-                    // Fallback to local default if remote URL fails (offline/cache cleared)
                     setBackgroundImage(Image.resolveAssetSource(require('../assets/images/default_darshan.jpg')).uri);
                 }}
             />
+
+            {/* 2. Garland Mala Layer */}
+            <GarlandMala isVisible={isGarlandVisible} imageSource={selectedGarlandIcon} />
+
+            {/* 3. Prasad (Samagri) Layer */}
+            <PrasadDisplay
+                isVisible={isPrasadVisible}
+                items={selectedPrasadIcons}
+                isDhupVisible={isDhupVisible}
+                dhupIcon={selectedDhupIcon}
+            />
+
+            {/* 4. Falling Flowers Layer */}
+            {activeFlowers.map((flower, index) => (
+                <FallingFlower key={flower.id} index={index} onComplete={removeFlower} imageSource={flower.imageSource} />
+            ))}
+
+            {/* 5. Falling Coins Layer */}
+            {activeCoins.map((coin, index) => (
+                <FallingCoin key={coin.id} index={index} onComplete={removeCoin} imageSource={coin.imageSource} />
+            ))}
 
             {/* 2. Top Layer: Hanging Bells */}
             {/* User requested to move bells UP. Removed safe area constraint to allow them to go higher */}
@@ -867,13 +999,19 @@ const DailyDarshanScreen = ({ navigation }) => {
                 {/* Left Column - 3 buttons */}
                 <View style={styles.leftColumn}>
                     <SideIcon
-                        iconName="flower-outline"
+                        imageSource={selectedPrasadIcons.length > 0 ? selectedPrasadIcons[0] : ITEM_ICONS['sa5']}
+                        label={language === 'hi' ? 'प्रसाद' : 'Prasad'}
+                        onPress={togglePrasad}
+                    />
+
+                    <SideIcon
+                        imageSource={selectedFlowerIcons.length > 0 ? selectedFlowerIcons[0] : ITEM_ICONS['f1']}
                         label={t.flowers || 'Flowers'}
                         onPress={triggerFlowerShower}
                     />
 
                     <SideIcon
-                        iconName="cash-outline"
+                        imageSource={selectedCoinIcons.length > 0 ? selectedCoinIcons[0] : ITEM_ICONS['c1']}
                         label={t.coins || 'Coins'}
                         onPress={triggerCoinShower}
                     />
@@ -886,6 +1024,11 @@ const DailyDarshanScreen = ({ navigation }) => {
 
                 {/* Right Column - 3 buttons */}
                 <View style={styles.rightColumn}>
+                    <SideIcon
+                        imageSource={selectedDhupIcon ? selectedDhupIcon : ITEM_ICONS['dd1']}
+                        label={language === 'hi' ? 'धूप/दिया' : 'Dhup/Diya'}
+                        onPress={toggleDhup}
+                    />
                     <SideIcon
                         iconName="book-outline"
                         label={t.slokas}
@@ -948,9 +1091,10 @@ const DailyDarshanScreen = ({ navigation }) => {
 
             {/* Central Big Diya Layered Above EVERYTING - Now outside bottomNav to avoid pushing layout */}
             <View style={[styles.centerThaliContainer, { bottom: insets.bottom + 35 }]} pointerEvents="box-none">
+
                 <TouchableOpacity onPress={performAarti} activeOpacity={0.8}>
                     <Animated.Image
-                        source={require('../assets/images/my_diya.png')}
+                        source={selectedThaliIcon}
                         style={[styles.thaliImage, diyaStyle]}
                         resizeMode="contain"
                     />
