@@ -89,7 +89,7 @@ const BottomNav = ({ navigation, activeTab, disabled }) => {
 
                 <TouchableOpacity
                     style={styles.navItem}
-                    onPress={() => handleProtectedNavigation('Generate')}
+                    onPress={() => handleProtectedNavigation('Astro')}
                     disabled={disabled}
                 >
                     <Ionicons
