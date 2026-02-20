@@ -6,6 +6,7 @@ import { Alert, Dimensions, FlatList, Image, StatusBar, StyleSheet, Text, Toucha
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import samagriItems from '../assets/data/samagri_items.json';
 import BottomNav from '../components/BottomNav';
+import { useLanguage } from '../context/LanguageContext';
 import {
     isItemSelected,
     isItemUnlocked,
@@ -20,7 +21,32 @@ import {
 
 const REWARD_ITEM_IDS = ['f1', 's1', 't1', 'c1'];
 
-
+const STORE_UI_TRANSLATIONS = {
+    en: {
+        header: 'Divine Samagri Store',
+        categories: {
+            '🌸 Flowers & Leaves': '🌸 Flowers & Leaves',
+            '🔔 Sound': '🔔 Sound',
+            '🌺 Garlands': '🌺 Garlands',
+            '🪔 Thali': '🪔 Thali',
+            '🕯 Dhup & Diya': '🕯 Dhup & Diya',
+            '🍬 Samagri': '🍬 Samagri',
+            '💰 Coins': '💰 Coins'
+        }
+    },
+    hi: {
+        header: 'दिव्य सामग्री स्टोर',
+        categories: {
+            '🌸 Flowers & Leaves': '🌸 फूल और पत्तियां',
+            '🔔 Sound': '🔔 ध्वनि',
+            '🌺 Garlands': '🌺 पुष्प माला',
+            '🪔 Thali': '🪔 पूजा थाली',
+            '🕯 Dhup & Diya': '🕯 धूप और दीप',
+            '🍬 Samagri': '🍬 भोग सामग्री',
+            '💰 Coins': '💰 दिव्य मुद्रा'
+        }
+    }
+};
 
 const SamagriScreen = () => {
     const navigation = useNavigation();
@@ -30,6 +56,8 @@ const SamagriScreen = () => {
     const [userCoins, setUserCoins] = useState(0);
     const [unlockedItems, setUnlockedItems] = useState({});
     const [selectedPujaItems, setSelectedPujaItems] = useState({});
+    const [currentTime, setCurrentTime] = useState(Date.now());
+    const { language } = useLanguage();
     const mainListRef = useRef(null);
     const categoryListRef = useRef(null);
 
@@ -62,6 +90,32 @@ const SamagriScreen = () => {
         }, [])
     );
 
+    // Update current time every minute for countdown
+    useFocusEffect(
+        useCallback(() => {
+            const interval = setInterval(() => {
+                setCurrentTime(Date.now());
+            }, 60000);
+            return () => clearInterval(interval);
+        }, [])
+    );
+
+    const getExpiryLabel = (itemId) => {
+        const item = unlockedItems[itemId];
+        if (!item || item.permanent) return null;
+
+        const timeLeft = item.expiresAt - currentTime;
+        if (timeLeft <= 0) return null;
+
+        const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+
+        if (language === 'hi') {
+            return `समाप्ति: ${hours}घं ${minutes}मि`;
+        }
+        return `Expires in ${hours}h ${minutes}m`;
+    };
+
     const onCategoryPress = (index, categoryName) => {
         setSelectedCategory(categoryName);
         mainListRef.current?.scrollToIndex({ index, animated: true });
@@ -89,17 +143,21 @@ const SamagriScreen = () => {
 
             // Show success toast
             Alert.alert(
-                '✨ Unlocked!',
-                `${item.name} unlocked for 24 hours`,
-                [{ text: 'OK' }]
+                language === 'hi' ? '✨ अनलॉक हो गया!' : '✨ Unlocked!',
+                language === 'hi'
+                    ? `${item.name_hi || item.name} 24 घंटे के लिए अनलॉक हो गया है`
+                    : `${item.name} unlocked for 24 hours`,
+                [{ text: language === 'hi' ? 'ठीक है' : 'OK' }]
             );
         } else {
             Alert.alert(
-                'Cannot Unlock',
+                language === 'hi' ? 'अनलॉक नहीं कर सकते' : 'Cannot Unlock',
                 result.error === 'Not enough coins'
-                    ? 'You need more Divya Coins. Watch ads in Settings to earn more!'
+                    ? (language === 'hi'
+                        ? 'आपके पास पर्याप्त Divya Coins नहीं है। अधिक मुद्रा कमाने के लिए सेटिंग्स में विज्ञापन देखें!'
+                        : 'You need more Divya Coins. Watch ads in Settings to earn more!')
                     : result.error,
-                [{ text: 'OK' }]
+                [{ text: language === 'hi' ? 'ठीक है' : 'OK' }]
             );
         }
     };
@@ -124,7 +182,9 @@ const SamagriScreen = () => {
                 styles.categoryButtonText,
                 selectedCategory === item.category && styles.selectedCategoryButtonText
             ]}>
-                {item.category}
+                {language === 'hi'
+                    ? (STORE_UI_TRANSLATIONS.hi.categories[item.category] || item.category)
+                    : item.category}
             </Text>
         </TouchableOpacity>
     );
@@ -183,11 +243,15 @@ const SamagriScreen = () => {
                 </View>
 
                 <View style={styles.itemInfo}>
-                    <Text style={[styles.itemName, !itemUnlocked && { color: '#666' }]}>{item.name}</Text>
+                    <Text style={[styles.itemName, !itemUnlocked && { color: '#666' }]}>
+                        {language === 'hi' ? (item.name_hi || item.name) : item.name}
+                    </Text>
                     <View style={styles.priceContainer}>
                         <Ionicons name="flash" size={14} color={itemUnlocked ? "#ffd700" : "#666"} />
                         <Text style={[styles.itemPrice, !itemUnlocked && { color: '#666' }]}>
-                            {itemUnlocked ? 'Unlocked' : `${item.price} coins`}
+                            {itemUnlocked
+                                ? (getExpiryLabel(item.id) || (language === 'hi' ? 'अनलॉक' : 'Unlocked'))
+                                : `${item.price} coins`}
                         </Text>
                     </View>
                 </View>
@@ -235,7 +299,9 @@ const SamagriScreen = () => {
                 <TouchableOpacity onPress={() => navigation.navigate('DailyDarshan')} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color="#FFF" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Divine Samagri Store</Text>
+                <Text style={styles.headerTitle}>
+                    {language === 'hi' ? STORE_UI_TRANSLATIONS.hi.header : STORE_UI_TRANSLATIONS.en.header}
+                </Text>
                 <View style={styles.coinBadge}>
                     <Ionicons name="flash" size={16} color="#ffd700" />
                     <Text style={styles.coinBalance}>{userCoins}</Text>

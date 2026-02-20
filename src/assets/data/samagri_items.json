@@ -5,61 +5,73 @@
             {
                 "id": "f1",
                 "name": "Marigold",
+                "name_hi": "गेंदा",
                 "price": 5
             },
             {
                 "id": "f2",
                 "name": "Rose",
+                "name_hi": "गुलाब",
                 "price": 10
             },
             {
                 "id": "f3",
                 "name": "Bel Patra",
+                "name_hi": "बेल पत्र",
                 "price": 5
             },
             {
                 "id": "f4",
                 "name": "Vaijayanti",
+                "name_hi": "वैजयंती",
                 "price": 15
             },
             {
                 "id": "f5",
                 "name": "Jasmine",
+                "name_hi": "चमेली",
                 "price": 10
             },
             {
                 "id": "f6",
                 "name": "Madhumalti",
+                "name_hi": "मधुमालती",
                 "price": 10
             },
             {
                 "id": "f7",
                 "name": "Hibiscus",
+                "name_hi": "गुड़हल",
                 "price": 5
             },
             {
                 "id": "f8",
                 "name": "White Rose",
+                "name_hi": "सफेद गुलाब",
                 "price": 10
             },
             {
                 "id": "f9",
                 "name": "Agastya",
+                "name_hi": "अगस्त्य",
                 "price": 15
             },
             {
                 "id": "f10",
                 "name": "Lajvanti",
+                "name_hi": "लाजवंती",
                 "price": 10
             },
             {
                 "id": "f11",
                 "name": "Lotus",
+                "name_hi": "कमल",
                 "price": 20
             },
             {
                 "id": "f12",
                 "name": "Neelkamal",
+                "name_hi": "नीलकमल",
                 "price": 25
             }
         ]
@@ -70,21 +82,25 @@
             {
                 "id": "s1",
                 "name": "Shankh",
+                "name_hi": "शंख",
                 "price": 50
             },
             {
                 "id": "s2",
                 "name": "Bell",
+                "name_hi": "घंटी",
                 "price": 30
             },
             {
                 "id": "s3",
                 "name": "Majira",
+                "name_hi": "मंजीरा",
                 "price": 40
             },
             {
                 "id": "s4",
                 "name": "Drum",
+                "name_hi": "नगाड़ा",
                 "price": 60
             }
         ]
@@ -95,21 +111,25 @@
             {
                 "id": "g1",
                 "name": "Normal Garland",
+                "name_hi": "सामान्य माला",
                 "price": 15
             },
             {
                 "id": "g2",
                 "name": "Marigold Garland",
+                "name_hi": "गेंदे की माला",
                 "price": 20
             },
             {
                 "id": "g3",
                 "name": "Rose Garland",
+                "name_hi": "गुलाब की माला",
                 "price": 30
             },
             {
                 "id": "g4",
                 "name": "White Aak Garland",
+                "name_hi": "सफेद आक की माला",
                 "price": 25
             }
         ]
@@ -120,21 +140,25 @@
             {
                 "id": "t1",
                 "name": "Classic Thali",
+                "name_hi": "क्लासिक थाली",
                 "price": 100
             },
             {
                 "id": "t2",
                 "name": "Silver Thali",
+                "name_hi": "चांदी की थाली",
                 "price": 500
             },
             {
                 "id": "t3",
                 "name": "Gold Plated Thali",
+                "name_hi": "स्वर्ण जड़ित थाली",
                 "price": 1000
             },
             {
                 "id": "t4",
                 "name": "Kundan Thali",
+                "name_hi": "कुंदन थाली",
                 "price": 800
             }
         ]
@@ -145,26 +169,31 @@
             {
                 "id": "dd1",
                 "name": "Oil Diya",
+                "name_hi": "तेल का दीपक",
                 "price": 5
             },
             {
                 "id": "dd2",
                 "name": "Camphor",
+                "name_hi": "कपूर",
                 "price": 5
             },
             {
                 "id": "dd3",
                 "name": "Dhup",
+                "name_hi": "धूप",
                 "price": 5
             },
             {
                 "id": "dd4",
                 "name": "Ghee Diya",
+                "name_hi": "घी का दीपक",
                 "price": 10
             },
             {
                 "id": "dd5",
                 "name": "Five-Faced Diya",
+                "name_hi": "पंचमुखी दीपक",
                 "price": 25
             }
         ]
@@ -175,56 +204,67 @@
             {
                 "id": "sa1",
                 "name": "Nariyal Barfi",
+                "name_hi": "नारियल बर्फी",
                 "price": 20
             },
             {
                 "id": "sa2",
                 "name": "Panchamrit",
+                "name_hi": "पंचामृत",
                 "price": 15
             },
             {
                 "id": "sa3",
                 "name": "Gangajal",
+                "name_hi": "गंगाजल",
                 "price": 10
             },
             {
                 "id": "sa4",
                 "name": "Sandalwood",
+                "name_hi": "चंदन",
                 "price": 15
             },
             {
                 "id": "sa5",
                 "name": "Besan Laddoo",
+                "name_hi": "बेसन लड्डू",
                 "price": 20
             },
             {
                 "id": "sa6",
                 "name": "Boondi Laddoo",
+                "name_hi": "बूंदी लड्डू",
                 "price": 20
             },
             {
                 "id": "sa7",
                 "name": "Fruits",
+                "name_hi": "फल",
                 "price": 30
             },
             {
                 "id": "sa8",
                 "name": "Kheer",
+                "name_hi": "खीर",
                 "price": 25
             },
             {
                 "id": "sa9",
                 "name": "Halwa",
+                "name_hi": "हलवा",
                 "price": 25
             },
             {
                 "id": "sa10",
                 "name": "Nariyal",
+                "name_hi": "नारियल",
                 "price": 10
             },
             {
                 "id": "sa11",
                 "name": "Chappan Bhog",
+                "name_hi": "छप्पन भोग",
                 "price": 200
             }
         ]
@@ -235,21 +275,25 @@
             {
                 "id": "c1",
                 "name": "Normal Coins",
+                "name_hi": "सामान्य मुद्रा",
                 "price": 0
             },
             {
                 "id": "c2",
                 "name": "Bronze Coins",
+                "name_hi": "कांस्य मुद्रा",
                 "price": 50
             },
             {
                 "id": "c3",
                 "name": "Silver Coins",
+                "name_hi": "चांदी की मुद्रा",
                 "price": 100
             },
             {
                 "id": "c4",
                 "name": "Gold Coins",
+                "name_hi": "स्वर्ण मुद्रा",
                 "price": 250
             }
         ]
