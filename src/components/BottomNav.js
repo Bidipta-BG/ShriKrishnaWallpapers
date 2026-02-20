@@ -1,10 +1,36 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useLanguage } from '../context/LanguageContext';
 import { useLoading } from '../contexts/LoadingContext';
+
+const NAV_TRANSLATIONS = {
+    en: {
+        images: 'Images',
+        astro: 'Astro',
+        puja: 'Puja',
+        samagri: 'Samagri',
+        more: 'More',
+        offlineTitle: 'No Internet Connection',
+        offlineMsg: 'You are currently offline. Please connect to the internet to access the divine gallery and features.',
+        ok: 'OK'
+    },
+    hi: {
+        images: 'चित्र',
+        astro: 'एस्ट्रो',
+        puja: 'पूजा',
+        samagri: 'सामग्री',
+        more: 'अधिक',
+        offlineTitle: 'इंटरनेट कनेक्शन नहीं है',
+        offlineMsg: 'आप वर्तमान में ऑफ़लाइन हैं। दिव्य गैलरी और सुविधाओं का उपयोग करने के लिए कृपया इंटरनेट से जुड़ें।',
+        ok: 'ठीक है'
+    }
+};
 
 const BottomNav = ({ navigation, activeTab }) => {
     const { showLoading, hideLoading } = useLoading();
+    const { language } = useLanguage();
+    const t = NAV_TRANSLATIONS[language] || NAV_TRANSLATIONS.en;
 
     const handleProtectedNavigation = async (screen, params = {}) => {
         showLoading('Loading...');
@@ -34,9 +60,9 @@ const BottomNav = ({ navigation, activeTab }) => {
             // Offline or network error
             hideLoading();
             Alert.alert(
-                "No Internet Connection",
-                "You are currently offline. Please connect to the internet to access the divine gallery and features.",
-                [{ text: "OK" }]
+                t.offlineTitle,
+                t.offlineMsg,
+                [{ text: t.ok }]
             );
         }
     };
@@ -56,7 +82,7 @@ const BottomNav = ({ navigation, activeTab }) => {
                         size={24}
                         color={activeTab === 'Image' ? '#9c6ce6' : '#FFF'}
                     />
-                    <Text style={[styles.navLabel, activeTab === 'Image' && { color: '#9c6ce6' }]}>Images</Text>
+                    <Text style={[styles.navLabel, activeTab === 'Image' && { color: '#9c6ce6' }]}>{t.images}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -68,7 +94,7 @@ const BottomNav = ({ navigation, activeTab }) => {
                         size={24}
                         color={activeTab === 'Astro' ? '#9c6ce6' : '#FFF'}
                     />
-                    <Text style={[styles.navLabel, activeTab === 'Astro' && { color: '#9c6ce6' }]}>Astro</Text>
+                    <Text style={[styles.navLabel, activeTab === 'Astro' && { color: '#9c6ce6' }]}>{t.astro}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('DailyDarshan')}>
@@ -78,7 +104,7 @@ const BottomNav = ({ navigation, activeTab }) => {
                         size={26}
                         color={activeTab === 'Puja' ? '#4dabf7' : '#FFF'}
                     />
-                    <Text style={[styles.navLabel, activeTab === 'Puja' && { color: '#4dabf7' }]}>Puja</Text>
+                    <Text style={[styles.navLabel, activeTab === 'Puja' && { color: '#4dabf7' }]}>{t.puja}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -90,7 +116,7 @@ const BottomNav = ({ navigation, activeTab }) => {
                         size={24}
                         color={activeTab === 'Samagri' ? '#9c6ce6' : '#FFF'}
                     />
-                    <Text style={[styles.navLabel, activeTab === 'Samagri' && { color: '#9c6ce6' }]}>Samagri</Text>
+                    <Text style={[styles.navLabel, activeTab === 'Samagri' && { color: '#9c6ce6' }]}>{t.samagri}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Settings')}>
@@ -100,7 +126,7 @@ const BottomNav = ({ navigation, activeTab }) => {
                         size={24}
                         color={activeTab === 'Settings' ? '#9c6ce6' : '#FFF'}
                     />
-                    <Text style={[styles.navLabel, activeTab === 'Settings' && { color: '#9c6ce6' }]}>More</Text>
+                    <Text style={[styles.navLabel, activeTab === 'Settings' && { color: '#9c6ce6' }]}>{t.more}</Text>
                 </TouchableOpacity>
             </View>
 

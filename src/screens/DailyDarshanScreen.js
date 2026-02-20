@@ -206,6 +206,9 @@ const TRANSLATIONS = {
         flowers: 'Flowers',
         coins: 'Coins',
         shankh: 'Shankh',
+        bell: 'Bell',
+        majira: 'Majira',
+        drum: 'Drum',
         more: 'More',
         slokas: 'Slokas',
         chanting: 'Chanting',
@@ -229,8 +232,11 @@ const TRANSLATIONS = {
     },
     hi: {
         flowers: 'पुष्प',
-        divyaCoins: 'दिव्य मुद्रा',
+        coins: 'मुद्रा',
         shankh: 'शंख',
+        bell: 'घंटी',
+        majira: 'मंजीरा',
+        drum: 'नगाड़ा',
         more: 'अधिक',
         slokas: 'श्लोक',
         chanting: 'जाप',
@@ -266,7 +272,6 @@ const DailyDarshanScreen = ({ navigation }) => {
     const [selectedThaliIcon, setSelectedThaliIcon] = useState(require('../assets/images/my_diya.png'));
     const [selectedSoundId, setSelectedSoundId] = useState('s1');
     const [selectedSoundIcon, setSelectedSoundIcon] = useState(require('../assets/images/shankh_icon.png'));
-    const [selectedSoundLabel, setSelectedSoundLabel] = useState('Shankh');
     const dhupTimeoutRef = useRef(null);
 
     // Load user selections on focus
@@ -324,19 +329,10 @@ const DailyDarshanScreen = ({ navigation }) => {
                     setSelectedSoundId(soundId);
                     setSelectedSoundIcon(ITEM_ICONS[soundId]);
 
-                    const soundNames = {
-                        's1': { en: 'Shankh', hi: 'शंख' },
-                        's2': { en: 'Bell', hi: 'घंटी' },
-                        's3': { en: 'Majira', hi: 'मंजीरा' },
-                        's4': { en: 'Drum', hi: 'नगाड़ा' },
-                    };
-                    const name = soundNames[soundId] || soundNames['s1'];
-                    setSelectedSoundLabel(language === 'hi' ? name.hi : name.en);
                 } else {
                     // Default fallback to Shankh
                     setSelectedSoundId('s1');
                     setSelectedSoundIcon(require('../assets/images/shankh_icon.png'));
-                    setSelectedSoundLabel(language === 'hi' ? 'शंख' : 'Shankh');
                 }
             };
 
@@ -1048,7 +1044,13 @@ const DailyDarshanScreen = ({ navigation }) => {
                     />
                     <SideIcon
                         imageSource={selectedSoundIcon}
-                        label={selectedSoundLabel}
+                        label={
+                            selectedSoundId === 's1' ? t.shankh :
+                                selectedSoundId === 's2' ? t.bell :
+                                    selectedSoundId === 's3' ? t.majira :
+                                        selectedSoundId === 's4' ? t.drum :
+                                            t.shankh
+                        }
                         onPress={toggleInstrumentPlayback}
                         active={isInstrumentPlaying}
                     />
