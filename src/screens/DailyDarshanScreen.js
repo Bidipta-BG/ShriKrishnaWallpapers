@@ -183,10 +183,14 @@ const FallingCoin = ({ index, onComplete, imageSource }) => {
 };
 
 // --- Helper Components for the Icons ---
-const SideIcon = ({ color, emoji, iconName, iconSize = 24, iconColor = "#fff", imageSource, label, onPress }) => (
-    <TouchableOpacity onPress={onPress}>
-        <View style={styles.iconWrapper}>
-            <View style={[styles.iconCircle, { backgroundColor: color || 'rgba(0,0,0,0.4)' }]}>
+const SideIcon = ({ color, emoji, iconName, iconSize = 24, iconColor = "#fff", imageSource, label, onPress, disabled, active }) => (
+    <TouchableOpacity onPress={onPress} disabled={disabled} activeOpacity={disabled ? 1 : 0.7}>
+        <View style={[styles.iconWrapper, disabled && { opacity: 0.5 }]}>
+            <View style={[
+                styles.iconCircle,
+                { backgroundColor: color || 'rgba(0,0,0,0.4)' },
+                active && { borderColor: '#9c6ce6', borderWidth: 2 }
+            ]}>
                 {imageSource && imageSource !== null ? (
                     <Image source={imageSource} style={{ width: 30, height: 30 }} resizeMode="contain" />
                 ) : iconName ? (
@@ -262,17 +266,31 @@ const DailyDarshanScreen = ({ navigation }) => {
     const insets = useSafeAreaInsets();
     const route = useRoute();
 
+    // --- Active Ceremony & Animation States ---
+    const [isAartiActive, setIsAartiActive] = useState(false);
+    const [isInstrumentPlaying, setIsInstrumentPlaying] = useState(false);
+    const [isRinging, setIsRinging] = useState(false);
+    const [isPrasadVisible, setIsPrasadVisible] = useState(false);
+    const [isDhupVisible, setIsDhupVisible] = useState(false);
+    const [isFlowerShowerActive, setIsFlowerShowerActive] = useState(false);
+    const [isCoinShowerActive, setIsCoinShowerActive] = useState(false);
+    const [isGarlandVisible, setIsGarlandVisible] = useState(false);
+
+    // Master Interaction Lock
+    const isInteractionDisabled = isAartiActive || isInstrumentPlaying || isPrasadVisible || isDhupVisible || isFlowerShowerActive || isCoinShowerActive || isRinging;
+
     // --- Samagri Selections for Animations ---
     // Initialize with defaults to avoid empty shower before fetch
     const [selectedFlowerIcons, setSelectedFlowerIcons] = useState([require('../assets/images/flowers_leafs/marigold.png')]);
     const [selectedCoinIcons, setSelectedCoinIcons] = useState([require('../assets/images/coins/normal_coins.png')]);
     const [selectedPrasadIcons, setSelectedPrasadIcons] = useState([]); // Array of prasad image sources
-    const [isDhupVisible, setIsDhupVisible] = useState(false);
     const [selectedDhupIcon, setSelectedDhupIcon] = useState(null);
     const [selectedThaliIcon, setSelectedThaliIcon] = useState(require('../assets/images/my_diya.png'));
     const [selectedSoundId, setSelectedSoundId] = useState('s1');
     const [selectedSoundIcon, setSelectedSoundIcon] = useState(require('../assets/images/shankh_icon.png'));
+    const [selectedGarlandIcon, setSelectedGarlandIcon] = useState(null);
     const dhupTimeoutRef = useRef(null);
+    const prasadTimeoutRef = useRef(null);
 
     // Load user selections on focus
     useFocusEffect(
@@ -340,13 +358,6 @@ const DailyDarshanScreen = ({ navigation }) => {
         }, [])
     );
 
-    // --- Garland Visibility ---
-    const [isGarlandVisible, setIsGarlandVisible] = useState(false);
-    const [selectedGarlandIcon, setSelectedGarlandIcon] = useState(null);
-
-    // --- Prasad Visibility ---
-    const [isPrasadVisible, setIsPrasadVisible] = useState(false);
-    const prasadTimeoutRef = useRef(null);
 
     const togglePrasad = () => {
         if (selectedPrasadIcons.length === 0) {
@@ -585,7 +596,6 @@ const DailyDarshanScreen = ({ navigation }) => {
     const bellRotation = useSharedValue(0);
     const diyaOpacity = useSharedValue(1);
     const soundRef = useRef(null);
-    const [isRinging, setIsRinging] = useState(false);
 
     // Cleanup sound on unmount
     useEffect(() => {
@@ -643,7 +653,6 @@ const DailyDarshanScreen = ({ navigation }) => {
 
     // --- Instrument Sound (Dynamic) ---
     const instrumentSoundRef = useRef(null);
-    const [isInstrumentPlaying, setIsInstrumentPlaying] = useState(false);
 
     // Cleanup instrument on unmount
     useEffect(() => {
@@ -655,16 +664,7 @@ const DailyDarshanScreen = ({ navigation }) => {
     }, []);
 
     const toggleInstrumentPlayback = async () => {
-        if (isInstrumentPlaying) {
-            // If already playing, stop it
-            if (instrumentSoundRef.current) {
-                await instrumentSoundRef.current.stopAsync();
-                await instrumentSoundRef.current.unloadAsync();
-                instrumentSoundRef.current = null;
-            }
-            setIsInstrumentPlaying(false);
-            return;
-        }
+        if (isInteractionDisabled || isInstrumentPlaying) return;
 
         setIsInstrumentPlaying(true);
         try {
@@ -712,7 +712,6 @@ const DailyDarshanScreen = ({ navigation }) => {
     // --- Aarti Animation (Diya) ---
     const aartiRotation = useSharedValue(0);
     const aartiScale = useSharedValue(1);
-    const [isAartiActive, setIsAartiActive] = useState(false);
     const [rewardPoints, setRewardPoints] = useState(0); // For Punya Coins demo
 
 
@@ -854,10 +853,12 @@ const DailyDarshanScreen = ({ navigation }) => {
             showerIntervalRef.current = null;
         }
         setIsGarlandVisible(false);
+        setIsFlowerShowerActive(false);
     };
 
     const triggerFlowerShower = () => {
-        if (showerIntervalRef.current) return;
+        if (isInteractionDisabled || showerIntervalRef.current) return;
+        setIsFlowerShowerActive(true);
 
         // Automatically show Mala if one is selected/unlocked
         if (selectedGarlandIcon) {
@@ -919,10 +920,12 @@ const DailyDarshanScreen = ({ navigation }) => {
             clearInterval(coinIntervalRef.current);
             coinIntervalRef.current = null;
         }
+        setIsCoinShowerActive(false);
     };
 
     const triggerCoinShower = () => {
-        if (coinIntervalRef.current) return;
+        if (isInteractionDisabled || coinIntervalRef.current) return;
+        setIsCoinShowerActive(true);
 
         const startTime = Date.now();
         const addBatch = () => {
@@ -1002,15 +1005,15 @@ const DailyDarshanScreen = ({ navigation }) => {
             {/* 2. Top Layer: Hanging Bells */}
             {/* User requested to move bells UP. Removed safe area constraint to allow them to go higher */}
             <View style={[styles.bellsContainer, { top: insets.top - 25 }]}>
-                <TouchableOpacity onPress={ringBell} activeOpacity={0.8}>
-                    <Animated.View style={[styles.bellWrapper, styles.bellLeft, bellStyle]}>
+                <TouchableOpacity onPress={ringBell} activeOpacity={0.8} disabled={isInteractionDisabled}>
+                    <Animated.View style={[styles.bellWrapper, styles.bellLeft, bellStyle, isInteractionDisabled && { opacity: 0.5 }]}>
                         <View style={styles.bellString} />
                         <Text style={styles.bellEmoji}>🔔</Text>
                     </Animated.View>
                 </TouchableOpacity>
 
-                <TouchableOpacity onPress={ringBell} activeOpacity={0.8}>
-                    <Animated.View style={[styles.bellWrapper, styles.bellRight, bellStyle]}>
+                <TouchableOpacity onPress={ringBell} activeOpacity={0.8} disabled={isInteractionDisabled}>
+                    <Animated.View style={[styles.bellWrapper, styles.bellRight, bellStyle, isInteractionDisabled && { opacity: 0.5 }]}>
                         <View style={styles.bellString} />
                         <Text style={styles.bellEmoji}>🔔</Text>
                     </Animated.View>
@@ -1029,18 +1032,21 @@ const DailyDarshanScreen = ({ navigation }) => {
                         imageSource={selectedPrasadIcons.length > 0 ? selectedPrasadIcons[0] : ITEM_ICONS['sa5']}
                         label={language === 'hi' ? 'प्रसाद' : 'Prasad'}
                         onPress={togglePrasad}
+                        disabled={isInteractionDisabled}
                     />
 
                     <SideIcon
                         imageSource={selectedFlowerIcons.length > 0 ? selectedFlowerIcons[0] : ITEM_ICONS['f1']}
                         label={t.flowers || 'Flowers'}
                         onPress={triggerFlowerShower}
+                        disabled={isInteractionDisabled}
                     />
 
                     <SideIcon
                         imageSource={selectedCoinIcons.length > 0 ? selectedCoinIcons[0] : ITEM_ICONS['c1']}
                         label={t.coins || 'Coins'}
                         onPress={triggerCoinShower}
+                        disabled={isInteractionDisabled}
                     />
                     <SideIcon
                         imageSource={selectedSoundIcon}
@@ -1052,7 +1058,7 @@ const DailyDarshanScreen = ({ navigation }) => {
                                             t.shankh
                         }
                         onPress={toggleInstrumentPlayback}
-                        active={isInstrumentPlaying}
+                        disabled={isInteractionDisabled}
                     />
                 </View>
 
@@ -1062,21 +1068,25 @@ const DailyDarshanScreen = ({ navigation }) => {
                         imageSource={selectedDhupIcon ? selectedDhupIcon : ITEM_ICONS['dd1']}
                         label={language === 'hi' ? 'धूप/दिया' : 'Dhup/Diya'}
                         onPress={toggleDhup}
+                        disabled={isInteractionDisabled}
                     />
                     <SideIcon
                         iconName="book-outline"
                         label={t.slokas}
                         onPress={() => navigation.navigate('Slokas')}
+                        disabled={isInteractionDisabled}
                     />
                     <SideIcon
                         iconName="radio-button-on-outline"
                         label={t.chanting}
                         onPress={() => navigation.navigate('MantraSelection')}
+                        disabled={isInteractionDisabled}
                     />
                     <SideIcon
                         iconName="information-circle-outline"
                         label={t.about || 'About'}
                         onPress={() => navigation.navigate('Settings')}
+                        disabled={isInteractionDisabled}
                     />
                 </View>
             </View>
@@ -1090,6 +1100,7 @@ const DailyDarshanScreen = ({ navigation }) => {
                         activeOpacity={0.7}
                         onPress={() => navigation.navigate('ScheduleDarshan')}
                         style={{ alignItems: 'flex-start', minWidth: 100, paddingLeft: 15 }}
+                        disabled={isInteractionDisabled}
                     >
                         <Text style={{ fontSize: 16, color: '#000', fontWeight: 'bold', textShadowColor: '#fff', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 1 }}>
                             {language === 'hi' ? `दिन ${streak}/${challengeGoal}` : `Day ${streak}/${challengeGoal}`}
@@ -1107,6 +1118,7 @@ const DailyDarshanScreen = ({ navigation }) => {
                         activeOpacity={0.7}
                         onPress={() => navigation.navigate('ScheduleDarshan')}
                         style={{ alignItems: 'flex-end', minWidth: 100, paddingRight: 15 }}
+                        disabled={isInteractionDisabled}
                     >
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                             <Ionicons name="star" size={16} color="#FFD700" style={{ marginRight: 4 }} />
@@ -1120,16 +1132,16 @@ const DailyDarshanScreen = ({ navigation }) => {
                     </TouchableOpacity>
                 </View>
 
-                <BottomNav navigation={navigation} activeTab="Puja" />
+                <BottomNav navigation={navigation} activeTab="Puja" disabled={isInteractionDisabled} />
             </View>
 
             {/* Central Big Diya Layered Above EVERYTING - Now outside bottomNav to avoid pushing layout */}
             <View style={[styles.centerThaliContainer, { bottom: insets.bottom + 35 }]} pointerEvents="box-none">
 
-                <TouchableOpacity onPress={performAarti} activeOpacity={0.8}>
+                <TouchableOpacity onPress={performAarti} activeOpacity={0.8} disabled={isInteractionDisabled}>
                     <Animated.Image
                         source={selectedThaliIcon}
-                        style={[styles.thaliImage, diyaStyle]}
+                        style={[styles.thaliImage, diyaStyle, isInteractionDisabled && { opacity: 0.6 }]}
                         resizeMode="contain"
                     />
                 </TouchableOpacity>

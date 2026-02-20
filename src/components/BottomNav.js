@@ -27,12 +27,13 @@ const NAV_TRANSLATIONS = {
     }
 };
 
-const BottomNav = ({ navigation, activeTab }) => {
+const BottomNav = ({ navigation, activeTab, disabled }) => {
     const { showLoading, hideLoading } = useLoading();
     const { language } = useLanguage();
     const t = NAV_TRANSLATIONS[language] || NAV_TRANSLATIONS.en;
 
     const handleProtectedNavigation = async (screen, params = {}) => {
+        if (disabled) return;
         showLoading('Loading...');
         // Simple connectivity check using a HEAD request to the API
         // This is fast and doesn't download large data.
@@ -72,10 +73,11 @@ const BottomNav = ({ navigation, activeTab }) => {
             {/* Progress Bar (Subtle tech line) */}
             <View style={styles.techProgressBar} />
 
-            <View style={styles.navBar}>
+            <View style={[styles.navBar, disabled && { opacity: 0.6 }]}>
                 <TouchableOpacity
                     style={styles.navItem}
                     onPress={() => handleProtectedNavigation('Gallery')}
+                    disabled={disabled}
                 >
                     <Ionicons
                         name={activeTab === 'Image' ? 'images' : 'images-outline'}
@@ -88,6 +90,7 @@ const BottomNav = ({ navigation, activeTab }) => {
                 <TouchableOpacity
                     style={styles.navItem}
                     onPress={() => handleProtectedNavigation('Generate')}
+                    disabled={disabled}
                 >
                     <Ionicons
                         name={activeTab === 'Astro' ? 'planet' : 'planet-outline'}
@@ -97,7 +100,11 @@ const BottomNav = ({ navigation, activeTab }) => {
                     <Text style={[styles.navLabel, activeTab === 'Astro' && { color: '#9c6ce6' }]}>{t.astro}</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('DailyDarshan')}>
+                <TouchableOpacity
+                    style={styles.navItem}
+                    onPress={() => !disabled && navigation.navigate('DailyDarshan')}
+                    disabled={disabled}
+                >
                     {activeTab === 'Puja' && <View style={styles.pujaActiveIndicator} />}
                     <Ionicons
                         name={activeTab === 'Puja' ? 'flower' : 'flower-outline'}
@@ -110,6 +117,7 @@ const BottomNav = ({ navigation, activeTab }) => {
                 <TouchableOpacity
                     style={styles.navItem}
                     onPress={() => handleProtectedNavigation('Samagri')}
+                    disabled={disabled}
                 >
                     <Ionicons
                         name={activeTab === 'Samagri' ? 'cart' : 'cart-outline'}
@@ -119,7 +127,11 @@ const BottomNav = ({ navigation, activeTab }) => {
                     <Text style={[styles.navLabel, activeTab === 'Samagri' && { color: '#9c6ce6' }]}>{t.samagri}</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Settings')}>
+                <TouchableOpacity
+                    style={styles.navItem}
+                    onPress={() => !disabled && navigation.navigate('Settings')}
+                    disabled={disabled}
+                >
                     {/* Settings/More tab */}
                     <Ionicons
                         name={activeTab === 'Settings' ? 'settings' : 'settings-outline'}
