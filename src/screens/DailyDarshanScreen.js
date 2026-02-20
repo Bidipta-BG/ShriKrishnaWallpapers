@@ -42,6 +42,12 @@ const COIN_IMAGES = [
 ];
 
 // --- Dummy Music Data Removed (Moved to MantrasScreen)
+const INSTRUMENT_SOUNDS = {
+    's1': require('../assets/sounds/shank-sound.mp3'),
+    's2': require('../assets/sounds/bell_sound2.mp3'),
+    's3': require('../assets/sounds/majira_sound.mp3'),
+    's4': require('../assets/sounds/drum_sound.mp3'),
+};
 
 const FLOWER_COUNT = 15;
 const FallingFlower = ({ index, onComplete, imageSource }) => {
@@ -258,6 +264,9 @@ const DailyDarshanScreen = ({ navigation }) => {
     const [isDhupVisible, setIsDhupVisible] = useState(false);
     const [selectedDhupIcon, setSelectedDhupIcon] = useState(null);
     const [selectedThaliIcon, setSelectedThaliIcon] = useState(require('../assets/images/my_diya.png'));
+    const [selectedSoundId, setSelectedSoundId] = useState('s1');
+    const [selectedSoundIcon, setSelectedSoundIcon] = useState(require('../assets/images/shankh_icon.png'));
+    const [selectedSoundLabel, setSelectedSoundLabel] = useState('Shankh');
     const dhupTimeoutRef = useRef(null);
 
     // Load user selections on focus
@@ -307,6 +316,27 @@ const DailyDarshanScreen = ({ navigation }) => {
                 } else {
                     // Default fallback to my_diya.png
                     setSelectedThaliIcon(require('../assets/images/my_diya.png'));
+                }
+
+                // Map Sound ID, checking UNLOCKED status
+                const soundId = selected.sound;
+                if (soundId && unlocked[soundId] && INSTRUMENT_SOUNDS[soundId]) {
+                    setSelectedSoundId(soundId);
+                    setSelectedSoundIcon(ITEM_ICONS[soundId]);
+
+                    const soundNames = {
+                        's1': { en: 'Shankh', hi: 'शंख' },
+                        's2': { en: 'Bell', hi: 'घंटी' },
+                        's3': { en: 'Majira', hi: 'मंजीरा' },
+                        's4': { en: 'Drum', hi: 'नगाड़ा' },
+                    };
+                    const name = soundNames[soundId] || soundNames['s1'];
+                    setSelectedSoundLabel(language === 'hi' ? name.hi : name.en);
+                } else {
+                    // Default fallback to Shankh
+                    setSelectedSoundId('s1');
+                    setSelectedSoundIcon(require('../assets/images/shankh_icon.png'));
+                    setSelectedSoundLabel(language === 'hi' ? 'शंख' : 'Shankh');
                 }
             };
 
@@ -615,50 +645,51 @@ const DailyDarshanScreen = ({ navigation }) => {
         }
     };
 
-    // --- Shankh Sound ---
-    const shankhSoundRef = useRef(null);
-    const [isShankhPlaying, setIsShankhPlaying] = useState(false);
+    // --- Instrument Sound (Dynamic) ---
+    const instrumentSoundRef = useRef(null);
+    const [isInstrumentPlaying, setIsInstrumentPlaying] = useState(false);
 
-    // Cleanup shankh on unmount
+    // Cleanup instrument on unmount
     useEffect(() => {
         return () => {
-            if (shankhSoundRef.current) {
-                shankhSoundRef.current.unloadAsync();
+            if (instrumentSoundRef.current) {
+                instrumentSoundRef.current.unloadAsync();
             }
         };
     }, []);
 
-    const playShankh = async () => {
-        if (isShankhPlaying) {
+    const toggleInstrumentPlayback = async () => {
+        if (isInstrumentPlaying) {
             // If already playing, stop it
-            if (shankhSoundRef.current) {
-                await shankhSoundRef.current.stopAsync();
-                await shankhSoundRef.current.unloadAsync();
-                shankhSoundRef.current = null;
+            if (instrumentSoundRef.current) {
+                await instrumentSoundRef.current.stopAsync();
+                await instrumentSoundRef.current.unloadAsync();
+                instrumentSoundRef.current = null;
             }
-            setIsShankhPlaying(false);
+            setIsInstrumentPlaying(false);
             return;
         }
 
-        setIsShankhPlaying(true);
+        setIsInstrumentPlaying(true);
         try {
+            const soundFile = INSTRUMENT_SOUNDS[selectedSoundId] || INSTRUMENT_SOUNDS['s1'];
             const { sound } = await Audio.Sound.createAsync(
-                require('../assets/sounds/shank-sound.mp3'),
+                soundFile,
                 { shouldPlay: true }
             );
-            shankhSoundRef.current = sound;
+            instrumentSoundRef.current = sound;
 
             // Auto-reset state when playback finishes
             sound.setOnPlaybackStatusUpdate((status) => {
                 if (status.didJustFinish) {
-                    setIsShankhPlaying(false);
+                    setIsInstrumentPlaying(false);
                     sound.unloadAsync(); // Cleanup
                 }
             });
 
         } catch (error) {
-            console.log('Error playing Shankh:', error);
-            setIsShankhPlaying(false);
+            console.log('Error playing instrument:', error);
+            setIsInstrumentPlaying(false);
         }
     };
 
@@ -717,13 +748,13 @@ const DailyDarshanScreen = ({ navigation }) => {
         // 1. Stop Bell
         stopBell();
 
-        // 2. Stop Shankh
-        if (shankhSoundRef.current) {
-            shankhSoundRef.current.stopAsync().catch(() => { });
-            shankhSoundRef.current.unloadAsync().catch(() => { });
-            shankhSoundRef.current = null;
+        // 2. Stop Instrument
+        if (instrumentSoundRef.current) {
+            instrumentSoundRef.current.stopAsync().catch(() => { });
+            instrumentSoundRef.current.unloadAsync().catch(() => { });
+            instrumentSoundRef.current = null;
         }
-        setIsShankhPlaying(false);
+        setIsInstrumentPlaying(false);
 
         // 3. Stop Interval Generation
         if (showerIntervalRef.current) {
@@ -751,7 +782,7 @@ const DailyDarshanScreen = ({ navigation }) => {
         setIsAartiActive(true);
 
         // Trigger all effects
-        playShankh();
+        toggleInstrumentPlayback();
         ringBell();
         triggerFlowerShower();
         triggerCoinShower();
@@ -1016,9 +1047,10 @@ const DailyDarshanScreen = ({ navigation }) => {
                         onPress={triggerCoinShower}
                     />
                     <SideIcon
-                        imageSource={require('../assets/images/shankh_icon.png')}
-                        label={t.shankh}
-                        onPress={playShankh}
+                        imageSource={selectedSoundIcon}
+                        label={selectedSoundLabel}
+                        onPress={toggleInstrumentPlayback}
+                        active={isInstrumentPlaying}
                     />
                 </View>
 

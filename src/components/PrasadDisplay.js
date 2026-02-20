@@ -61,7 +61,7 @@ const PrasadItem = ({ imageSource, index, totalItems, isVisible, isSingleCentere
     const rowWidth = (itemsInThisRow * ITEM_SIZE) + ((itemsInThisRow - 1) * SPACING);
     const rowStartX = (width - rowWidth) / 2;
     const targetX = isSingleCentered ? (width - ITEM_SIZE) / 2 : rowStartX + (indexInRow * (ITEM_SIZE + SPACING));
-    const targetY = BASELINE_Y - (row * ROW_HEIGHT) - (isSingleCentered ? 80 : 0); // Increased lift to 45px to prevent overlap
+    const targetY = BASELINE_Y - (row * ROW_HEIGHT) - (isSingleCentered ? 80 : 0); // Increased lift to 80px to prevent overlap
 
     // Entry Side Logic (based on user request)
     // 1 item: Right
