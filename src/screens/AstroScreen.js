@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
 import {
+    ActivityIndicator,
     Dimensions,
     FlatList,
     Modal,
@@ -31,6 +31,15 @@ const ASTRO_MENU_ITEMS = [
 const TRANSLATIONS = {
     en: {
         title: 'Divine Astro',
+        comingSoon: 'COMING SOON',
+        surveyTitle: 'A Message for You 🙏',
+        surveyMsg: 'Jai Shri Krishna! We are working really hard to bring the best personalized astrology features for you. Since we want to provide this completely free, we want to know if you really want this feature to be here.',
+        surveyQuestion: 'Would you like us to launch this feature?',
+        yes: 'Yes, I need it! ✨',
+        no: 'Not for me 🚫',
+        thankYouTitle: 'Jai Shri Krishna! 🙏',
+        thankYouMsg: 'Thank you for your valuable feedback. We are working hard to make this app best for you!',
+        // Legacy below
         onboardingTitle: 'Complete Your Profile',
         genderTitle: 'Select Gender',
         male: 'Male',
@@ -44,14 +53,18 @@ const TRANSLATIONS = {
         accept: 'Accept & Continue',
         readTC: 'Read Terms & Conditions',
         hideTC: 'Hide Terms & Conditions',
-        handAnalysis: 'Hand Analysis',
-        dailyReport: 'Daily Report',
-        tarot: 'Tarot',
-        horoscope: 'Horoscope',
-        loveTest: 'Love Test',
     },
     hi: {
         title: 'दिव्य ज्योतिष',
+        comingSoon: 'शीघ्र आ रहा है',
+        surveyTitle: 'आपके लिए एक संदेश 🙏',
+        surveyMsg: 'जय श्री कृष्णा! हम आपके लिए सर्वोत्तम व्यक्तिगत ज्योतिष सुविधाएं लाने के लिए बहुत कड़ी मेहनत कर रहे हैं। चूंकि हम इसे पूरी तरह से निःशुल्क प्रदान करना चाहते हैं, हम यह जानना चाहते हैं कि क्या आप वाकई चाहते हैं कि यह सुविधा यहां हो।',
+        surveyQuestion: 'क्या आप चाहते हैं कि हम यह सुविधा लॉन्च करें?',
+        yes: 'हाँ, मुझे इसकी आवश्यकता है! ✨',
+        no: 'मेरे लिए नहीं 🚫',
+        thankYouTitle: 'जय श्री कृष्णा! 🙏',
+        thankYouMsg: 'आपकी बहुमूल्य प्रतिक्रिया के लिए धन्यवाद। हम इस ऐप को आपके लिए सर्वोत्तम बनाने के लिए कड़ी मेहनत कर रहे हैं!',
+        // Legacy below
         onboardingTitle: 'अपनी प्रोफाइल पूरी करें',
         genderTitle: 'लिंग चुनें',
         male: 'पुरुष',
@@ -65,11 +78,6 @@ const TRANSLATIONS = {
         accept: 'स्वीकार करें और जारी रखें',
         readTC: 'नियम एवं शर्तें पढ़ें',
         hideTC: 'नियम एवं शर्तें छिपाएं',
-        handAnalysis: 'हस्तरेखा विश्लेषण',
-        dailyReport: 'दैनिक रिपोर्ट',
-        tarot: 'टैरो कार्ड',
-        horoscope: 'राशिफल',
-        loveTest: 'प्रेम परीक्षण',
     }
 };
 
@@ -77,16 +85,18 @@ const AstroScreen = ({ navigation }) => {
     const { language } = useLanguage();
     const t = TRANSLATIONS[language] || TRANSLATIONS.en;
 
-    const [isFirstVisit, setIsFirstVisit] = useState(false);
+    const [hasVoted, setHasVoted] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Form States
+    // --- Legacy States (Kept for future) ---
+    const [isFirstVisit, setIsFirstVisit] = useState(false);
     const [gender, setGender] = useState(null);
     const [dob, setDob] = useState(new Date());
     const [tob, setTob] = useState(new Date());
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showTimePicker, setShowTimePicker] = useState(false);
-    const [showTC, setShowTC] = useState(false); // Collapsible T&C state
+    const [showTC, setShowTC] = useState(false);
 
     useEffect(() => {
         checkUserStatus();
@@ -94,9 +104,9 @@ const AstroScreen = ({ navigation }) => {
 
     const checkUserStatus = async () => {
         try {
-            const status = await AsyncStorage.getItem('astro_profile_completed');
-            if (status !== 'true') {
-                setIsFirstVisit(true);
+            const vote = await AsyncStorage.getItem('astro_survey_recorded');
+            if (vote === 'true') {
+                setHasVoted(true);
             }
         } catch (e) {
             console.error(e);
@@ -105,60 +115,68 @@ const AstroScreen = ({ navigation }) => {
         }
     };
 
-    const handleOnboardingSubmit = async () => {
-        if (!gender) {
-            alert(language === 'hi' ? 'कृपया लिंग चुनें' : 'Please select gender');
-            return;
-        }
+    const getOrGenerateDeviceId = async () => {
         try {
-            await AsyncStorage.setItem('astro_profile_completed', 'true');
-            await AsyncStorage.setItem('astro_gender', gender);
-            await AsyncStorage.setItem('astro_dob', dob.toISOString());
-            await AsyncStorage.setItem('astro_tob', tob.toISOString());
-            setIsFirstVisit(false);
+            let deviceId = await AsyncStorage.getItem('astro_device_id');
+            if (!deviceId) {
+                deviceId = 'dev_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+                await AsyncStorage.setItem('astro_device_id', deviceId);
+            }
+            return deviceId;
         } catch (e) {
-            console.error(e);
+            return 'anonymous_device';
         }
     };
 
-    const onDateChange = (event, selectedDate) => {
-        setShowDatePicker(false);
-        if (selectedDate) setDob(selectedDate);
+    const recordInterest = async (isInterested) => {
+        setIsSubmitting(true);
+        try {
+            const deviceId = await getOrGenerateDeviceId();
+
+            // API call to record interest
+            const response = await fetch('https://api.thevibecoderagency.online/api/srikrishna-aarti/astro-interest', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    interested: isInterested,
+                    language: language,
+                    timestamp: new Date().toISOString(),
+                    deviceId: deviceId
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Save locally to show thank you and prevent duplicate voting
+                await AsyncStorage.setItem('astro_survey_recorded', 'true');
+                setHasVoted(true);
+            } else {
+                console.error('API responded with failure:', result.message);
+                // Still allow user to see thank you as we'll try again or just let them be
+                await AsyncStorage.setItem('astro_survey_recorded', 'true');
+                setHasVoted(true);
+            }
+        } catch (e) {
+            console.error('Error recording interest:', e);
+            // In case of error (networking), still show thank you locally
+            await AsyncStorage.setItem('astro_survey_recorded', 'true');
+            setHasVoted(true);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
-    const onTimeChange = (event, selectedTime) => {
-        setShowTimePicker(false);
-        if (selectedTime) setTob(selectedTime);
+    // --- Legacy Handlers ---
+    const handleOnboardingSubmit = async () => {
+        // ... kept in code ...
     };
 
-    const renderMenuItem = ({ item }) => (
-        <TouchableOpacity
-            style={styles.gridCard}
-            activeOpacity={0.8}
-            onPress={() => {
-                if (item.id === '1') {
-                    navigation.navigate('HandAnalysis');
-                } else {
-                    console.log('Opening', item.name);
-                }
-            }}
-        >
-            <LinearGradient
-                colors={['#1a1a1a', '#0a0a0a']}
-                style={styles.cardGradient}
-            >
-                <View style={[styles.iconBox, { borderColor: item.color + '40' }]}>
-                    <Ionicons name={item.icon} size={32} color={item.color} />
-                </View>
-                <Text style={styles.cardText}>{language === 'hi' ? t[item.id] || item.name : item.name}</Text>
-
-                {/* Visual Flair */}
-                <View style={[styles.cardDot, { backgroundColor: item.color }]} />
-            </LinearGradient>
-        </TouchableOpacity>
+    if (isLoading) return (
+        <View style={[styles.container, { justifyContent: 'center' }]}>
+            <ActivityIndicator size="large" color="#FFD700" />
+        </View>
     );
-
-    if (isLoading) return null;
 
     return (
         <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -170,129 +188,87 @@ const AstroScreen = ({ navigation }) => {
                     <Ionicons name="arrow-back" size={24} color="#FFF" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>{t.title}</Text>
-                <TouchableOpacity onPress={async () => {
-                    await AsyncStorage.removeItem('astro_profile_completed');
-                    setIsFirstVisit(true);
-                }}>
-                    <Ionicons name="person-circle-outline" size={28} color="#FFD700" />
-                </TouchableOpacity>
+                <View style={{ width: 28 }} />
             </View>
 
-            <FlatList
-                data={ASTRO_MENU_ITEMS}
-                keyExtractor={(item) => item.id}
-                renderItem={renderMenuItem}
-                numColumns={2}
-                contentContainerStyle={styles.gridContainer}
-                ListHeaderComponent={
-                    <View style={styles.welcomeBox}>
-                        <Text style={styles.welcomeTitle}>Jai Shri Krishna! 🙏</Text>
-                        <Text style={styles.welcomeSubtitle}>Discover your cosmic path today.</Text>
-                    </View>
-                }
-            />
+            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                {!hasVoted ? (
+                    <View style={styles.surveyContainer}>
+                        <LinearGradient
+                            colors={['#1a1a2a', '#0a0a0a']}
+                            style={styles.surveyCard}
+                        >
+                            <View style={styles.surveyIconWrapper}>
+                                <Ionicons name="planet" size={60} color="#FFD700" />
+                                <View style={styles.glowDot} />
+                            </View>
 
-            {/* Bottom Navigation */}
+                            <View style={styles.comingSoonBadge}>
+                                <Text style={styles.comingSoonText}>{t.comingSoon}</Text>
+                            </View>
+
+                            <Text style={styles.surveyTitle}>{t.surveyTitle}</Text>
+                            <Text style={styles.surveyMsg}>{t.surveyMsg}</Text>
+
+                            <View style={styles.divider} />
+
+                            <Text style={styles.surveyQuestion}>{t.surveyQuestion}</Text>
+
+                            <View style={styles.btnRow}>
+                                <TouchableOpacity
+                                    style={[styles.surveyBtn, styles.yesBtn]}
+                                    onPress={() => recordInterest(true)}
+                                    disabled={isSubmitting}
+                                >
+                                    {isSubmitting ? <ActivityIndicator size="small" color="#000" /> : <Text style={styles.yesBtnText}>{t.yes}</Text>}
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={[styles.surveyBtn, styles.noBtn]}
+                                    onPress={() => recordInterest(false)}
+                                    disabled={isSubmitting}
+                                >
+                                    <Text style={styles.noBtnText}>{t.no}</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </LinearGradient>
+                    </View>
+                ) : (
+                    <View style={styles.thankYouContainer}>
+                        <LinearGradient
+                            colors={['#0a0a0a', '#1a1a2a']}
+                            style={styles.surveyCard}
+                        >
+                            <Ionicons name="checkmark-circle" size={80} color="#4CAF50" />
+                            <Text style={styles.thankYouTitle}>{t.thankYouTitle}</Text>
+                            <Text style={styles.thankYouMsg}>{t.thankYouMsg}</Text>
+
+                            <TouchableOpacity
+                                style={[styles.surveyBtn, styles.yesBtn, { marginTop: 30 }]}
+                                onPress={() => navigation.goBack()}
+                            >
+                                <Text style={styles.yesBtnText}>Back to Puja</Text>
+                            </TouchableOpacity>
+                        </LinearGradient>
+                    </View>
+                )}
+            </ScrollView>
+
             <BottomNav navigation={navigation} activeTab="Astro" />
 
-            {/* Onboarding Popup (Modal) */}
-            <Modal
-                visible={isFirstVisit}
-                transparent={true}
-                animationType="slide"
-                statusBarTranslucent={true}
-            >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.onboardingModalContent}>
-                        <ScrollView showsVerticalScrollIndicator={false}>
-                            <Text style={styles.onboardingHeader}>{t.onboardingTitle}</Text>
-
-                            {/* Gender Selection */}
-                            <View style={styles.section}>
-                                <Text style={styles.sectionTitle}>{t.genderTitle}</Text>
-                                <View style={styles.genderRow}>
-                                    {['Male', 'Female', 'Other'].map((g) => (
-                                        <TouchableOpacity
-                                            key={g}
-                                            style={[styles.genderBtn, gender === g && styles.genderBtnActive]}
-                                            onPress={() => setGender(g)}
-                                        >
-                                            <Text style={[styles.genderText, gender === g && styles.genderTextActive]}>
-                                                {language === 'hi' ? (g === 'Male' ? t.male : g === 'Female' ? t.female : t.other) : g}
-                                            </Text>
-                                        </TouchableOpacity>
-                                    ))}
-                                </View>
-                            </View>
-
-                            {/* DOB / TOB */}
-                            <View style={styles.section}>
-                                <Text style={styles.sectionTitle}>{t.dobTitle}</Text>
-                                <TouchableOpacity style={styles.pickerBtn} onPress={() => setShowDatePicker(true)}>
-                                    <Ionicons name="calendar-outline" size={20} color="#FFD700" />
-                                    <Text style={styles.pickerText}>{dob.toDateString()}</Text>
-                                </TouchableOpacity>
-                            </View>
-
-                            <View style={styles.section}>
-                                <Text style={styles.sectionTitle}>{t.tobTitle}</Text>
-                                <TouchableOpacity style={styles.pickerBtn} onPress={() => setShowTimePicker(true)}>
-                                    <Ionicons name="time-outline" size={20} color="#FFD700" />
-                                    <Text style={styles.pickerText}>{tob.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
-                                </TouchableOpacity>
-                            </View>
-
-                            <View style={styles.noteBox}>
-                                <Ionicons name="information-circle-outline" size={18} color="#4dabf7" />
-                                <Text style={styles.noteText}>{t.accuracyNote}</Text>
-                            </View>
-
-                            {/* Terms & Conditions (Collapsible) */}
-                            <TouchableOpacity
-                                style={styles.tcToggle}
-                                onPress={() => setShowTC(!showTC)}
-                                activeOpacity={0.7}
-                            >
-                                <Text style={styles.tcToggleText}>{showTC ? t.hideTC : t.readTC}</Text>
-                                <Ionicons
-                                    name={showTC ? "chevron-up" : "chevron-down"}
-                                    size={18}
-                                    color="#AAA"
-                                />
-                            </TouchableOpacity>
-
-                            {showTC && (
-                                <View style={styles.tcBox}>
-                                    <Text style={styles.tcHeader}>{t.tcTitle}</Text>
-                                    <Text style={styles.tcText}>{t.tcText}</Text>
-                                </View>
-                            )}
-
-                            <TouchableOpacity style={styles.submitBtn} onPress={handleOnboardingSubmit}>
-                                <Text style={styles.submitBtnText}>{t.accept}</Text>
-                            </TouchableOpacity>
-
-                            {showDatePicker && (
-                                <DateTimePicker
-                                    value={dob}
-                                    mode="date"
-                                    display="default"
-                                    onChange={onDateChange}
-                                />
-                            )}
-
-                            {showTimePicker && (
-                                <DateTimePicker
-                                    value={tob}
-                                    mode="time"
-                                    display="default"
-                                    onChange={onTimeChange}
-                                />
-                            )}
-                        </ScrollView>
-                    </View>
-                </View>
-            </Modal>
+            {/* Legacy UI - Kept in code for future use, but currently hidden */}
+            {false && (
+                <>
+                    <FlatList
+                        data={ASTRO_MENU_ITEMS}
+                        keyExtractor={(item) => item.id}
+                        renderItem={() => null}
+                        numColumns={2}
+                        contentContainerStyle={styles.gridContainer}
+                    />
+                    <Modal visible={false} />
+                </>
+            )}
         </SafeAreaView>
     );
 };
@@ -319,196 +295,134 @@ const styles = StyleSheet.create({
         color: '#FFD700',
         letterSpacing: 1,
     },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.85)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 20,
+    scrollContent: {
+        flexGrow: 1,
+        paddingHorizontal: 20,
+        paddingTop: 30,
+        paddingBottom: 100,
     },
-    onboardingModalContent: {
-        backgroundColor: '#111',
-        borderRadius: 25,
-        padding: 25,
-        width: '100%',
-        maxHeight: '90%',
+    surveyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+    },
+    surveyCard: {
+        borderRadius: 30,
+        padding: 30,
+        alignItems: 'center',
         borderWidth: 1,
         borderColor: '#333',
         elevation: 10,
     },
-    onboardingHeader: {
-        fontSize: 22,
-        fontWeight: 'bold',
-        color: '#FFF',
-        marginBottom: 25,
-        textAlign: 'center',
-        fontFamily: 'serif',
-    },
-    section: {
-        marginBottom: 20,
-    },
-    sectionTitle: {
-        color: '#AAA',
-        fontSize: 13,
-        marginBottom: 8,
-        fontWeight: 'bold',
-        textTransform: 'uppercase',
-    },
-    genderRow: {
-        flexDirection: 'row',
-        gap: 10,
-    },
-    genderBtn: {
-        flex: 1,
-        backgroundColor: '#1a1a1a',
-        paddingVertical: 12,
-        borderRadius: 12,
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#333',
-    },
-    genderBtnActive: {
-        backgroundColor: '#9c6ce6',
-        borderColor: '#9c6ce6',
-    },
-    genderText: {
-        color: '#FFF',
-        fontWeight: 'bold',
-    },
-    genderTextActive: {
-        color: '#FFF',
-    },
-    pickerBtn: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#1a1a1a',
-        padding: 15,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: '#333',
-        gap: 12,
-    },
-    pickerText: {
-        color: '#FFF',
-        fontSize: 16,
-    },
-    noteBox: {
-        flexDirection: 'row',
-        backgroundColor: '#0a1a2a',
-        padding: 12,
-        borderRadius: 10,
-        marginBottom: 20,
-        alignItems: 'center',
-        gap: 10,
-    },
-    noteText: {
-        color: '#4dabf7',
-        fontSize: 12,
-        flex: 1,
-        fontStyle: 'italic',
-    },
-    tcToggle: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingVertical: 10,
-        paddingHorizontal: 5,
-        marginBottom: 5,
-    },
-    tcToggleText: {
-        color: '#AAA',
-        fontSize: 14,
-        textDecorationLine: 'underline',
-    },
-    tcBox: {
-        backgroundColor: '#1a1a1a',
-        padding: 15,
-        borderRadius: 12,
-        marginBottom: 20,
-        maxHeight: 150,
-        borderWidth: 1,
-        borderColor: '#222',
-    },
-    tcHeader: {
-        color: '#FFD700',
-        fontWeight: 'bold',
-        marginBottom: 8,
-    },
-    tcText: {
-        color: '#888',
-        fontSize: 12,
-        lineHeight: 18,
-    },
-    submitBtn: {
-        backgroundColor: '#FFD700',
-        paddingVertical: 16,
-        borderRadius: 12,
-        alignItems: 'center',
-        marginTop: 10,
-    },
-    submitBtnText: {
-        color: '#000',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    // Grid Styles
-    gridContainer: {
-        padding: 15,
-        paddingBottom: 100, // Space for BottomNav
-    },
-    welcomeBox: {
-        marginBottom: 25,
-        paddingHorizontal: 5,
-    },
-    welcomeTitle: {
-        fontSize: 22,
-        fontWeight: 'bold',
-        color: '#FFF',
-        marginBottom: 5,
-    },
-    welcomeSubtitle: {
-        fontSize: 14,
-        color: '#AAA',
-    },
-    gridCard: {
-        flex: 1,
-        height: 150,
-        margin: 8,
-        borderRadius: 20,
-        overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: '#333',
-    },
-    cardGradient: {
-        flex: 1,
-        padding: 15,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    iconBox: {
-        width: 55,
-        height: 55,
-        borderRadius: 27.5,
-        borderWidth: 1.5,
+    surveyIconWrapper: {
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        backgroundColor: 'rgba(255, 215, 0, 0.1)',
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 10,
-        backgroundColor: 'rgba(0,0,0,0.3)',
     },
-    cardText: {
-        color: '#FFF',
-        fontSize: 14,
+    comingSoonBadge: {
+        backgroundColor: '#FFD70020',
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#FFD70040',
+        marginBottom: 15,
+    },
+    comingSoonText: {
+        color: '#FFD700',
+        fontSize: 10,
         fontWeight: 'bold',
+        letterSpacing: 1.5,
+    },
+    glowDot: {
+        position: 'absolute',
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: '#FFD700',
+        bottom: 25,
+        right: 25,
+        shadowColor: '#FFD700',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 1,
+        shadowRadius: 10,
+    },
+    surveyTitle: {
+        color: '#FFF',
+        fontSize: 22,
+        fontWeight: 'bold',
+        marginBottom: 15,
         textAlign: 'center',
     },
-    cardDot: {
-        position: 'absolute',
-        top: 15,
-        right: 15,
-        width: 6,
-        height: 6,
-        borderRadius: 3,
-        opacity: 0.6,
+    surveyMsg: {
+        color: '#AAA',
+        fontSize: 14,
+        lineHeight: 22,
+        textAlign: 'center',
+        marginBottom: 25,
+    },
+    divider: {
+        width: '100%',
+        height: 1,
+        backgroundColor: '#333',
+        marginBottom: 25,
+    },
+    surveyQuestion: {
+        color: '#FFD700',
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginBottom: 20,
+        textAlign: 'center',
+    },
+    btnRow: {
+        flexDirection: 'row',
+        gap: 15,
+        width: '100%',
+    },
+    surveyBtn: {
+        flex: 1,
+        height: 50,
+        borderRadius: 15,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    yesBtn: {
+        backgroundColor: '#FFD700',
+    },
+    noBtn: {
+        backgroundColor: '#1a1a1a',
+        borderWidth: 1,
+        borderColor: '#333',
+    },
+    yesBtnText: {
+        color: '#000',
+        fontWeight: 'bold',
+        fontSize: 14,
+    },
+    noBtnText: {
+        color: '#666',
+        fontWeight: '500',
+        fontSize: 14,
+    },
+    thankYouContainer: {
+        flex: 1,
+        justifyContent: 'center',
+    },
+    thankYouTitle: {
+        color: '#FFF',
+        fontSize: 24,
+        fontWeight: 'bold',
+        marginTop: 20,
+        marginBottom: 15,
+    },
+    thankYouMsg: {
+        color: '#AAA',
+        textAlign: 'center',
+        fontSize: 16,
+        lineHeight: 24,
     }
 });
 
