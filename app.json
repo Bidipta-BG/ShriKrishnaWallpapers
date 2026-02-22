@@ -11,7 +11,7 @@
       "supportsTablet": true
     },
     "android": {
-      "package": "com.thevibecoder.shrikrishnadailypujaaarti",
+      "package": "com.thevibecoder.shrikrishnapuja",
       "versionCode": 2,
       "blockedPermissions": [
         "android.permission.READ_MEDIA_VIDEO",

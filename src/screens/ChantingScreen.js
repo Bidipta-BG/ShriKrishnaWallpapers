@@ -188,7 +188,20 @@ const ChantingScreen = ({ route, navigation }) => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
                 Speech.stop();
-                Speech.speak(mantra.sans, { language: 'hi-IN', rate: 1.1 });
+
+                // Try to find a male voice for the Pujari feel
+                const voices = await Speech.getAvailableVoicesAsync();
+                const hindiMaleVoice = voices.find(v =>
+                    (v.language.startsWith('hi') || v.language.startsWith('in')) &&
+                    (v.name.toLowerCase().includes('male') || v.quality === 'Enhanced')
+                );
+
+                Speech.speak(mantra.sans, {
+                    language: 'hi-IN',
+                    voice: hindiMaleVoice?.identifier,
+                    rate: 0.85, // Balanced for mantras
+                    pitch: 0.85 // Deeper voice
+                });
             } catch (e) { console.log(e); }
         }
 

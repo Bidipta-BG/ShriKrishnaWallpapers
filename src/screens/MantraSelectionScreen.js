@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
-import { FlatList, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, FlatList, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../context/LanguageContext';
 
 // --- Dummy Data ---
-const MANTRA_DATA = [
+const FALLBACK_MANTRA = [
     {
         id: '1',
         title: 'Om Shri Vardhanaya Namah',
@@ -14,50 +15,8 @@ const MANTRA_DATA = [
             hi: 'करियर में सफलता और वृद्धि के लिए।'
         },
         details: {
-            en: "Chanting this mantra 108 times is believed to remove obstacles in your professional life. It invites Lord Krishna's blessings for career growth, financial stability, and success in new ventures.",
-            hi: "इस मंत्र का 108 बार जाप करने से व्यावसायिक जीवन में आने वाली बाधाएं दूर होती हैं। यह करियर में वृद्धि, आर्थिक स्थिरता और नए प्रयासों में सफलता के लिए भगवान कृष्ण का आशीर्वाद लाता है।"
-        },
-        count: 108
-    },
-    {
-        id: '2',
-        title: 'Hare Krishna Maha Mantra',
-        sans: 'हरे कृष्ण हरे कृष्ण कृष्ण कृष्ण हरे हरे।\nहरे राम हरे राम राम राम हरे हरे॥',
-        benefit: {
-            en: 'For inner peace and spiritual bliss.',
-            hi: 'आंतरिक शांति और आध्यात्मिक आनंद के लिए।'
-        },
-        details: {
-            en: "The Maha Mantra cleanses the heart of all accumulated dust/anxiety. Chanting 108 times brings immense peace, reduces stress, and awakens dormant divine love (Prema) for God.",
-            hi: "महामंत्र हृदय को सभी जमा हुई धूल/चिंता से शुद्ध करता है। 108 बार जाप करने से असीम शांति मिलती है, तनाव कम होता है और भगवान के लिए सुप्त दिव्य प्रेम (प्रेम) जागृत होता है।"
-        },
-        count: 108
-    },
-    {
-        id: '3',
-        title: 'Om Namo Bhagavate Vasudevaya',
-        sans: 'ॐ नमो भगवते वासुदेवाय',
-        benefit: {
-            en: 'Surrender to Lord Krishna.',
-            hi: 'भगवान कृष्ण को समर्पण।'
-        },
-        details: {
-            en: "This mantra means 'I bow to Lord Vasudeva (Krishna)'. Chanting it creates a shield of divine protection and helps one to surrender ego, bringing clarity and wisdom to life decisions.",
-            hi: "इस मंत्र का अर्थ है 'मैं भगवान वासुदेव (कृष्ण) को नमन करता हूं'। इसका जाप ईश्वरीय सुरक्षा का कवच बनाता है और अहंकार को त्यागने में मदद करता है, जिससे जीवन के निर्णयों में स्पष्टता और ज्ञान आता है।"
-        },
-        count: 108
-    },
-    {
-        id: '4',
-        title: 'Kleem Krishnaya Namah',
-        sans: 'क्लीं कृष्णाय नमः',
-        benefit: {
-            en: 'Attracts love and positive energy.',
-            hi: 'प्रेम और सकारात्मक ऊर्जा को आकर्षित करता है।'
-        },
-        details: {
-            en: "'Kleem' is the seed sound of attraction. Chanting this invokes Krishna's magnetic charm, helping to attract good relationships, true love, and positive spiritual energy into your life.",
-            hi: "'क्लीं' आकर्षण का बीज मंत्र है। इसका जाप कृष्ण के चुंबकीय आकर्षण का आह्वान करता है, जो आपके जीवन में अच्छे रिश्ते, सच्चा प्यार और सकारात्मक आध्यात्मिक ऊर्जा को आकर्षित करने में मदद करता है।"
+            en: "Chanting this mantra 108 times is believed to remove obstacles in your professional life.",
+            hi: "इस मंत्र का 108 बार जाप करने से व्यावसायिक जीवन में आने वाली बाधाएं दूर होती हैं।"
         },
         count: 108
     }
@@ -80,6 +39,34 @@ const MantraSelectionScreen = ({ navigation }) => {
     const { language } = useLanguage();
     const t = TRANSLATIONS[language] || TRANSLATIONS['en'];
     const isHindi = language === 'hi';
+
+    const [mantras, setMantras] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        fetchMantras();
+    }, []);
+
+    const fetchMantras = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await fetch('https://api.thevibecoderagency.online/api/srikrishna-aarti/mantras');
+            const result = await response.json();
+            if (result.success) {
+                setMantras(result.data);
+            } else {
+                throw new Error('Failed to fetch');
+            }
+        } catch (e) {
+            console.error('Mantra fetch error:', e);
+            setError(isHindi ? 'मंत्र लोड करने में विफल' : 'Failed to load mantras');
+            setMantras(FALLBACK_MANTRA);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const renderItem = ({ item }) => {
         return (
@@ -123,12 +110,26 @@ const MantraSelectionScreen = ({ navigation }) => {
                 <View style={{ width: 40 }} />
             </View>
 
-            <FlatList
-                data={MANTRA_DATA}
-                keyExtractor={item => item.id}
-                renderItem={renderItem}
-                contentContainerStyle={styles.listContent}
-            />
+            {loading ? (
+                <View style={styles.centerContainer}>
+                    <ActivityIndicator size="large" color="#FFD700" />
+                </View>
+            ) : error ? (
+                <View style={styles.centerContainer}>
+                    <Ionicons name="alert-circle-outline" size={50} color="#D35400" />
+                    <Text style={styles.errorText}>{error}</Text>
+                    <TouchableOpacity style={styles.retryBtn} onPress={fetchMantras}>
+                        <Text style={styles.retryBtnText}>{isHindi ? 'पुनः प्रयास करें' : 'Retry'}</Text>
+                    </TouchableOpacity>
+                </View>
+            ) : (
+                <FlatList
+                    data={mantras}
+                    keyExtractor={item => item.id}
+                    renderItem={renderItem}
+                    contentContainerStyle={styles.listContent}
+                />
+            )}
         </SafeAreaView>
     );
 };
@@ -229,6 +230,32 @@ const styles = StyleSheet.create({
     startBtnText: {
         color: '#FFF',
         fontSize: 16,
+        fontWeight: 'bold'
+    },
+    centerContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20
+    },
+    errorText: {
+        color: '#D35400',
+        fontSize: 16,
+        marginTop: 10,
+        textAlign: 'center',
+        fontFamily: 'serif'
+    },
+    retryBtn: {
+        marginTop: 20,
+        backgroundColor: '#3E2723',
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 25,
+        borderWidth: 1,
+        borderColor: '#FFD700'
+    },
+    retryBtnText: {
+        color: '#FFD700',
         fontWeight: 'bold'
     }
 });

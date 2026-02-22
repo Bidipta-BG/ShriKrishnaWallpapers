@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import * as Speech from 'expo-speech';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -30,7 +30,8 @@ if (Platform.OS === 'android') {
 }
 
 // --- Dummy Data ---
-const SLOKA_DATA = [
+// Initial fallback data (keeping first 2 for safety)
+const FALLBACK_DATA = [
     {
         id: '1',
         chapter: 'Chapter 2, Verse 47',
@@ -42,45 +43,6 @@ const SLOKA_DATA = [
         hi: {
             text: "तुम्हारा अधिकार केवल कर्म करने में है, उसके फलों में नहीं।",
             meaning: "अपने कर्म पर ध्यान दो, परिणाम पर नहीं।"
-        }
-    },
-    {
-        id: '2',
-        chapter: 'Chapter 4, Verse 7',
-        sans: 'यदा यदा हि धर्मस्य ग्लानिर्भवति भारत।\nअभ्युत्थानमधर्मस्य तदात्मानं सृजाम्यहम्॥',
-        en: {
-            text: "Whenever there is a decline in righteousness and an increase in unrighteousness, O Arjun, at that time I manifest Myself on earth.",
-            meaning: "God descends when Dharma needs protection."
-        },
-        hi: {
-            text: "जब-जब धर्म की हानि और अधर्म की वृद्धि होती है, तब-तब मैं अपने रूप को रचता हूँ अर्थात साकार रूप से लोगों के सम्मुख प्रकट होता हूँ।",
-            meaning: "धर्म की रक्षा के लिए भगवान अवतार लेते हैं।"
-        }
-    },
-    {
-        id: '3',
-        chapter: 'Chapter 9, Verse 22',
-        sans: 'अनन्याश्चिन्तयन्तो मां ये जनाः पर्युपासते।\nतेषां नित्याभियुक्तानां योगक्षेमं वहाम्यहम्॥',
-        en: {
-            text: "To those who are constantly devoted to serving Me with love, I give the understanding by which they can come to Me.",
-            meaning: "God takes care of those who rely on Him."
-        },
-        hi: {
-            text: "जो अनन्य भाव से मेरा चिंतन करते हुए मेरी उपासना करते हैं, उनके योग और क्षेम (पालन-पोषण) का वहन मैं स्वयं करता हूँ।",
-            meaning: "भगवान अपने भक्तों का ध्यान रखते हैं।"
-        }
-    },
-    {
-        id: '4',
-        chapter: 'Chapter 18, Verse 66',
-        sans: 'सर्वधर्मान्परित्यज्य मामेकं शरणं व्रज।\nअहं त्वा सर्वपापेभ्यो मोक्षयिष्यामि मा शुचः॥',
-        en: {
-            text: "Abandon all varieties of religion and just surrender unto Me. I shall deliver you from all sinful reactions. Do not fear.",
-            meaning: "Surrender completely to God."
-        },
-        hi: {
-            text: "सभी धर्मों को त्यागकर तू केवल मेरी शरण में आ जा। मैं तुझे सभी पापों से मुक्त कर दूँगा, तू शोक मत कर।",
-            meaning: "ईश्वर शरण में ही सच्ची मुक्ति है।"
         }
     }
 ];
@@ -124,10 +86,19 @@ const SlokaCard = ({ item, isHindi, t, isFeatured = false }) => {
             setIsSpeaking(false);
         } else {
             setIsSpeaking(true);
+
+            // Try to find a male voice if available on the device
+            const voices = await Speech.getAvailableVoicesAsync();
+            const hindiMaleVoice = voices.find(v =>
+                (v.language.startsWith('hi') || v.language.startsWith('in')) &&
+                (v.name.toLowerCase().includes('male') || v.quality === 'Enhanced')
+            );
+
             Speech.speak(thingToSay, {
                 language: 'hi-IN',
-                rate: 0.8,
-                pitch: 1.0,
+                voice: hindiMaleVoice?.identifier, // Use male voice if found
+                rate: 0.75, // Slightly slower for more impact
+                pitch: 0.85, // Lower pitch for a deeper male sound
                 onDone: () => setIsSpeaking(false),
                 onStopped: () => setIsSpeaking(false),
                 onError: () => setIsSpeaking(false),
@@ -216,16 +187,47 @@ const SlokasScreen = ({ navigation }) => {
     const t = TRANSLATIONS[language] || TRANSLATIONS['en'];
     const isHindi = language === 'hi';
 
-    // State for Today's Message (Randomizer)
-    const [todaysSloka, setTodaysSloka] = useState(SLOKA_DATA[0]);
+    // State for Dynamic Data
+    const [slokas, setSlokas] = useState([]);
+    const [todaysSloka, setTodaysSloka] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [isRandomizing, setIsRandomizing] = useState(false);
 
+    useEffect(() => {
+        fetchSlokas();
+    }, []);
+
+    const fetchSlokas = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await fetch('https://api.thevibecoderagency.online/api/srikrishna-aarti/daily-slokas');
+            const result = await response.json();
+
+            if (result.success && result.data) {
+                setSlokas(result.data.allSlokas || []);
+                setTodaysSloka(result.data.featuredSloka || result.data.allSlokas[0]);
+            } else {
+                throw new Error('Failed to fetch slokas');
+            }
+        } catch (e) {
+            console.error('Sloka fetch error:', e);
+            setError(isHindi ? 'डेटा लोड करने में विफल' : 'Failed to load slokas');
+            // Use fallback data
+            setSlokas(FALLBACK_DATA);
+            setTodaysSloka(FALLBACK_DATA[0]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const randomizeSloka = () => {
+        if (slokas.length === 0) return;
         setIsRandomizing(true);
-        // Simple shuffle animation effect could be added here
         setTimeout(() => {
-            const randomIndex = Math.floor(Math.random() * SLOKA_DATA.length);
-            setTodaysSloka(SLOKA_DATA[randomIndex]);
+            const randomIndex = Math.floor(Math.random() * slokas.length);
+            setTodaysSloka(slokas[randomIndex]);
             setIsRandomizing(false);
         }, 500);
     };
@@ -243,38 +245,54 @@ const SlokasScreen = ({ navigation }) => {
                 <View style={{ width: 40 }} />
             </View>
 
-            <FlatList
-                data={SLOKA_DATA}
-                keyExtractor={item => item.id}
-                renderItem={({ item }) => (
-                    <SlokaCard item={item} isHindi={isHindi} t={t} />
-                )}
-                contentContainerStyle={styles.listContent}
-                ListHeaderComponent={() => (
-                    <View style={styles.featuredContainer}>
-                        <View style={styles.sectionHeaderRow}>
-                            <Text style={styles.sectionTitle}>{t.todaysMessage}</Text>
-                            <TouchableOpacity onPress={randomizeSloka} style={styles.randomBtn}>
-                                {isRandomizing ? (
-                                    <ActivityIndicator size="small" color="#FFD700" />
-                                ) : (
-                                    <Ionicons name="shuffle" size={20} color="#FFD700" />
-                                )}
-                                <Text style={styles.randomBtnText}>{t.randomize}</Text>
-                            </TouchableOpacity>
+            {loading ? (
+                <View style={styles.centerContainer}>
+                    <ActivityIndicator size="large" color="#FFD700" />
+                </View>
+            ) : error ? (
+                <View style={styles.centerContainer}>
+                    <Ionicons name="alert-circle-outline" size={50} color="#D35400" />
+                    <Text style={styles.errorText}>{error}</Text>
+                    <TouchableOpacity style={styles.retryBtn} onPress={fetchSlokas}>
+                        <Text style={styles.retryBtnText}>{isHindi ? 'पुनः प्रयास करें' : 'Retry'}</Text>
+                    </TouchableOpacity>
+                </View>
+            ) : (
+                <FlatList
+                    data={slokas}
+                    keyExtractor={item => item.id}
+                    renderItem={({ item }) => (
+                        <SlokaCard item={item} isHindi={isHindi} t={t} />
+                    )}
+                    contentContainerStyle={styles.listContent}
+                    ListHeaderComponent={() => (
+                        <View style={styles.featuredContainer}>
+                            <View style={styles.sectionHeaderRow}>
+                                <Text style={styles.sectionTitle}>{t.todaysMessage}</Text>
+                                <TouchableOpacity onPress={randomizeSloka} style={styles.randomBtn}>
+                                    {isRandomizing ? (
+                                        <ActivityIndicator size="small" color="#FFD700" />
+                                    ) : (
+                                        <Ionicons name="shuffle" size={20} color="#FFD700" />
+                                    )}
+                                    <Text style={styles.randomBtnText}>{t.randomize}</Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            {todaysSloka && (
+                                <SlokaCard
+                                    item={todaysSloka}
+                                    isHindi={isHindi}
+                                    t={t}
+                                    isFeatured={true}
+                                />
+                            )}
+
+                            <Text style={[styles.sectionTitle, { marginTop: 20 }]}>{t.allSlokas}</Text>
                         </View>
-
-                        <SlokaCard
-                            item={todaysSloka}
-                            isHindi={isHindi}
-                            t={t}
-                            isFeatured={true}
-                        />
-
-                        <Text style={[styles.sectionTitle, { marginTop: 20 }]}>{t.allSlokas}</Text>
-                    </View>
-                )}
-            />
+                    )}
+                />
+            )}
         </SafeAreaView>
     );
 };
@@ -428,6 +446,32 @@ const styles = StyleSheet.create({
         fontSize: 12,
         marginLeft: 6,
         fontWeight: '500'
+    },
+    centerContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20
+    },
+    errorText: {
+        color: '#D35400',
+        fontSize: 16,
+        marginTop: 10,
+        textAlign: 'center',
+        fontFamily: 'serif'
+    },
+    retryBtn: {
+        marginTop: 20,
+        backgroundColor: '#3E2723',
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 25,
+        borderWidth: 1,
+        borderColor: '#FFD700'
+    },
+    retryBtnText: {
+        color: '#FFD700',
+        fontWeight: 'bold'
     }
 });
 
