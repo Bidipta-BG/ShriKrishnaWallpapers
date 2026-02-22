@@ -231,7 +231,7 @@ const TRANSLATIONS = {
         pause: 'Pause',
         repeat: 'repeat',
         shieldTitle: 'Sadhana Saved! 🙏',
-        shieldMsg: 'You missed your Puja yesterday, but your Raksha Kavach (Shield) protected your progress. Shri Krishna is waiting for you!',
+        shieldMsg: 'You missed your Puja yesterday, but your Raksha Kavach (Shield) protected your progress. Sri Krishna is waiting for you!',
         ok: 'Pranam',
     },
     hi: {

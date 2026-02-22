@@ -26,7 +26,7 @@ const TRANSLATIONS = {
         level: 'Bhakti Level',
         shieldDesc: 'A divine shield that protects your streak if you miss a day.',
         coinDesc: 'Rewards for your daily devotion.',
-        footer: 'Shri Krishna is pleased with your constant devotion. 🙏',
+        footer: 'Sri Krishna is pleased with your constant devotion. 🙏',
         beginner: 'Sharanagat (Beginner)',
         intermediate: 'Sadhak (Devoted)',
         advanced: 'Bhakta (Advanced)',

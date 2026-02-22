@@ -34,7 +34,7 @@ const LanguageSelectionScreen = () => {
             />
             <SafeAreaView style={{ flex: 1 }}>
                 <View style={styles.content}>
-                    <Text style={styles.title}>Shri Krishna Wallpapers</Text>
+                    <Text style={styles.title}>Sri Krishna Puja</Text>
                     <Text style={styles.subtitle}>Choose your Language</Text>
                     <Text style={styles.subtitleHindi}>अपनी भाषा चुनें</Text>
 

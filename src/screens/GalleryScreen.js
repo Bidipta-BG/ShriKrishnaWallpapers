@@ -192,7 +192,7 @@ const GalleryScreen = () => {
                     <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.navigate('Settings')}>
                         <Ionicons name="information-circle-outline" size={26} color="#fff" />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Shri Krishna</Text>
+                    <Text style={styles.headerTitle}>Sri Krishna Puja</Text>
                     <TouchableOpacity style={styles.savedButtonContainer} onPress={() => navigation.navigate('Saved')}>
                         <View style={styles.savedButtonCircle}>
                             <Ionicons name="bookmark" size={14} color="#ffd700" />
@@ -220,7 +220,7 @@ const GalleryScreen = () => {
                     <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.navigate('Settings')}>
                         <Ionicons name="information-circle-outline" size={26} color="#fff" />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Shri Krishna</Text>
+                    <Text style={styles.headerTitle}>Sri Krishna Puja</Text>
                     <View style={styles.noAdsContainer}>
                         <View style={styles.noAdsCircle}>
                             <Ionicons name="ban" size={14} color="#ff4444" />
@@ -255,7 +255,7 @@ const GalleryScreen = () => {
                     <Ionicons name="information-circle-outline" size={26} color="#fff" />
                 </TouchableOpacity>
 
-                <Text style={styles.headerTitle}>Shri Krishna</Text>
+                <Text style={styles.headerTitle}>Sri Krishna Puja</Text>
 
                 <TouchableOpacity
                     style={styles.savedButtonContainer}

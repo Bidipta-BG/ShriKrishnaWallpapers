@@ -115,7 +115,7 @@ const SettingsScreen = () => {
                 await AsyncStorage.setItem('referral_redeemed', 'true');
                 setHasRedeemed(true);
                 setInviteCode('');
-                Alert.alert('Jai Shri Krishna!', 'You have received 50 Divya Coins! Your friend will also be rewarded.');
+                Alert.alert('Jai Sri Krishna!', 'You have received 50 Divya Coins! Your friend will also be rewarded.');
             } else {
                 Alert.alert('Redeem Failed', result.message || 'Could not redeem this code.');
             }
@@ -144,7 +144,7 @@ const SettingsScreen = () => {
                     return newTotal;
                 });
                 setPendingRewards(0);
-                Alert.alert('Rewards Claimed!', `Jai Shri Krishna! You earned ${rewardTotal} Divya Coins from your referrals.`);
+                Alert.alert('Rewards Claimed!', `Jai Sri Krishna! You earned ${rewardTotal} Divya Coins from your referrals.`);
             }
         } catch (error) {
             console.error('Claim error:', error);
@@ -201,7 +201,7 @@ const SettingsScreen = () => {
         try {
             await Share.share({
                 message:
-                    'Check out this amazing Shri Krishna Daily Puja & Aarti app! 🌸 Perform daily rituals and get beautiful wallpapers. Download now: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnapuja',
+                    'Check out this amazing Sri Krishna Puja app! 🌸 Perform daily rituals and get beautiful wallpapers. Download now: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnapuja',
             });
         } catch (error) {
             console.error('Error sharing:', error);
@@ -223,7 +223,7 @@ const SettingsScreen = () => {
 
     const handleContact = () => {
         // Replace with your actual support email
-        Linking.openURL('mailto:support@axomitlab.com?subject=Shri Krishna App Feedback');
+        Linking.openURL('mailto:support@axomitlab.com?subject=Sri Krishna Puja App Feedback');
     };
 
     const handlePrivacy = () => {
@@ -327,7 +327,7 @@ const SettingsScreen = () => {
                                     style={styles.copyBtn}
                                     onPress={() => {
                                         Share.share({
-                                            message: `Use my invite code ${referralCode} in the Shri Krishna app and get 50 Divya Coins! Download now: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnapuja`
+                                            message: `Use my invite code ${referralCode} in the Sri Krishna Puja app and get 50 Divya Coins! Download now: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnapuja`
                                         });
                                     }}
                                 >

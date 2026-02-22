@@ -53,7 +53,7 @@ const GenerateScreen = ({ navigation }) => {
                 <View style={styles.featureList}>
                     <View style={styles.featureItem}>
                         <Ionicons name="brush-outline" size={24} color="#9c6ce6" />
-                        <Text style={styles.featureText}>Generate unique <Text style={styles.highlight}>Shri Krishna</Text> wallpapers</Text>
+                        <Text style={styles.featureText}>Generate unique <Text style={styles.highlight}>Sri Krishna</Text> wallpapers</Text>
                     </View>
                     <View style={styles.featureItem}>
                         <Ionicons name="happy-outline" size={24} color="#9c6ce6" />

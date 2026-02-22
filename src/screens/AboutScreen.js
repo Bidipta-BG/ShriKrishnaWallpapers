@@ -23,17 +23,17 @@ const AboutScreen = ({ navigation }) => {
                     <View style={styles.logoPlaceholder}>
                         <Ionicons name="flower-outline" size={60} color="#FFD700" />
                     </View>
-                    <Text style={styles.appName}>Shri Krishna</Text>
+                    <Text style={styles.appName}>Sri Krishna Puja</Text>
                     <Text style={styles.appSubtitle}>Daily Puja & Aarti</Text>
                     <Text style={styles.version}>Version 1.0.0</Text>
                 </View>
 
                 <View style={styles.section}>
                     <Text style={styles.sectionText}>
-                        Jai Shri Krishna! 🙏
+                        Jai Sri Krishna! 🙏
                     </Text>
                     <Text style={styles.sectionText}>
-                        This application is dedicated to all the devotees of Lord Krishna. Our mission is to provide a digital sanctuary where you can perform daily puja, listen to divine aartis, and immerse yourself in the bhakti of Shri Krishna and Nanha Kanhaiya.
+                        This application is dedicated to all the devotees of Lord Krishna. Our mission is to provide a digital sanctuary where you can perform daily puja, listen to divine aartis, and immerse yourself in the bhakti of Sri Krishna and Nanha Kanhaiya.
                     </Text>
                     <Text style={styles.sectionText}>
                         We hope this app brings peace, joy, and spiritual connection to your daily life.

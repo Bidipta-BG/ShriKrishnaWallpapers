@@ -176,7 +176,7 @@ const FullImageScreen = () => {
             await AsyncStorage.setItem('saved_background_image', uriToSave);
             Alert.alert(
                 'Daily Darshan Image Updated',
-                'Puja background updated successfully! Your Daily Darshan screen now features this divine form of Shri Krishna.',
+                'Puja background updated successfully! Your Daily Darshan screen now features this divine form of Sri Krishna.',
                 [{ text: 'Ok' }]
             );
         } catch (error) {

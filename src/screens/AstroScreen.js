@@ -33,11 +33,11 @@ const TRANSLATIONS = {
         title: 'Divine Astro',
         comingSoon: 'COMING SOON',
         surveyTitle: 'A Message for You 🙏',
-        surveyMsg: 'Jai Shri Krishna! We are working really hard to bring the best personalized astrology features for you. Since we want to provide this completely free, we want to know if you really want this feature to be here.',
+        surveyMsg: 'Jai Sri Krishna! We are working really hard to bring the best personalized astrology features for you. Since we want to provide this completely free, we want to know if you really want this feature to be here.',
         surveyQuestion: 'Would you like us to launch this feature?',
         yes: 'Yes, I need it! ✨',
         no: 'Not for me 🚫',
-        thankYouTitle: 'Jai Shri Krishna! 🙏',
+        thankYouTitle: 'Jai Sri Krishna! 🙏',
         thankYouMsg: 'Thank you for your valuable feedback. We are working hard to make this app best for you!',
         // Legacy below
         onboardingTitle: 'Complete Your Profile',

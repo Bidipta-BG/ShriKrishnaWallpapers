@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Shri Krishna: Daily Puja Aarti",
+    "name": "Sri Krishna Puja",
     "slug": "ShriKrishnaWallpapers",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -28,8 +28,8 @@
       [
         "expo-media-library",
         {
-          "photosPermission": "Allow Shri Krishna app to save beautiful wallpapers to your gallery.",
-          "savePhotosPermission": "Allow Shri Krishna app to save beautiful wallpapers to your gallery."
+          "photosPermission": "Allow Sri Krishna app to save beautiful wallpapers to your gallery.",
+          "savePhotosPermission": "Allow Sri Krishna app to save beautiful wallpapers to your gallery."
         }
       ],
       [

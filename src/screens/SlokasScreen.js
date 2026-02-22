@@ -55,7 +55,7 @@ const TRANSLATIONS = {
         tapToReveal: 'Tap to reveal meaning',
         randomize: 'New Message',
         copied: 'Sloka copied to clipboard!',
-        shareMsg: 'Check out this beautiful Sloka from Shri Krishna Wallpapers app:\n\n',
+        shareMsg: 'Check out this beautiful Sloka from Sri Krishna Puja app:\n\n',
     },
     hi: {
         title: 'दैनिक श्लोक',
