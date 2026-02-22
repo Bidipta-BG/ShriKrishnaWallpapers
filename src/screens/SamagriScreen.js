@@ -30,7 +30,7 @@ const STORE_UI_TRANSLATIONS = {
             '🌺 Garlands': '🌺 Garlands',
             '🪔 Thali': '🪔 Thali',
             '🕯 Dhup & Diya': '🕯 Dhup & Diya',
-            '🍬 Samagri': '🍬 Samagri',
+            '🍬 Prasaad': '🍬 Prasaad',
             '💰 Coins': '💰 Coins'
         }
     },
@@ -42,7 +42,7 @@ const STORE_UI_TRANSLATIONS = {
             '🌺 Garlands': '🌺 पुष्प माला',
             '🪔 Thali': '🪔 पूजा थाली',
             '🕯 Dhup & Diya': '🕯 धूप और दीप',
-            '🍬 Samagri': '🍬 भोग सामग्री',
+            '🍬 Prasaad': '🍬 भोग प्रसाद',
             '💰 Coins': '💰 दिव्य मुद्रा'
         }
     }
@@ -285,7 +285,7 @@ const SamagriScreen = () => {
         if (category.includes('Garlands')) return 'infinite';
         if (category.includes('Thali')) return 'disc';
         if (category.includes('Dhup')) return 'flame';
-        if (category.includes('Samagri')) return 'gift';
+        if (category.includes('Prasaad')) return 'gift';
         if (category.includes('Coins')) return 'cash';
         return 'star';
     };

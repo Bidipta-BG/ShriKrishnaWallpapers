@@ -15,7 +15,7 @@ const CATEGORY_KEYS = {
     '🌺 Garlands': 'garlands',
     '🪔 Thali': 'thali',
     '🕯 Dhup & Diya': 'dhup',
-    '🍬 Samagri': 'samagri',
+    '🍬 Prasaad': 'samagri',
     '💰 Coins': 'coins'
 };
 

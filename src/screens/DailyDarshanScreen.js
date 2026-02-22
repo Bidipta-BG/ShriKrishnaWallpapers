@@ -68,9 +68,8 @@ const FallingFlower = ({ index, onComplete, imageSource }) => {
     const opacity = useSharedValue(1);
 
     useEffect(() => {
-        // Target Y: Bottom Shelf area ~ (height - 190 range) - Moved UP by 30px
-        // Add random variation to "pile" them naturally
-        const targetY = height - 160 + (Math.random() * 20);
+        // Target Y: Use percentage of screen height to ensure items land consistently relative to Prasad
+        const targetY = (height * 0.83) + (Math.random() * 20);
 
         translateY.value = withDelay(
             randomDelay,
@@ -135,7 +134,8 @@ const FallingCoin = ({ index, onComplete, imageSource }) => {
     const opacity = useSharedValue(1);
 
     useEffect(() => {
-        const targetY = height - 160 + (Math.random() * 20);
+        // Target Y: Match flower percentage for consistent scaling across devices
+        const targetY = (height * 0.83) + (Math.random() * 20);
 
         translateY.value = withDelay(
             config.delay,
@@ -184,25 +184,26 @@ const FallingCoin = ({ index, onComplete, imageSource }) => {
 
 // --- Helper Components for the Icons ---
 const SideIcon = ({ color, emoji, iconName, iconSize = 24, iconColor = "#fff", imageSource, label, onPress, disabled, active }) => (
-    <TouchableOpacity onPress={onPress} disabled={disabled} activeOpacity={disabled ? 1 : 0.7}>
-        <View style={[styles.iconWrapper, disabled && { opacity: 0.5 }]}>
-            <View style={[
-                styles.iconCircle,
-                { backgroundColor: color || 'rgba(0,0,0,0.4)' },
-                active && { borderColor: '#9c6ce6', borderWidth: 2 }
-            ]}>
-                {imageSource && imageSource !== null ? (
-                    <Image source={imageSource} style={{ width: 30, height: 30 }} resizeMode="contain" />
-                ) : iconName ? (
-                    <Ionicons name={iconName} size={iconSize} color={iconColor} />
-                ) : (
-                    <Text style={styles.iconEmoji}>{emoji}</Text>
-                )}
-            </View>
-            {label && <Text style={styles.iconLabel}>{label}</Text>}
+    <TouchableOpacity
+        onPress={onPress}
+        disabled={disabled}
+        activeOpacity={0.7}
+        style={[styles.iconWrapper, disabled && { opacity: 0.5 }]}
+    >
+        <View style={[
+            styles.iconCircle,
+            active && { borderColor: '#9c6ce6', backgroundColor: 'rgba(156, 108, 230, 0.2)' }
+        ]}>
+            {imageSource ? (
+                <Image source={imageSource} style={{ width: 30, height: 30 }} resizeMode="contain" />
+            ) : (
+                <Ionicons name={iconName} size={iconSize} color={active ? '#9c6ce6' : iconColor} />
+            )}
         </View>
+        <Text style={[styles.iconLabel, active && { color: '#9c6ce6' }]}>{label}</Text>
     </TouchableOpacity>
 );
+
 
 // --- Dummy Translation Data (Simulating Backend) ---
 const TRANSLATIONS = {
@@ -1026,15 +1027,7 @@ const DailyDarshanScreen = ({ navigation }) => {
 
             {/* 4. Side Icons Layer */}
             <View style={[styles.sidesContainer, { bottom: insets.bottom + 145 }]}>
-                {/* Left Column - 3 buttons */}
                 <View style={styles.leftColumn}>
-                    <SideIcon
-                        imageSource={selectedPrasadIcons.length > 0 ? selectedPrasadIcons[0] : ITEM_ICONS['sa5']}
-                        label={language === 'hi' ? 'प्रसाद' : 'Prasad'}
-                        onPress={togglePrasad}
-                        disabled={isInteractionDisabled}
-                    />
-
                     <SideIcon
                         imageSource={selectedFlowerIcons.length > 0 ? selectedFlowerIcons[0] : ITEM_ICONS['f1']}
                         label={t.flowers || 'Flowers'}
@@ -1048,6 +1041,24 @@ const DailyDarshanScreen = ({ navigation }) => {
                         onPress={triggerCoinShower}
                         disabled={isInteractionDisabled}
                     />
+
+                    <SideIcon
+                        imageSource={selectedDhupIcon ? selectedDhupIcon : ITEM_ICONS['dd1']}
+                        label={language === 'hi' ? 'धूप/दिया' : 'Dhup/Diya'}
+                        onPress={toggleDhup}
+                        disabled={isInteractionDisabled}
+                    />
+
+                    <SideIcon
+                        imageSource={selectedPrasadIcons.length > 0 ? selectedPrasadIcons[0] : ITEM_ICONS['sa5']}
+                        label={language === 'hi' ? 'प्रसाद' : 'Prasad'}
+                        onPress={togglePrasad}
+                        disabled={isInteractionDisabled}
+                    />
+                </View>
+
+                {/* Right Column - 3 buttons */}
+                <View style={styles.rightColumn}>
                     <SideIcon
                         imageSource={selectedSoundIcon}
                         label={
@@ -1058,16 +1069,6 @@ const DailyDarshanScreen = ({ navigation }) => {
                                             t.shankh
                         }
                         onPress={toggleInstrumentPlayback}
-                        disabled={isInteractionDisabled}
-                    />
-                </View>
-
-                {/* Right Column - 3 buttons */}
-                <View style={styles.rightColumn}>
-                    <SideIcon
-                        imageSource={selectedDhupIcon ? selectedDhupIcon : ITEM_ICONS['dd1']}
-                        label={language === 'hi' ? 'धूप/दिया' : 'Dhup/Diya'}
-                        onPress={toggleDhup}
                         disabled={isInteractionDisabled}
                     />
                     <SideIcon
