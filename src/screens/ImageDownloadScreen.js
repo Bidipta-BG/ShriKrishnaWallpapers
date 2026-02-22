@@ -6,6 +6,7 @@ import {
     Alert,
     Dimensions,
     Image,
+    Linking,
     Modal,
     StatusBar,
     StyleSheet,
@@ -47,10 +48,22 @@ const ImageDownloadScreen = ({ navigation, route }) => {
         setIsDownloading(true);
 
         try {
-            // Request permissions
-            const { status } = await MediaLibrary.requestPermissionsAsync();
+            // Request permissions - On Android 13+, write-only is often enough for saving
+            const { status, canAskAgain } = await MediaLibrary.requestPermissionsAsync(true);
+
             if (status !== 'granted') {
-                Alert.alert('Permission Required', 'Please grant gallery permissions to download the wallpaper.');
+                if (!canAskAgain) {
+                    Alert.alert(
+                        'Permission Required',
+                        'Blessings! To save this sacred image, please enable storage access in your Phone Settings.',
+                        [
+                            { text: 'Cancel', style: 'cancel' },
+                            { text: 'Open Settings', onPress: () => Linking.openSettings() }
+                        ]
+                    );
+                } else {
+                    Alert.alert('Permission Required', 'Please grant gallery permissions to download the wallpaper.');
+                }
                 setIsDownloading(false);
                 return;
             }
@@ -58,7 +71,7 @@ const ImageDownloadScreen = ({ navigation, route }) => {
             // Capture the view
             const uri = await captureRef(viewRef, {
                 format: 'jpg',
-                quality: selectedQuality === 'Full HD Quality' ? 1.0 : 0.6,
+                quality: 1.0, // Default to Full HD
                 result: 'tmpfile',
             });
 
@@ -118,14 +131,14 @@ const ImageDownloadScreen = ({ navigation, route }) => {
                     ref={viewRef}
                     collapsable={false}
                 >
-                    <Image source={imageSource} style={styles.mainImage} resizeMode="cover" />
+                    <Image source={{ uri: imageSource }} style={styles.mainImage} resizeMode="cover" />
 
                     {showWatermark && (
                         <View style={styles.watermarkBox}>
                             <View style={styles.logoCircle}>
-                                <Text style={styles.logoText}>Ai</Text>
+                                <Text style={styles.logoText}>SK</Text>
                             </View>
-                            <Text style={styles.watermarkText}>AI God Status App</Text>
+                            <Text style={styles.watermarkText}>Sri Krishna Puja App</Text>
                             <TouchableOpacity
                                 style={styles.removeWatermark}
                                 onPress={() => setShowWatermark(false)}
@@ -169,10 +182,8 @@ const ImageDownloadScreen = ({ navigation, route }) => {
             >
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Choose Export Quality</Text>
-
-                        <QualityOption label="Full HD Quality" icon="cloud-done-outline" color="#9c6ce6" />
-                        <QualityOption label="Low Quality" icon="speedometer-outline" color="#aaa" />
+                        <Text style={styles.modalTitle}>Watch an Ad to Download</Text>
+                        <Text style={[styles.modalText, { marginBottom: 20 }]}>Please watch a short video to support our temple and download this divine wallpaper.</Text>
 
                         <TouchableOpacity
                             style={styles.modalOkBtn}

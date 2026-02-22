@@ -28,14 +28,14 @@ const FullImageScreen = () => {
     const insets = useSafeAreaInsets();
     const { width, height } = useWindowDimensions();
 
-    const [allImages, setAllImages] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
     const initialIndex = route.params?.initialIndex ?? 0;
-    const passedImages = route.params?.allImages;
+    const passedImages = route.params?.allImages || [];
 
+    const [allImages, setAllImages] = useState(passedImages);
+    const [isLoading, setIsLoading] = useState(passedImages.length === 0);
 
     // Ensure initialIndex is valid
-    const validInitialIndex = (initialIndex >= 0 && initialIndex < allImages.length) ? initialIndex : 0;
+    const validInitialIndex = (initialIndex >= 0 && initialIndex < (allImages.length || passedImages.length)) ? initialIndex : 0;
 
     const [currentIndex, setCurrentIndex] = useState(validInitialIndex);
     const [savedIds, setSavedIds] = useState([]);

@@ -13,10 +13,6 @@
     "android": {
       "package": "com.thevibecoder.shrikrishnapuja",
       "versionCode": 2,
-      "blockedPermissions": [
-        "android.permission.READ_MEDIA_VIDEO",
-        "android.permission.READ_MEDIA_AUDIO"
-      ],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -29,6 +25,13 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow Shri Krishna app to save beautiful wallpapers to your gallery.",
+          "savePhotosPermission": "Allow Shri Krishna app to save beautiful wallpapers to your gallery."
+        }
+      ],
       [
         "expo-splash-screen",
         {

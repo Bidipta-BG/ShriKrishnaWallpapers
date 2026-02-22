@@ -51,7 +51,7 @@ const ImageShareScreen = ({ navigation, route }) => {
             // Capture the view
             const uri = await captureRef(viewRef, {
                 format: 'jpg',
-                quality: selectedQuality === 'Full HD Quality' ? 1.0 : 0.6,
+                quality: 1.0, // Default to Full HD
                 result: 'tmpfile',
             });
 
@@ -111,14 +111,14 @@ const ImageShareScreen = ({ navigation, route }) => {
                     ref={viewRef}
                     collapsable={false}
                 >
-                    <Image source={imageSource} style={styles.mainImage} resizeMode="cover" />
+                    <Image source={{ uri: imageSource }} style={styles.mainImage} resizeMode="cover" />
 
                     {showWatermark && (
                         <View style={styles.watermarkBox}>
                             <View style={styles.logoCircle}>
-                                <Text style={styles.logoText}>Ai</Text>
+                                <Text style={styles.logoText}>SK</Text>
                             </View>
-                            <Text style={styles.watermarkText}>AI God Status App</Text>
+                            <Text style={styles.watermarkText}>Sri Krishna Puja App</Text>
                             <TouchableOpacity
                                 style={styles.removeWatermark}
                                 onPress={() => setShowWatermark(false)}
@@ -162,10 +162,8 @@ const ImageShareScreen = ({ navigation, route }) => {
             >
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Choose Export Quality</Text>
-
-                        <QualityOption label="Full HD Quality" icon="cloud-done-outline" color="#9c6ce6" />
-                        <QualityOption label="Low Quality" icon="speedometer-outline" color="#aaa" />
+                        <Text style={styles.modalTitle}>Watch an Ad to Share</Text>
+                        <Text style={[styles.modalText, { marginBottom: 20 }]}>Please watch a short video to support our temple and share this divine image.</Text>
 
                         <TouchableOpacity
                             style={styles.modalOkBtn}
