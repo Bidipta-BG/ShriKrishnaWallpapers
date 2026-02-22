@@ -135,16 +135,16 @@ const ImageDownloadScreen = ({ navigation, route }) => {
 
                     {showWatermark && (
                         <View style={styles.watermarkBox}>
-                            <View style={styles.logoCircle}>
-                                <Text style={styles.logoText}>SK</Text>
-                            </View>
+                            <Ionicons name="logo-google-playstore" size={20} color="#FFD700" style={{ marginRight: 8 }} />
                             <Text style={styles.watermarkText}>Sri Krishna Puja App</Text>
-                            <TouchableOpacity
-                                style={styles.removeWatermark}
-                                onPress={() => setShowWatermark(false)}
-                            >
-                                <Ionicons name="close-circle" size={18} color="#9c6ce6" />
-                            </TouchableOpacity>
+                            {!isDownloading && (
+                                <TouchableOpacity
+                                    style={styles.removeWatermark}
+                                    onPress={() => setShowWatermark(false)}
+                                >
+                                    <Ionicons name="close-circle" size={18} color="rgba(255,215,0,0.6)" />
+                                </TouchableOpacity>
+                            )}
                         </View>
                     )}
                 </View>
@@ -208,7 +208,7 @@ const ImageDownloadScreen = ({ navigation, route }) => {
                     </View>
                 </View>
             </Modal>
-        </View>
+        </View >
     );
 };
 

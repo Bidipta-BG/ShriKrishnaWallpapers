@@ -217,7 +217,7 @@ const TRANSLATIONS = {
         slokas: 'Slokas',
         chanting: 'Chanting',
         share: 'Share',
-        about: 'About',
+        shareBlessing: 'Share Blessing',
         allImages: 'All Images',
         allMantras: 'All Mantras',
         download: 'Download',
@@ -245,7 +245,7 @@ const TRANSLATIONS = {
         slokas: 'श्लोक',
         chanting: 'जाप',
         share: 'साझा करें',
-        about: 'मेरे बारे में',
+        shareBlessing: 'आशीर्वाद साझा करें',
         allImages: 'सभी चित्र',
         allMantras: 'सभी मंत्र/गीत',
         cancel: 'रद्द करें',
@@ -1083,9 +1083,9 @@ const DailyDarshanScreen = ({ navigation }) => {
                         disabled={isInteractionDisabled}
                     />
                     <SideIcon
-                        iconName="information-circle-outline"
-                        label={t.about || 'About'}
-                        onPress={() => navigation.navigate('Settings')}
+                        iconName="share-social-outline"
+                        label={t.shareBlessing || 'Share Blessing'}
+                        onPress={() => navigation.navigate('DailySlokaShare', { backgroundImage })}
                         disabled={isInteractionDisabled}
                     />
                 </View>

@@ -49,6 +49,7 @@ const AppNavigator = ({ initialRouteName = 'LanguageSelection' }) => {
             <Stack.Screen name="ImageShare" component={ImageShareScreen} />
             <Stack.Screen name="ImageDownload" component={ImageDownloadScreen} />
             <Stack.Screen name="About" component={AboutScreen} />
+            <Stack.Screen name="DailySlokaShare" component={require('../screens/DailySlokaShareScreen').default} />
         </Stack.Navigator>
     );
 };
