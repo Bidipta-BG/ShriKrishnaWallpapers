@@ -201,7 +201,7 @@ const SettingsScreen = () => {
         try {
             await Share.share({
                 message:
-                    'Check out this amazing Sri Krishna Puja app! 🌸 Perform daily rituals and get beautiful wallpapers. Download now: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnapuja',
+                    'Check out this amazing Sri Krishna Puja app! 🌸 Perform daily rituals and get beautiful wallpapers. Download now: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnadailypujaaarti',
             });
         } catch (error) {
             console.error('Error sharing:', error);
@@ -209,7 +209,7 @@ const SettingsScreen = () => {
     };
 
     const handleRate = () => {
-        const packageName = 'com.thevibecoder.shrikrishnapuja';
+        const packageName = 'com.thevibecoder.shrikrishnadailypujaaarti';
         const url = Platform.OS === 'android'
             ? `market://details?id=${packageName}`
             : `https://play.google.com/store/apps/details?id=${packageName}`; // Fallback for now, iOS ID needed later
@@ -327,7 +327,7 @@ const SettingsScreen = () => {
                                     style={styles.copyBtn}
                                     onPress={() => {
                                         Share.share({
-                                            message: `Use my invite code ${referralCode} in the Sri Krishna Puja app and get 50 Divya Coins! Download now: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnapuja`
+                                            message: `Use my invite code ${referralCode} in the Sri Krishna Puja app and get 50 Divya Coins! Download now: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnadailypujaaarti`
                                         });
                                     }}
                                 >
