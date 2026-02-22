@@ -17,7 +17,11 @@
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
-      }
+      },
+      "permissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
       "output": "static",
@@ -58,9 +62,14 @@
       "typedRoutes": true
     },
     "extra": {
-      "router": {},
+      "router": {
+        "origin": false
+      },
+      "extra": {
+        "router": {}
+      },
       "eas": {
-        "projectId": "946937c1-eb2c-4e06-9f98-5e2d210d6550"
+        "projectId": "beda1d1b-841e-4434-a1a8-85106892524d"
       }
     }
   }

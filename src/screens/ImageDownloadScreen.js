@@ -329,6 +329,12 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         marginBottom: 25,
     },
+    modalText: {
+        color: '#eee',
+        fontSize: 15,
+        textAlign: 'center',
+        lineHeight: 22,
+    },
     qualityBtn: {
         width: '100%',
         height: 60,

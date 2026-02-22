@@ -549,7 +549,7 @@ const styles = StyleSheet.create({
         marginTop: 10,
     },
     modalText: {
-        color: '#aaa',
+        color: '#eee',
         fontSize: 15,
         textAlign: 'center',
         lineHeight: 22,
