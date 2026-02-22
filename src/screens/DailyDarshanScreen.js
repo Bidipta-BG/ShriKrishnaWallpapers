@@ -217,7 +217,7 @@ const TRANSLATIONS = {
         slokas: 'Slokas',
         chanting: 'Chanting',
         share: 'Share',
-        shareBlessing: 'Share Blessing',
+        shareBlessing: 'Share',
         allImages: 'All Images',
         allMantras: 'All Mantras',
         download: 'Download',
