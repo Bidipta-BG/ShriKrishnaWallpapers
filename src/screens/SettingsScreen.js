@@ -176,11 +176,11 @@ const SettingsScreen = () => {
             try {
                 if (type === 'coins') {
                     setCurrentCoins(prev => {
-                        const newTotal = (prev || 0) + 5;
+                        const newTotal = (prev || 0) + 50;
                         AsyncStorage.setItem('divyaCoins', newTotal.toString());
                         return newTotal;
                     });
-                    Alert.alert('Blessed!', 'You earned 5 Divya Coins for your devotion.');
+                    Alert.alert('Blessed!', 'You earned 50 Divya Coins for your devotion.');
                 } else if (type === 'no_ads') {
                     const expiry = Date.now() + 5 * 60 * 1000; // 5 minutes for testing
                     setAdFreeUntil(expiry);
@@ -284,7 +284,7 @@ const SettingsScreen = () => {
                     </View>
 
                     <TouchableOpacity style={[styles.buyButton, { backgroundColor: '#4caf50' }]} onPress={() => handleWatchAd('coins')}>
-                        <Text style={styles.buyButtonText}>WATCH AD (+5)</Text>
+                        <Text style={styles.buyButtonText}>WATCH AD (+50)</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -387,7 +387,7 @@ const SettingsScreen = () => {
                 </LinearGradient>
 
                 {/* Remove Ads Card */}
-                <LinearGradient
+                {/* <LinearGradient
                     colors={['#1a1a1a', '#2d2d2d']}
                     style={styles.card}
                     start={{ x: 0, y: 0 }}
@@ -425,7 +425,7 @@ const SettingsScreen = () => {
                             {adFreeUntil > Date.now() ? 'ACTIVE' : 'WATCH AD'}
                         </Text>
                     </TouchableOpacity>
-                </LinearGradient>
+                </LinearGradient> */}
 
 
                 {/* New Feature List */}
