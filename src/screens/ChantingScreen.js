@@ -1,10 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import * as Speech from 'expo-speech';
 import { useEffect, useState } from 'react';
 import {
     Alert,
     Dimensions,
+    Image,
+    Modal,
+    Share,
     StatusBar,
     StyleSheet,
     Text,
@@ -26,6 +28,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../context/LanguageContext';
+import { loadUserCoins, saveUserCoins } from '../utils/samagri_helpers';
 
 const { width, height } = Dimensions.get('window');
 
@@ -82,7 +85,8 @@ const FallingFlower = ({ index, onComplete }) => {
 
 // --- Virtual Mala (108 Beads Ring) ---
 const VirtualMala = ({ count, target }) => {
-    const beads = Array.from({ length: 108 }, (_, i) => i);
+    const totalBeads = target || 108;
+    const beads = Array.from({ length: totalBeads }, (_, i) => i);
     const radius = width * 0.42;
     const centerX = width / 2;
     const centerY = width / 2;
@@ -90,7 +94,7 @@ const VirtualMala = ({ count, target }) => {
     return (
         <View style={styles.malaContainer}>
             {beads.map((i) => {
-                const angleDeg = (i * (360 / 108)) - 90;
+                const angleDeg = (i * (360 / totalBeads)) - 90;
                 const angleRad = (angleDeg * Math.PI) / 180;
                 const x = centerX + radius * Math.cos(angleRad);
                 const y = centerY + radius * Math.sin(angleRad);
@@ -125,22 +129,14 @@ const TRANSLATIONS = {
         wellDone: 'Well done! You have completed',
         rounds: 'rounds.',
         reset: 'Reset',
-        tapToCount: 'Tap to Count',
-        sound: {
-            mute: 'Silent',
-            speak: 'Speak'
-        }
+        tapToCount: 'Tap to Count'
     },
     hi: {
         completed: 'Jaap पूर्ण हुआ!',
         wellDone: 'बहुत बढ़िया! आपने पूरा कर लिया है',
         rounds: 'माला।',
         reset: 'रीसेट',
-        tapToCount: 'गिनती के लिए टैप करें',
-        sound: {
-            mute: 'मौन',
-            speak: 'बोलें'
-        }
+        tapToCount: 'गिनती के लिए टैप करें'
     }
 };
 
@@ -151,12 +147,12 @@ const ChantingScreen = ({ route, navigation }) => {
     const isHindi = language === 'hi';
 
     const [count, setCount] = useState(0);
-    const target = mantra.count;
+    // Use target from route params if provided, else fallback to mantra.count
+    const target = route.params?.targetCount || mantra.count || 108;
 
     // Audio State: 'speak' | 'mute'
-    const [soundMode, setSoundMode] = useState('mute');
-
     const [flowers, setFlowers] = useState([]);
+    const [showRewardModal, setShowRewardModal] = useState(false);
 
     const scale = useSharedValue(1);
     const rippleOpacity = useSharedValue(0);
@@ -179,31 +175,8 @@ const ChantingScreen = ({ route, navigation }) => {
         setCount(newCount);
         addFlower();
 
-        // 1. Audio & Haptics
-        if (soundMode === 'mute') {
-            Vibration.vibrate(50);
-        } else if (soundMode === 'speak') {
-            try {
-                // Haptic for feedback during speech
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-
-                Speech.stop();
-
-                // Try to find a male voice for the Pujari feel
-                const voices = await Speech.getAvailableVoicesAsync();
-                const hindiMaleVoice = voices.find(v =>
-                    (v.language.startsWith('hi') || v.language.startsWith('in')) &&
-                    (v.name.toLowerCase().includes('male') || v.quality === 'Enhanced')
-                );
-
-                Speech.speak(mantra.sans, {
-                    language: 'hi-IN',
-                    voice: hindiMaleVoice?.identifier,
-                    rate: 0.85, // Balanced for mantras
-                    pitch: 0.85 // Deeper voice
-                });
-            } catch (e) { console.log(e); }
-        }
+        // 1. Vibration
+        Vibration.vibrate(50);
 
         // Milestone Haptic (Every 27 beads - Quarter Mala)
         if (newCount % 27 === 0 && newCount !== target) {
@@ -224,12 +197,30 @@ const ChantingScreen = ({ route, navigation }) => {
 
         // 4. Check Completion
         if (newCount === target) {
-            setTimeout(() => {
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                Alert.alert(t.completed, `${t.wellDone} ${target} ${t.rounds}`, [
-                    { text: 'OK', onPress: () => navigation.goBack() }
-                ]);
-            }, 300);
+            handleCompletion();
+        }
+    };
+
+    const handleCompletion = async () => {
+        // Award Coins
+        const currentCoins = await loadUserCoins();
+        await saveUserCoins(currentCoins + 5);
+
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setShowRewardModal(true);
+    };
+
+    const handleShare = async () => {
+        try {
+            const message = isHindi
+                ? `मैंने अभी ${mantra.title} का ${target} बार जाप पूरा किया और 5 दिव्य सिक्के कमाए! 🙏✨ आप भी आध्यात्मिक शांति के लिए इस ऐप को डाउनलोड करें: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnadailypujaaarti`
+                : `I just completed chanting ${mantra.title} ${target} times and earned 5 Divya Coins! 🙏✨ Join me for a spiritual journey: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnadailypujaaarti`;
+
+            await Share.share({
+                message: message,
+            });
+        } catch (error) {
+            console.error('Share error:', error);
         }
     };
 
@@ -238,15 +229,6 @@ const ChantingScreen = ({ route, navigation }) => {
             { text: "Cancel", style: "cancel" },
             { text: "Yes", onPress: () => setCount(0) }
         ]);
-    };
-
-    const toggleSoundMode = () => {
-        setSoundMode(prev => prev === 'speak' ? 'mute' : 'speak');
-    };
-
-    const getSoundIcon = () => {
-        // Toggle icons
-        return soundMode === 'speak' ? 'mic' : 'volume-mute';
     };
 
     const buttonStyle = useAnimatedStyle(() => ({
@@ -309,15 +291,61 @@ const ChantingScreen = ({ route, navigation }) => {
                     </TouchableWithoutFeedback>
                 </View>
 
-                {/* Bottom: Controls */}
-                <View style={styles.controls}>
-                    <TouchableOpacity style={styles.controlBtn} onPress={toggleSoundMode}>
-                        <Ionicons name={getSoundIcon()} size={24} color="#FFD700" />
-                        <Text style={styles.controlText}>{t.sound[soundMode]}</Text>
-                    </TouchableOpacity>
-                </View>
-
             </View>
+
+            {/* Reward Modal */}
+            <Modal
+                visible={showRewardModal}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowRewardModal(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.rewardCard}>
+                        <View style={styles.crownContainer}>
+                            <Ionicons name="trophy" size={80} color="#FFD700" />
+                        </View>
+
+                        <Text style={styles.congratsTitle}>
+                            {isHindi ? 'जाप सफल हुआ!' : 'Chanting Successful!'}
+                        </Text>
+
+                        <Text style={styles.rewardMsg}>
+                            {isHindi
+                                ? `आपने सफलतापूर्वक ${target} बार जाप पूरा किया है और ५ दिव्य सिक्के अर्जित किए हैं।`
+                                : `You have successfully completed ${target} chants and earned 5 Divya Coins.`}
+                        </Text>
+
+                        <View style={styles.coinBadge}>
+                            <Image
+                                source={require('../assets/images/coins/gold_coins.png')}
+                                style={styles.coinIcon}
+                            />
+                            <Text style={styles.coinText}>+5 Divya Coins</Text>
+                        </View>
+
+                        <View style={styles.modalButtons}>
+                            <TouchableOpacity
+                                style={styles.shareButton}
+                                onPress={handleShare}
+                            >
+                                <Ionicons name="share-social" size={24} color="#FFF" />
+                                <Text style={styles.shareText}>{isHindi ? 'साझा करें' : 'Share'}</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={styles.closeBtn}
+                                onPress={() => {
+                                    setShowRewardModal(false);
+                                    navigation.goBack();
+                                }}
+                            >
+                                <Text style={styles.closeBtnText}>{isHindi ? 'बंद करें' : 'Close'}</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -345,7 +373,7 @@ const styles = StyleSheet.create({
     content: {
         flex: 1,
         alignItems: 'center',
-        justifyContent: 'space-between',
+        justifyContent: 'center',
         paddingVertical: 20
     },
     mantraInfo: {
@@ -435,32 +463,106 @@ const styles = StyleSheet.create({
         marginTop: 5,
         textTransform: 'uppercase'
     },
-    controls: {
-        flexDirection: 'row',
-        marginBottom: 20,
-        backgroundColor: '#2C1B10',
-        padding: 5,
-        borderRadius: 30,
-        borderWidth: 1,
-        borderColor: '#5D4037',
-        zIndex: 10
-    },
-    controlBtn: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 20,
-        paddingVertical: 10,
-    },
-    controlText: {
-        color: '#FFD700',
-        marginLeft: 10,
-        fontWeight: 'bold'
-    },
     flower: {
         position: 'absolute',
         width: 30, // Small flowers
         height: 30,
         zIndex: 0
+    },
+    // Modal Styles
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.85)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20
+    },
+    rewardCard: {
+        backgroundColor: '#1A120B',
+        width: '90%',
+        borderRadius: 25,
+        padding: 30,
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#FFD700',
+        elevation: 20,
+        shadowColor: '#FFD700',
+        shadowOpacity: 0.5,
+        shadowRadius: 20
+    },
+    crownContainer: {
+        marginBottom: 20,
+        transform: [{ scale: 1.2 }]
+    },
+    congratsTitle: {
+        color: '#FFD700',
+        fontSize: 28,
+        fontWeight: 'bold',
+        textAlign: 'center',
+        marginBottom: 15,
+        fontFamily: 'serif'
+    },
+    rewardMsg: {
+        color: '#FFF',
+        fontSize: 16,
+        textAlign: 'center',
+        lineHeight: 24,
+        marginBottom: 25,
+        opacity: 0.9
+    },
+    coinBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255, 215, 0, 0.1)',
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 30,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 215, 0, 0.3)',
+        marginBottom: 30
+    },
+    coinIcon: {
+        width: 30,
+        height: 30,
+        marginRight: 10
+    },
+    coinText: {
+        color: '#FFD700',
+        fontSize: 18,
+        fontWeight: 'bold'
+    },
+    modalButtons: {
+        width: '100%',
+        gap: 15
+    },
+    shareButton: {
+        flexDirection: 'row',
+        backgroundColor: '#007AFF',
+        width: '100%',
+        paddingVertical: 15,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10
+    },
+    shareText: {
+        color: '#FFF',
+        fontSize: 16,
+        fontWeight: 'bold'
+    },
+    closeBtn: {
+        width: '100%',
+        paddingVertical: 15,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#3E2723',
+        alignItems: 'center',
+        justifyContent: 'center'
+    },
+    closeBtnText: {
+        color: '#BCAAA4',
+        fontSize: 16,
+        fontWeight: '600'
     }
 });
 

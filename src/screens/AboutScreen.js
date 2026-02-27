@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 const AboutScreen = ({ navigation }) => {
     const handlePortfolio = () => {
-        Linking.openURL('https://thevibecoder.com'); // Placeholder
+        Linking.openURL('https://axomitlab.com'); // Placeholder
     };
 
     return (

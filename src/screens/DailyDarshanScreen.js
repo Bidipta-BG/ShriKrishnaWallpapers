@@ -216,7 +216,7 @@ const TRANSLATIONS = {
         drum: 'Drum',
         more: 'More',
         slokas: 'Slokas',
-        chanting: 'Chanting',
+        chanting: 'Mantra',
         share: 'Share',
         shareBlessing: 'Share',
         allImages: 'All Images',
@@ -244,7 +244,7 @@ const TRANSLATIONS = {
         drum: 'नगाड़ा',
         more: 'अधिक',
         slokas: 'श्लोक',
-        chanting: 'जाप',
+        chanting: 'मंत्र',
         share: 'साझा करें',
         shareBlessing: 'आशीर्वाद साझा करें',
         allImages: 'सभी चित्र',
@@ -1074,7 +1074,7 @@ const DailyDarshanScreen = ({ navigation }) => {
                     <SideIcon
                         iconName="book-outline"
                         label={t.slokas}
-                        onPress={() => navigation.navigate('Slokas')}
+                        onPress={() => navigation.navigate('SlokaLibrary')}
                         disabled={isInteractionDisabled}
                     />
                     <SideIcon

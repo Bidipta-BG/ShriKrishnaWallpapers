@@ -17,6 +17,9 @@ import SamagriScreen from '../screens/SamagriScreen';
 import SavedScreen from '../screens/SavedScreen';
 import ScheduleDarshanScreen from '../screens/ScheduleDarshanScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import SlokaChapterListScreen from '../screens/SlokaChapterListScreen';
+import SlokaLibraryScreen from '../screens/SlokaLibraryScreen';
+import SlokaStudyScreen from '../screens/SlokaStudyScreen';
 import SlokasScreen from '../screens/SlokasScreen';
 
 const Stack = createStackNavigator();
@@ -35,6 +38,9 @@ const AppNavigator = ({ initialRouteName = 'LanguageSelection' }) => {
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="Slokas" component={SlokasScreen} />
             <Stack.Screen name="MantraSelection" component={MantraSelectionScreen} />
+            <Stack.Screen name="SlokaLibrary" component={SlokaLibraryScreen} />
+            <Stack.Screen name="SlokaChapterList" component={SlokaChapterListScreen} />
+            <Stack.Screen name="SlokaStudy" component={SlokaStudyScreen} />
             <Stack.Screen name="Gallery" component={GalleryScreen} />
             <Stack.Screen name="CategoryGrid" component={CategoryGridScreen} />
             <Stack.Screen name="FullImage" component={FullImageScreen} />
@@ -50,6 +56,7 @@ const AppNavigator = ({ initialRouteName = 'LanguageSelection' }) => {
             <Stack.Screen name="ImageDownload" component={ImageDownloadScreen} />
             <Stack.Screen name="About" component={AboutScreen} />
             <Stack.Screen name="DailySlokaShare" component={require('../screens/DailySlokaShareScreen').default} />
+            <Stack.Screen name="MantraPlayer" component={require('../screens/MantraPlayerScreen').default} />
         </Stack.Navigator>
     );
 };
