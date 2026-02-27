@@ -25,6 +25,7 @@ const DailySlokaShareScreen = () => {
     const route = useRoute();
     const insets = useSafeAreaInsets();
     const { language } = useLanguage();
+    const isHindi = language === 'hi';
     const { backgroundImage } = route.params || {};
 
     const viewRef = useRef();
@@ -39,13 +40,29 @@ const DailySlokaShareScreen = () => {
 
     const fetchDailySloka = async () => {
         try {
-            const response = await fetch('https://api.thevibecoderagency.online/api/srikrishna-aarti/daily-slokas');
-            const result = await response.json();
-            if (result.success && result.data) {
-                setSloka(result.data.featuredSloka || result.data.allSlokas[0]);
+            // 1. Fetch Granth List
+            const bookRes = await fetch('https://api.thevibecoderagency.online/api/srikrishna-aarti/granth');
+            const books = await bookRes.json();
+            const bookId = books[0]?.id || 'bg';
+
+            // 2. Fetch specific Granth Structure
+            const structureRes = await fetch(`https://api.thevibecoderagency.online/api/srikrishna-aarti/granth/${bookId}`);
+            const structure = await structureRes.json();
+
+            // 3. Pick a random verse
+            const chapters = structure.chapters || [];
+            const randomChapter = chapters[Math.floor(Math.random() * chapters.length)];
+            const verses = randomChapter?.verses || [];
+            const randomVerse = verses[Math.floor(Math.random() * verses.length)];
+
+            if (randomVerse) {
+                // 4. Fetch full verse details
+                const detailRes = await fetch(`https://api.thevibecoderagency.online/api/srikrishna-aarti/granth/verse/${randomVerse.id}`);
+                const verseDetail = await detailRes.json();
+                setSloka(verseDetail);
             }
         } catch (error) {
-            console.error('Error fetching sloka for share:', error);
+            console.error('Error fetching Granth Wisdom:', error);
         } finally {
             setIsLoading(false);
         }
@@ -93,7 +110,7 @@ const DailySlokaShareScreen = () => {
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                     <Ionicons name="close" size={28} color="#fff" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>{language === 'hi' ? 'दैनिक आशीर्वाद' : 'Daily Blessing'}</Text>
+                <Text style={styles.headerTitle}>{language === 'hi' ? 'ग्रंथ आशीर्वाद' : 'Granth Wisdom'}</Text>
             </View>
 
             {/* Capturable View */}
@@ -108,6 +125,9 @@ const DailySlokaShareScreen = () => {
                         <Text style={styles.sanskritText}>{sloka?.sans}</Text>
                         <View style={styles.divider} />
                         <Text style={styles.translationText}>{slokaContent?.text}</Text>
+                        <Text style={styles.verseCitation}>
+                            — {isHindi ? sloka?.chapterHi : sloka?.chapter}
+                        </Text>
 
                         {showBranding && (
                             <View style={styles.brandingRow}>
@@ -141,7 +161,7 @@ const DailySlokaShareScreen = () => {
                         ) : (
                             <>
                                 <Ionicons name="share-social" size={24} color="#000" />
-                                <Text style={styles.shareText}>{language === 'hi' ? 'साझा करें' : 'Share Blessing'}</Text>
+                                <Text style={styles.shareText}>{language === 'hi' ? 'ग्रंथ आशीर्वाद' : 'Wisdom'}</Text>
                             </>
                         )}
                     </LinearGradient>
@@ -231,6 +251,15 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         lineHeight: 24,
         fontStyle: 'italic',
+        marginBottom: 10
+    },
+    verseCitation: {
+        color: '#FFD700',
+        fontSize: 12,
+        fontWeight: 'bold',
+        textAlign: 'right',
+        opacity: 0.8,
+        fontStyle: 'italic'
     },
     brandingRow: {
         flexDirection: 'row',

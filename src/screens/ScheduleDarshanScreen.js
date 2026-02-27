@@ -165,7 +165,8 @@ const ScheduleDarshanScreen = () => {
                         </Text>
                     </View>
 
-                    {/* 4. Store Row (Side-by-Side) */}
+                    {/* 4. Store Row (Side-by-Side) - Commented out as per request */}
+                    {/* 
                     <View style={styles.storeRow}>
                         <TouchableOpacity style={[styles.card, styles.storeSmallCard]} activeOpacity={0.8}>
                             <View style={styles.storeButtonIcon}>
@@ -181,6 +182,7 @@ const ScheduleDarshanScreen = () => {
                             <Text style={styles.storeSmallText}>{t.goAdFree}</Text>
                         </TouchableOpacity>
                     </View>
+                    */}
 
                 </View>
 

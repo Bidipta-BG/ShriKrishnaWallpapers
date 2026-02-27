@@ -7,6 +7,7 @@ import {
     Dimensions,
     FlatList,
     Image,
+    Modal,
     StatusBar,
     StyleSheet,
     Text,
@@ -26,6 +27,8 @@ const SlokaLibraryScreen = ({ navigation }) => {
     const [progress, setProgress] = useState(null);
     const [granthList, setGranthList] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [showEntranceModal, setShowEntranceModal] = useState(false);
+    const [pendingBook, setPendingBook] = useState(null);
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
@@ -119,7 +122,12 @@ const SlokaLibraryScreen = ({ navigation }) => {
         return (
             <TouchableOpacity
                 style={[styles.bookCard, isLocked && styles.lockedCard]}
-                onPress={() => !isLocked && navigation.navigate('SlokaChapterList', { book: item })}
+                onPress={() => {
+                    if (!isLocked) {
+                        setPendingBook(item);
+                        setShowEntranceModal(true);
+                    }
+                }}
                 activeOpacity={0.8}
             >
                 <View style={[styles.imageContainer, isLocked && { opacity: 0.5 }]}>
@@ -201,6 +209,58 @@ const SlokaLibraryScreen = ({ navigation }) => {
                     )}
                 />
             )}
+
+            {/* Devotional Entrance Modal */}
+            <Modal
+                transparent={true}
+                visible={showEntranceModal}
+                animationType="fade"
+                onRequestClose={() => setShowEntranceModal(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.devotionalCard}>
+                        <View style={styles.spiritualIconBox}>
+                            <Ionicons name="sunny-outline" size={50} color="#FFD700" />
+                            <Ionicons name="sparkles" size={24} color="#FFA000" style={styles.topSparkle} />
+                        </View>
+
+                        <Text style={styles.modalTitle}>
+                            {isHindi ? 'पवित्र शुरुआत' : 'Sacred Beginning'}
+                        </Text>
+
+                        <Text style={styles.devotionalText}>
+                            {isHindi
+                                ? 'प्रिय भक्त, कृपया पूरे हृदय और श्रद्धा के साथ इन पवित्र ग्रंथों का अध्ययन करें। स्वयं पर विश्वास रखें, यह ज्ञान आपके जीवन को नई दिशा देगा।'
+                                : 'Dear Devotee, please study these sacred scriptures with a full heart and faith. Believe in yourself; this wisdom will guide your life.'}
+                        </Text>
+
+                        <View style={styles.rewardHighlight}>
+                            <View style={styles.coinBadge}>
+                                <Text style={styles.coinSymbol}>$</Text>
+                            </View>
+                            <Text style={styles.rewardInfoText}>
+                                {isHindi
+                                    ? 'प्रत्येक श्लोक पर 5 दिव्य सिक्के प्राप्त करें'
+                                    : 'Earn 5 Divya Coins for each verse'}
+                            </Text>
+                        </View>
+
+                        <TouchableOpacity
+                            style={styles.entranceBtn}
+                            onPress={() => {
+                                setShowEntranceModal(false);
+                                if (pendingBook) {
+                                    navigation.navigate('SlokaChapterList', { book: pendingBook });
+                                }
+                            }}
+                        >
+                            <Text style={styles.entranceBtnText}>
+                                {isHindi ? 'प्रणाम / शुरू करें' : 'Pranam / Start'}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -220,6 +280,96 @@ const styles = StyleSheet.create({
         color: '#FFD700',
         fontSize: 16,
         fontFamily: 'serif'
+    },
+    // Modal Styles
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.85)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20
+    },
+    devotionalCard: {
+        backgroundColor: '#1A120B',
+        width: '90%',
+        borderRadius: 25,
+        padding: 30,
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#FFD700',
+        elevation: 20,
+        shadowColor: '#FFD700',
+        shadowOpacity: 0.3,
+        shadowRadius: 15
+    },
+    spiritualIconBox: {
+        marginBottom: 20,
+        position: 'relative'
+    },
+    topSparkle: {
+        position: 'absolute',
+        top: -5,
+        right: -10
+    },
+    modalTitle: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#FFD700',
+        marginBottom: 15,
+        fontFamily: 'serif'
+    },
+    devotionalText: {
+        color: '#EFEBE9',
+        fontSize: 16,
+        textAlign: 'center',
+        lineHeight: 24,
+        marginBottom: 25,
+        fontStyle: 'italic'
+    },
+    rewardHighlight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255,215,0,0.1)',
+        paddingVertical: 10,
+        paddingHorizontal: 15,
+        borderRadius: 12,
+        marginBottom: 30,
+        gap: 12
+    },
+    coinBadge: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: '#FFD700',
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    coinSymbol: {
+        color: '#1A120B',
+        fontWeight: 'bold',
+        fontSize: 14
+    },
+    rewardInfoText: {
+        color: '#FFD700',
+        fontSize: 14,
+        fontWeight: 'bold'
+    },
+    entranceBtn: {
+        backgroundColor: '#D35400',
+        paddingHorizontal: 30,
+        paddingVertical: 12,
+        borderRadius: 25,
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOpacity: 0.3,
+        shadowRadius: 5,
+        shadowOffset: { width: 0, height: 2 }
+    },
+    entranceBtnText: {
+        color: '#FFF',
+        fontSize: 16,
+        fontWeight: 'bold',
+        textTransform: 'uppercase'
     },
     header: {
         flexDirection: 'row',
