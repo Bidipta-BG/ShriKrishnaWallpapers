@@ -100,14 +100,12 @@ const findNextVerseId = (currentVerseId, bookData) => {
 };
 
 const checkAndUnlockNextBook = (currentVerseId, bookData, progress) => {
-    // Basic logic: if this was the last verse of the last chapter of a book, unlock the next book
-    // For now, we'll keep it simple: finding the current book index
+    // If bookData contains multiple books, we can find the next one
     const bookId = currentVerseId.split('_')[0];
-    const bookIndex = bookData.findIndex(b => b.id === bookId);
+    const bookIndex = bookData.findIndex(b => b.id === bookId || b.bookId === bookId);
 
     if (bookIndex !== -1 && bookIndex + 1 < bookData.length) {
-        // Here we could add a check if ALL verses in bookIndex are in progress.completedVerses
-        return bookData[bookIndex + 1].id;
+        return bookData[bookIndex + 1].id || bookData[bookIndex + 1].bookId;
     }
     return null;
 };

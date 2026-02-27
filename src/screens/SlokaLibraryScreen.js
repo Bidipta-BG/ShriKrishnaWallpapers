@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useState } from 'react';
 import {
+    ActivityIndicator,
     Alert,
     Dimensions,
     FlatList,
@@ -23,16 +24,47 @@ const SlokaLibraryScreen = ({ navigation }) => {
     const { language } = useLanguage();
     const isHindi = language === 'hi';
     const [progress, setProgress] = useState(null);
+    const [granthList, setGranthList] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const getProgress = useCallback(async () => {
-        const data = await loadSlokaProgress();
-        setProgress(data);
+    const fetchData = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            // Fetch Progress
+            const progressData = await loadSlokaProgress();
+            setProgress(progressData);
+
+            // Fetch Granth List from API
+            const response = await fetch('https://api.thevibecoderagency.online/api/srikrishna-aarti/granth');
+            const data = await response.json();
+
+            // Enrich the list with chapter data to calculate progress
+            const enrichedData = await Promise.all(
+                data.map(async (book) => {
+                    try {
+                        const detailRes = await fetch(`https://api.thevibecoderagency.online/api/srikrishna-aarti/granth/${book.id}`);
+                        const detailData = await detailRes.json();
+                        return { ...book, ...detailData };
+                    } catch (e) {
+                        return book;
+                    }
+                })
+            );
+
+            setGranthList(enrichedData);
+        } catch (error) {
+            console.error('Fetch Granth List error:', error);
+            // Fallback to local data if API fails for some reason
+            setGranthList(GRANTH_LIBRARY_DATA);
+        } finally {
+            setIsLoading(false);
+        }
     }, []);
 
     useFocusEffect(
         useCallback(() => {
-            getProgress();
-        }, [getProgress])
+            fetchData();
+        }, [fetchData])
     );
 
     const handleReset = () => {
@@ -57,7 +89,7 @@ const SlokaLibraryScreen = ({ navigation }) => {
     };
 
     const getCompletionStats = (book) => {
-        if (!progress) return { percentage: 0, completed: 0, total: 0 };
+        if (!progress || !book.chapters) return { percentage: 0, completed: 0, total: 0 };
 
         let totalVerses = 0;
         let completedCount = 0;
@@ -91,7 +123,11 @@ const SlokaLibraryScreen = ({ navigation }) => {
                 activeOpacity={0.8}
             >
                 <View style={[styles.imageContainer, isLocked && { opacity: 0.5 }]}>
-                    <Image source={item.image} style={styles.bookImage} resizeMode="cover" />
+                    <Image
+                        source={item.image_url ? { uri: item.image_url } : item.image}
+                        style={styles.bookImage}
+                        resizeMode="cover"
+                    />
                     {isLocked && (
                         <View style={styles.lockOverlay}>
                             <Ionicons name="lock-closed" size={32} color="#FFD700" />
@@ -138,24 +174,33 @@ const SlokaLibraryScreen = ({ navigation }) => {
                 </TouchableOpacity>
             </View>
 
-            <FlatList
-                data={GRANTH_LIBRARY_DATA}
-                keyExtractor={item => item.id}
-                renderItem={renderBook}
-                contentContainerStyle={styles.listContent}
-                ListHeaderComponent={() => (
-                    <View style={styles.heroSection}>
-                        <Text style={styles.heroTitle}>
-                            {isHindi ? 'आध्यात्मिक यात्रा' : 'Spiritual Journey'}
-                        </Text>
-                        <Text style={styles.heroSubtitle}>
-                            {isHindi
-                                ? 'ईश्वर के वचनों को गहराई से समझें और अपने जीवन में उतारें।'
-                                : 'Deeply understand God\'s words and apply them to your life.'}
-                        </Text>
-                    </View>
-                )}
-            />
+            {isLoading ? (
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#FFD700" />
+                    <Text style={styles.loadingText}>
+                        {isHindi ? 'पुस्तकालय लोड हो रहा है...' : 'Loading Granth Library...'}
+                    </Text>
+                </View>
+            ) : (
+                <FlatList
+                    data={granthList}
+                    keyExtractor={item => item.id}
+                    renderItem={renderBook}
+                    contentContainerStyle={styles.listContent}
+                    ListHeaderComponent={() => (
+                        <View style={styles.heroSection}>
+                            <Text style={styles.heroTitle}>
+                                {isHindi ? 'आध्यात्मिक यात्रा' : 'Spiritual Journey'}
+                            </Text>
+                            <Text style={styles.heroSubtitle}>
+                                {isHindi
+                                    ? 'ईश्वर के वचनों को गहराई से समझें और अपने जीवन में उतारें।'
+                                    : 'Deeply understand God\'s words and apply them to your life.'}
+                            </Text>
+                        </View>
+                    )}
+                />
+            )}
         </SafeAreaView>
     );
 };
@@ -164,6 +209,17 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#120E0A',
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 15
+    },
+    loadingText: {
+        color: '#FFD700',
+        fontSize: 16,
+        fontFamily: 'serif'
     },
     header: {
         flexDirection: 'row',

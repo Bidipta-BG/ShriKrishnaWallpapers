@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useState } from 'react';
 import {
+    ActivityIndicator,
     FlatList,
     LayoutAnimation,
     Platform,
@@ -26,15 +27,33 @@ const SlokaChapterListScreen = ({ navigation, route }) => {
     const isHindi = language === 'hi';
     const [expandedChapters, setExpandedChapters] = useState({});
     const [progress, setProgress] = useState(null);
+    const [bookData, setBookData] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    const fetchData = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            // Fetch Progress
+            const progressData = await loadSlokaProgress();
+            setProgress(progressData);
+
+            // Fetch Book Structure from API
+            const response = await fetch(`https://api.thevibecoderagency.online/api/srikrishna-aarti/granth/${book.id}`);
+            const data = await response.json();
+            setBookData(data);
+        } catch (error) {
+            console.error('Fetch Book Structure error:', error);
+            // Fallback to route param if API fails
+            setBookData(book);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [book.id]);
 
     useFocusEffect(
         useCallback(() => {
-            const getProgress = async () => {
-                const data = await loadSlokaProgress();
-                setProgress(data);
-            };
-            getProgress();
-        }, [])
+            fetchData();
+        }, [fetchData])
     );
 
     const toggleChapter = (chapterId) => {
@@ -55,7 +74,11 @@ const SlokaChapterListScreen = ({ navigation, route }) => {
             <TouchableOpacity
                 key={verse.id}
                 style={[styles.verseItem, isLocked && styles.lockedVerse]}
-                onPress={() => !isLocked && navigation.navigate('SlokaStudy', { verse, book, chapterId })}
+                onPress={() => !isLocked && navigation.navigate('SlokaStudy', {
+                    verseId: verse.id,
+                    bookId: book.id,
+                    bookStructure: bookData // Pass structure for next verse calculation
+                })}
             >
                 <View style={styles.verseInfo}>
                     <Text style={styles.verseIndicator}>
@@ -126,12 +149,21 @@ const SlokaChapterListScreen = ({ navigation, route }) => {
                 <View style={{ width: 40 }} />
             </View>
 
-            <FlatList
-                data={book.chapters}
-                keyExtractor={item => item.id}
-                renderItem={renderChapter}
-                contentContainerStyle={styles.listContent}
-            />
+            {isLoading ? (
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#FFD700" />
+                    <Text style={styles.loadingText}>
+                        {isHindi ? 'अध्याय लोड हो रहे हैं...' : 'Loading Chapters...'}
+                    </Text>
+                </View>
+            ) : (
+                <FlatList
+                    data={bookData?.chapters || []}
+                    keyExtractor={item => item.id}
+                    renderItem={renderChapter}
+                    contentContainerStyle={styles.listContent}
+                />
+            )}
         </SafeAreaView>
     );
 };
@@ -140,6 +172,17 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#120E0A',
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 15
+    },
+    loadingText: {
+        color: '#FFD700',
+        fontSize: 16,
+        fontFamily: 'serif'
     },
     header: {
         flexDirection: 'row',

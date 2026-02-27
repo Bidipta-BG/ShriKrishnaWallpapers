@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import {
+    ActivityIndicator,
     LayoutAnimation,
     Modal,
     Platform,
@@ -15,7 +16,6 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '../context/LanguageContext';
-import { GRANTH_LIBRARY_DATA } from '../data/SlokaLibraryData';
 import { loadUserCoins, saveUserCoins } from '../utils/samagri_helpers';
 import { completeVerse, loadSlokaProgress } from '../utils/sloka_helpers';
 
@@ -25,11 +25,11 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 const SlokaStudyScreen = ({ navigation, route }) => {
     const insets = useSafeAreaInsets();
-    const { verse, book, chapterId } = route.params;
+    const { verseId, bookId, bookStructure } = route.params;
     const { language } = useLanguage();
     const isHindi = language === 'hi';
-    const content = isHindi ? verse.hi : verse.en;
 
+    const [verse, setVerse] = useState(null);
     const [timeLeft, setTimeLeft] = useState(null); // Use null to indicate loading
     const [isComplete, setIsComplete] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,30 +42,39 @@ const SlokaStudyScreen = ({ navigation, route }) => {
         lessons: false
     });
 
+    const content = verse ? (isHindi ? verse.hi : verse.en) : null;
+
     useEffect(() => {
-        const checkCompletion = async () => {
+        const fetchVerseAndCheckProgress = async () => {
+            setIsLoading(true);
             try {
+                // Fetch Verse Details from API
+                const response = await fetch(`https://api.thevibecoderagency.online/api/srikrishna-aarti/granth/verse/${verseId}`);
+                const verseData = await response.json();
+                setVerse(verseData);
+
+                // Check Progress
                 const progress = await loadSlokaProgress();
-                const alreadyDone = progress.completedVerses.includes(verse.id);
+                const alreadyDone = progress.completedVerses.includes(verseId);
 
                 if (alreadyDone) {
                     setTimeLeft(0);
                     setIsComplete(true);
                     setRewardEarned(true);
                 } else {
-                    setTimeLeft(5); // Testing: 5 seconds instead of 180
+                    setTimeLeft(verseData.timer || 5); // Use API timer or fallback
                     setIsComplete(false);
                     setRewardEarned(false);
                 }
             } catch (error) {
-                console.error('Check completion error:', error);
+                console.error('Fetch Verse error:', error);
                 setTimeLeft(5);
             } finally {
                 setIsLoading(false);
             }
         };
-        checkCompletion();
-    }, [verse.id]);
+        fetchVerseAndCheckProgress();
+    }, [verseId]);
 
     useEffect(() => {
         if (isLoading || timeLeft === null) return;
@@ -89,7 +98,9 @@ const SlokaStudyScreen = ({ navigation, route }) => {
         setRewardEarned(true);
         try {
             // Unlock next verse & chapter
-            await completeVerse(verse.id, GRANTH_LIBRARY_DATA);
+            // Pass the bookStructure which is basically the whole book data returned by GET /granth/{bookId}
+            // But we need to wrap it in an array for sloka_helpers if it expects an array of books
+            await completeVerse(verseId, [bookStructure]);
 
             // Add Reward Coins
             const currentCoins = await loadUserCoins();
@@ -174,7 +185,7 @@ const SlokaStudyScreen = ({ navigation, route }) => {
                 </TouchableOpacity>
                 <View style={styles.headerTitleContainer}>
                     <Text style={styles.headerSubtitle}>
-                        {isHindi ? verse.chapterHi : verse.chapter}
+                        {verse ? (isHindi ? verse.chapterHi : verse.chapter) : ''}
                     </Text>
                     <Text style={styles.headerTitle}>
                         {isHindi ? 'गहन अध्ययन' : 'Deep Study'}
@@ -183,24 +194,33 @@ const SlokaStudyScreen = ({ navigation, route }) => {
                 <View style={{ width: 40 }} />
             </View>
 
-            <ScrollView contentContainerStyle={styles.scrollContent}>
-                {/* Sanskrit Verse */}
-                <View style={styles.verseCard}>
-                    <Ionicons name="ribbon-outline" size={32} color="#FFD700" style={styles.verseIcon} />
-                    <Text style={styles.sanskritText}>{verse.sans}</Text>
+            {isLoading || !verse ? (
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#FFD700" />
+                    <Text style={styles.loadingText}>
+                        {isHindi ? 'श्लोक लोड हो रहा है...' : 'Loading Verse...'}
+                    </Text>
                 </View>
+            ) : (
+                <ScrollView contentContainerStyle={styles.scrollContent}>
+                    {/* Sanskrit Verse */}
+                    <View style={styles.verseCard}>
+                        <Ionicons name="ribbon-outline" size={32} color="#FFD700" style={styles.verseIcon} />
+                        <Text style={styles.sanskritText}>{verse.sans}</Text>
+                    </View>
 
-                {/* Main Translation */}
-                <View style={styles.translationContainer}>
-                    <Text style={styles.translationText}>{content.text}</Text>
-                </View>
+                    {/* Main Translation */}
+                    <View style={styles.translationContainer}>
+                        <Text style={styles.translationText}>{content.text}</Text>
+                    </View>
 
-                {/* Deep Dive Sections */}
-                {renderSection('meaning', isHindi ? 'सरल अर्थ' : 'Translation', content.meaning, 'book-outline')}
-                {renderSection('understanding', isHindi ? 'गहन समझ' : 'Deep Understanding', content.explanation, 'bulb-outline')}
-                {renderSection('lessons', isHindi ? 'जीवन के सबक' : 'Life Lessons', content.lessons, 'heart-outline')}
+                    {/* Deep Dive Sections */}
+                    {renderSection('meaning', isHindi ? 'सरल अर्थ' : 'Translation', content.meaning, 'book-outline')}
+                    {renderSection('understanding', isHindi ? 'गहन समझ' : 'Deep Understanding', content.explanation, 'bulb-outline')}
+                    {renderSection('lessons', isHindi ? 'जीवन के सबक' : 'Life Lessons', content.lessons, 'heart-outline')}
 
-            </ScrollView>
+                </ScrollView>
+            )}
 
             <View style={[
                 styles.bottomBar,
@@ -288,6 +308,17 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#120E0A',
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 15
+    },
+    loadingText: {
+        color: '#FFD700',
+        fontSize: 16,
+        fontFamily: 'serif'
     },
     header: {
         flexDirection: 'row',
