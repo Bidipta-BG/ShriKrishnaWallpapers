@@ -176,11 +176,11 @@ const SettingsScreen = () => {
             try {
                 if (type === 'coins') {
                     setCurrentCoins(prev => {
-                        const newTotal = (prev || 0) + 50;
+                        const newTotal = (prev || 0) + 10;
                         AsyncStorage.setItem('divyaCoins', newTotal.toString());
                         return newTotal;
                     });
-                    Alert.alert('Blessed!', 'You earned 50 Divya Coins for your devotion.');
+                    Alert.alert('Blessed!', 'You earned 10 Divya Coins for your devotion.');
                 } else if (type === 'no_ads') {
                     const expiry = Date.now() + 5 * 60 * 1000; // 5 minutes for testing
                     setAdFreeUntil(expiry);
@@ -284,7 +284,7 @@ const SettingsScreen = () => {
                     </View>
 
                     <TouchableOpacity style={[styles.buyButton, { backgroundColor: '#4caf50' }]} onPress={() => handleWatchAd('coins')}>
-                        <Text style={styles.buyButtonText}>WATCH AD (+50)</Text>
+                        <Text style={styles.buyButtonText}>WATCH AD (+10)</Text>
                     </TouchableOpacity>
                 </View>
 

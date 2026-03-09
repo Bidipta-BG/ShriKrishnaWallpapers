@@ -83,15 +83,15 @@ const MantraPlayerScreen = ({ route, navigation }) => {
         setRewardEarned(true);
         setIsPlaying(false);
         const currentCoins = await loadUserCoins();
-        await saveUserCoins(currentCoins + 5);
+        await saveUserCoins(currentCoins + 10);
         setShowRewardModal(true);
     };
 
     const handleShare = async () => {
         try {
             const message = isHindi
-                ? `मैंने अभी ${mantra.title} सुना और 5 दिव्य सिक्के कमाए! 🙏✨ आप भी आध्यात्मिक शांति के लिए इस ऐप को डाउनलोड करें: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnadailypujaaarti`
-                : `I just finished listening to ${mantra.title} and earned 5 Divya Coins! 🙏✨ Join me for a spiritual journey: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnadailypujaaarti`;
+                ? `मैंने अभी ${mantra.title} सुना और 10 दिव्य सिक्के कमाए! 🙏✨ आप भी आध्यात्मिक शांति के लिए इस ऐप को डाउनलोड करें: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnadailypujaaarti`
+                : `I just finished listening to ${mantra.title} and earned 10 Divya Coins! 🙏✨ Join me for a spiritual journey: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnadailypujaaarti`;
 
             await Share.share({
                 message: message,
@@ -214,8 +214,8 @@ const MantraPlayerScreen = ({ route, navigation }) => {
 
                         <Text style={styles.rewardMsg}>
                             {isHindi
-                                ? `आपने सफलतापूर्वक मंत्र श्रवण पूरा किया है और ५ दिव्य सिक्के अर्जित किए हैं।`
-                                : `You have successfully listened to this mantra and earned 5 Divya Coins.`}
+                                ? `आपने सफलतापूर्वक मंत्र श्रवण पूरा किया है और १० दिव्य सिक्के अर्जित किए हैं।`
+                                : `You have successfully listened to this mantra and earned 10 Divya Coins.`}
                         </Text>
 
                         <View style={styles.coinBadge}>
@@ -223,7 +223,7 @@ const MantraPlayerScreen = ({ route, navigation }) => {
                                 source={require('../assets/images/coins/gold_coins.png')}
                                 style={styles.coinIcon}
                             />
-                            <Text style={styles.coinText}>+5 Divya Coins</Text>
+                            <Text style={styles.coinText}>+10 Divya Coins</Text>
                         </View>
 
                         <View style={styles.modalButtons}>

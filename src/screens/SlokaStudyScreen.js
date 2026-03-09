@@ -104,7 +104,7 @@ const SlokaStudyScreen = ({ navigation, route }) => {
 
             // Add Reward Coins
             const currentCoins = await loadUserCoins();
-            await saveUserCoins(currentCoins + 5);
+            await saveUserCoins(currentCoins + 10);
 
             // Show Celebration
             setShowRewardModal(true);
@@ -121,8 +121,8 @@ const SlokaStudyScreen = ({ navigation, route }) => {
         try {
             const verseRef = isHindi ? verse.chapterHi : verse.chapter;
             const message = isHindi
-                ? `मैंने अभी श्रीकृष्ण ऐप में ${verseRef} का अध्ययन पूर्ण किया और 5 दिव्य सिक्के कमाए! 🙏✨ आप भी श्रीमद्भगवद्गीता के गहन ज्ञान से जुड़ें: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnadailypujaaarti`
-                : `I just finished studying ${verseRef} in the Shri Krishna App and earned 5 Divya Coins! 🙏✨ Deepen your spiritual journey today: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnadailypujaaarti`;
+                ? `मैंने अभी श्रीकृष्ण ऐप में ${verseRef} का अध्ययन पूर्ण किया और 10 दिव्य सिक्के कमाए! 🙏✨ आप भी श्रीमद्भगवद्गीता के गहन ज्ञान से जुड़ें: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnadailypujaaarti`
+                : `I just finished studying ${verseRef} in the Shri Krishna App and earned 10 Divya Coins! 🙏✨ Deepen your spiritual journey today: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnadailypujaaarti`;
 
             await Share.share({
                 message: message,
@@ -272,7 +272,7 @@ const SlokaStudyScreen = ({ navigation, route }) => {
                                     <Text style={styles.coinSymbol}>$</Text>
                                 </View>
                                 <Text style={styles.rewardItemText}>
-                                    {isHindi ? '५ दिव्य सिक्के प्राप्त हुए' : 'Earned 5 Divya Coins'}
+                                    {isHindi ? '१० दिव्य सिक्के प्राप्त हुए' : 'Earned 10 Divya Coins'}
                                 </Text>
                             </View>
                         </View>

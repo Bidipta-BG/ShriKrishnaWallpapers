@@ -35,11 +35,11 @@ const TRANSLATIONS = {
             customPlaceholder: 'Enter custom count',
             startBtn: 'Start Chanting',
             limitError: 'Maximum count allowed is 300',
-            motivation: 'Complete this jhaap to earn 5 Divya Coins and divine blessings.'
+            motivation: 'Complete this jhaap to earn 10 Divya Coins and divine blessings.'
         },
         listenModal: {
             title: 'Mantra Listening Prep',
-            motivation: 'Complete this mantra listening to earn 5 Divya Coins and attain deep inner peace.',
+            motivation: 'Complete this mantra listening to earn 10 Divya Coins and attain deep inner peace.',
             guidelines: 'Please listen in a quiet place with a clear and focused mind for the best experience.',
             warning: 'Note: If you go back before completion, your progress and rewards will be lost.',
             startBtn: 'Start Listening'
@@ -57,11 +57,11 @@ const TRANSLATIONS = {
             customPlaceholder: 'संख्या दर्ज करें',
             startBtn: 'जाप शुरू करें',
             limitError: 'अधिकतम संख्या 300 ही हो सकती है',
-            motivation: '५ दिव्य सिक्के और ईश्वरीय आशीर्वाद अर्जित करने के लिए इस जाप को पूरा करें।'
+            motivation: '१० दिव्य सिक्के और ईश्वरीय आशीर्वाद अर्जित करने के लिए इस जाप को पूरा करें।'
         },
         listenModal: {
             title: 'मंत्र श्रवण की तैयारी',
-            motivation: '५ दिव्य सिक्के अर्जित करने और गहरी आंतरिक शांति प्राप्त करने के लिए इस मंत्र श्रवण को पूरा करें।',
+            motivation: '१० दिव्य सिक्के अर्जित करने और गहरी आंतरिक शांति प्राप्त करने के लिए इस मंत्र श्रवण को पूरा करें।',
             guidelines: 'सर्वोत्तम अनुभव के लिए कृपया शांत स्थान पर स्पष्ट और केंद्रित मन से सुनें।',
             warning: 'नोट: यदि आप पूरा होने से पहले वापस जाते हैं, तो आपकी प्रगति और पुरस्कार खो जाएंगे।',
             startBtn: 'श्रवण शुरू करें'

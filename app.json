@@ -2,7 +2,7 @@
   "expo": {
     "name": "Sri Krishna Puja",
     "slug": "ShriKrishnaWallpapers",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "userInterfaceStyle": "automatic",
@@ -12,7 +12,7 @@
     },
     "android": {
       "package": "com.thevibecoder.shrikrishnadailypujaaarti",
-      "versionCode": 2,
+      "versionCode": 3,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -69,8 +69,9 @@
         "router": {}
       },
       "eas": {
-        "projectId": "beda1d1b-841e-4434-a1a8-85106892524d"
+        "projectId": "946937c1-eb2c-4e06-9f98-5e2d210d6550"
       }
-    }
+    },
+    "owner": "bidiptabikash"
   }
 }

@@ -494,7 +494,7 @@ const DailyDarshanScreen = ({ navigation }) => {
             if (!lastDate) {
                 // First time ever
                 newStreak = 1;
-                newCoins = 1;
+                newCoins = 10;
                 shouldAutoPlay = true;
             } else if (lastDate === today) {
                 // Same day refresh
@@ -507,12 +507,12 @@ const DailyDarshanScreen = ({ navigation }) => {
                 if (lastDate === yesterdayStr) {
                     // Consecutive Day (+)
                     newStreak += 1;
-                    newCoins += 1;
+                    newCoins += 10;
                     shouldAutoPlay = true;
 
                     // Milestone Logic (Day 7/7, 14/14, etc.)
                     if (newStreak === newGoal) {
-                        newCoins += 3; // Bonus
+                        newCoins += 20; // Bonus
                         newShields += 1; // Award Shield
                         newGoal += 7; // Increment goal
                     }
@@ -527,13 +527,13 @@ const DailyDarshanScreen = ({ navigation }) => {
                         // Missed exactly 1 day and has shield
                         newShields -= 1;
                         newStreak += 1; // Treat as if they came yesterday to maintain progress
-                        newCoins += 1; // Reward for "saving" the day
+                        newCoins += 10; // Reward for "saving" the day
                         setShieldPopupVisible(true);
                         shouldAutoPlay = true;
 
                         // Milestone check even on shield day
                         if (newStreak === newGoal) {
-                            newCoins += 3;
+                            newCoins += 20;
                             newShields += 1;
                             newGoal += 7;
                         }
@@ -541,7 +541,7 @@ const DailyDarshanScreen = ({ navigation }) => {
                         // Reset everything
                         newStreak = 1;
                         newGoal = 7;
-                        newCoins += 1; // Still give 1 coin for coming back
+                        newCoins += 10; // Still give 10 coins for coming back
                         shouldAutoPlay = true;
                     }
                 }
