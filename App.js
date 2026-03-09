@@ -1,7 +1,7 @@
 
 import { NavigationContainer } from '@react-navigation/native';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import appJson from './app.json';
 import LoadingOverlay from './src/components/LoadingOverlay';
@@ -56,35 +56,6 @@ const AppContent = () => {
         }
     };
 
-    const [selectedLangObj, setSelectedLangObj] = useState(null);
-
-    useEffect(() => {
-        if (!isLoading && !isUIReady) {
-            // ALWAYS show the selection popup on launch, acting as a "Gate"
-            Alert.alert(
-                "Welcome! / नमस्ते! 🙏",
-                "Please select your language.\nकृपया अपनी भाषा चुनें।",
-                [
-                    {
-                        text: "English",
-                        onPress: () => {
-                            selectLanguage('en');
-                            setTimeout(() => setUIReady(true), 500);
-                        }
-                    },
-                    {
-                        text: "हिंदी (Hindi)",
-                        onPress: () => {
-                            selectLanguage('hi');
-                            setTimeout(() => setUIReady(true), 500);
-                        }
-                    }
-                ],
-                { cancelable: false }
-            );
-        }
-    }, [isLoading, isUIReady]);
-
     if (isLoading) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFF8E1' }}>
@@ -95,8 +66,7 @@ const AppContent = () => {
 
     return (
         <NavigationContainer key={language ? 'user' : 'guest'}>
-            {/* Always start with DailyDarshan, language choice happens via Alert on top */}
-            <AppNavigator initialRouteName="DailyDarshan" />
+            <AppNavigator initialRouteName={language ? "DailyDarshan" : "LanguageSelection"} />
             <LoadingOverlay />
             <UpdateModal
                 visible={showUpdateModal}

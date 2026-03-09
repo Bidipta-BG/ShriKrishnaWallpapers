@@ -444,12 +444,12 @@ const SettingsScreen = () => {
                         onPress={handleContact}
                         color="#ff6b6b"
                     />
-                    {/* <MenuOption
+                    <MenuOption
                         icon="language"
                         title="Change Language"
                         onPress={handleLanguage}
                         color="#9c6ce6"
-                    /> */}
+                    />
                     <MenuOption
                         icon="shield-checkmark"
                         title="Privacy Policy"

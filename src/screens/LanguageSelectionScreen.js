@@ -9,12 +9,18 @@ import { LANGUAGES } from '../utils/constants';
 const { width } = Dimensions.get('window');
 
 const LanguageSelectionScreen = () => {
-    const { selectLanguage } = useLanguage();
+    const { selectLanguage, setUIReady } = useLanguage();
     const navigation = useNavigation();
 
     const handleLanguageSelect = (langCode) => {
         selectLanguage(langCode);
-        navigation.replace('DailyDarshan');
+        setUIReady(true);
+        // If we can go back, it means we came from Settings
+        if (navigation.canGoBack()) {
+            navigation.goBack();
+        } else {
+            navigation.replace('DailyDarshan');
+        }
     };
 
     const renderItem = ({ item }) => (
