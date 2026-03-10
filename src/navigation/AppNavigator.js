@@ -1,14 +1,13 @@
 import { createStackNavigator } from '@react-navigation/stack';
 import AboutScreen from '../screens/AboutScreen';
 import AppGuideScreen from '../screens/AppGuideScreen';
-import AstroScreen from '../screens/AstroScreen';
 import CategoryGridScreen from '../screens/CategoryGridScreen';
 import ChantingScreen from '../screens/ChantingScreen';
+import ChatScreen from '../screens/ChatScreen';
 import DailyDarshanScreen from '../screens/DailyDarshanScreen';
 import FullImageScreen from '../screens/FullImageScreen';
 import GalleryScreen from '../screens/GalleryScreen';
 import GenerateScreen from '../screens/GenerateScreen';
-import HandAnalysisScreen from '../screens/HandAnalysisScreen';
 import HomeScreen from '../screens/HomeScreen';
 import ImageDownloadScreen from '../screens/ImageDownloadScreen';
 import ImageShareScreen from '../screens/ImageShareScreen';
@@ -49,8 +48,7 @@ const AppNavigator = ({ initialRouteName = 'LanguageSelection' }) => {
             <Stack.Screen name="Chanting" component={ChantingScreen} />
             <Stack.Screen name="ScheduleDarshan" component={ScheduleDarshanScreen} />
             <Stack.Screen name="Samagri" component={SamagriScreen} />
-            <Stack.Screen name="Astro" component={AstroScreen} />
-            <Stack.Screen name="HandAnalysis" component={HandAnalysisScreen} />
+            <Stack.Screen name="Chat" component={ChatScreen} />
             <Stack.Screen name="Generate" component={GenerateScreen} />
             <Stack.Screen name="Saved" component={SavedScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />

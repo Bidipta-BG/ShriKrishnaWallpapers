@@ -58,7 +58,13 @@ const SETTINGS_TRANSLATIONS = {
         serenity: 'Divine Serenity',
         serenityMsg: 'Ads have been removed for the next 5 minutes.',
         shareMsg: 'Check out this amazing Sri Krishna Puja app! 🌸 Perform daily rituals and get beautiful wallpapers. Download now: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnadailypujaaarti',
-        inviteShareMsg: 'Use my invite code {code} in the Sri Krishna Puja app and get 50 Divya Coins! Download now: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnadailypujaaarti'
+        inviteShareMsg: 'Use my invite code {code} in the Sri Krishna Puja app and get 50 Divya Coins! Download now: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnadailypujaaarti',
+        supportUs: 'Support Us',
+        supportUsTitle: 'Support Our Mission 🙏',
+        supportUsMsg: 'Would you like to support the development and maintenance of this app by watching a short video?',
+        watchNow: 'Watch Now',
+        exploreApps: 'Explore our other apps',
+        exploreAppsSub: 'Discover more divine creations'
     },
     hi: {
         header: 'सेटिंग्स',
@@ -97,7 +103,13 @@ const SETTINGS_TRANSLATIONS = {
         serenity: 'दिव्य शांति',
         serenityMsg: 'अगले 5 मिनट के लिए विज्ञापन हटा दिए गए हैं।',
         shareMsg: 'इस अद्भुत श्री कृष्ण पूजा ऐप को देखें! 🌸 दैनिक अनुष्ठान करें और सुंदर वॉलपेपर प्राप्त करें। अभी डाउनलोड करें: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnadailypujaaarti',
-        inviteShareMsg: 'श्री कृष्ण पूजा ऐप में मेरे आमंत्रण कोड {code} का उपयोग करें और 50 दिव्य मुद्रा प्राप्त करें! अभी डाउनलोड करें: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnadailypujaaarti'
+        inviteShareMsg: 'श्री कृष्ण पूजा ऐप में मेरे आमंत्रण कोड {code} का उपयोग करें और 50 दिव्य मुद्रा प्राप्त करें! अभी डाउनलोड करें: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnadailypujaaarti',
+        supportUs: 'हमें सहयोग करें',
+        supportUsTitle: 'हमारे मिशन का समर्थन करें 🙏',
+        supportUsMsg: 'क्या आप एक छोटा वीडियो देखकर इस ऐप के विकास और रखरखाव का समर्थन करना चाहेंगे?',
+        watchNow: 'अभी देखें',
+        exploreApps: 'हमारे अन्य ऐप्स देखें',
+        exploreAppsSub: 'अधिक दिव्य कृतियों की खोज करें'
     }
 };
 
@@ -139,10 +151,10 @@ const SettingsScreen = () => {
 
     const getOrGenerateDeviceId = async () => {
         try {
-            let id = await AsyncStorage.getItem('astro_device_id');
+            let id = await AsyncStorage.getItem('divya_device_id');
             if (!id) {
                 id = 'dev_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-                await AsyncStorage.setItem('astro_device_id', id);
+                await AsyncStorage.setItem('divya_device_id', id);
             }
             return id;
         } catch (e) {
@@ -322,6 +334,28 @@ const SettingsScreen = () => {
         navigation.navigate('LanguageSelection'); // Using existing screen
     };
 
+    const handleSupportUs = () => {
+        Alert.alert(
+            t.supportUsTitle,
+            t.supportUsMsg,
+            [
+                { text: language === 'hi' ? 'नहीं' : 'Not Now', style: 'cancel' },
+                {
+                    text: t.watchNow,
+                    onPress: () => handleWatchAd('coins'), // Reusing watch ad logic
+                    style: 'default'
+                }
+            ]
+        );
+    };
+
+    const handleExploreApps = () => {
+        const developerUrl = 'https://play.google.com/store/apps/dev?id=5180120150247492167'; // Axomit Lab developer page
+        Linking.openURL(developerUrl).catch(err => {
+            console.error('Error opening developer page:', err);
+        });
+    };
+
     const MenuOption = ({ icon, title, onPress, color = '#fff' }) => (
         <TouchableOpacity style={styles.menuOption} onPress={onPress}>
             <View style={[styles.iconContainer, { backgroundColor: '#1a1a1a' }]}>
@@ -469,6 +503,24 @@ const SettingsScreen = () => {
                     )}
                 </LinearGradient>
 
+                {/* Explore Other Apps Card */}
+                <TouchableOpacity
+                    style={[styles.card, styles.exploreCard]}
+                    onPress={handleExploreApps}
+                    activeOpacity={0.8}
+                >
+                    <View style={styles.cardHeader}>
+                        <View style={[styles.iconCircleBlue, { backgroundColor: 'rgba(77, 171, 247, 0.2)' }]}>
+                            <Ionicons name="apps" size={24} color="#4dabf7" />
+                        </View>
+                        <View style={styles.cardTitleContainer}>
+                            <Text style={styles.cardTitle}>{t.exploreApps}</Text>
+                            <Text style={styles.exploreSubText}>{t.exploreAppsSub}</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={20} color="#4dabf7" />
+                    </View>
+                </TouchableOpacity>
+
                 {/* Remove Ads Card */}
                 {/* <LinearGradient
                     colors={['#1a1a1a', '#2d2d2d']}
@@ -520,6 +572,12 @@ const SettingsScreen = () => {
                         title={t.rateUs}
                         onPress={handleRate}
                         color="#FFD700"
+                    />
+                    <MenuOption
+                        icon="heart"
+                        title={t.supportUs}
+                        onPress={handleSupportUs}
+                        color="#f06595"
                     />
                     <MenuOption
                         icon="mail"
@@ -616,6 +674,16 @@ const styles = StyleSheet.create({
         borderColor: '#D4AF37',
         marginRight: 15,
     },
+    iconCircleBlue: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#4dabf7',
+        marginRight: 15,
+    },
     adsIconText: {
         color: '#fff',
         fontWeight: 'bold',
@@ -694,6 +762,14 @@ const styles = StyleSheet.create({
         color: '#ffd700',
         fontSize: 24,
         fontWeight: 'bold',
+    },
+    exploreCard: {
+        backgroundColor: '#0a0a0a',
+        borderColor: '#222',
+    },
+    exploreSubText: {
+        color: '#666',
+        fontSize: 12,
     },
     // New Styles for Menu
     menuSection: {

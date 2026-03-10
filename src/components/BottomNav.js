@@ -8,7 +8,7 @@ import { handleProtectedNavigation } from '../utils/navigation_helpers';
 const NAV_TRANSLATIONS = {
     en: {
         images: 'Images',
-        astro: 'Astro',
+        chat: 'Chat',
         puja: 'Puja',
         samagri: 'Samagri',
         more: 'More',
@@ -18,7 +18,7 @@ const NAV_TRANSLATIONS = {
     },
     hi: {
         images: 'चित्र',
-        astro: 'एस्ट्रो',
+        chat: 'चैट',
         puja: 'पूजा',
         samagri: 'सामग्री',
         more: 'अधिक',
@@ -66,15 +66,15 @@ const BottomNav = ({ navigation, activeTab, disabled }) => {
 
                 <TouchableOpacity
                     style={styles.navItem}
-                    onPress={() => handleNavigation('Astro')}
+                    onPress={() => handleNavigation('Chat')}
                     disabled={disabled}
                 >
                     <Ionicons
-                        name={activeTab === 'Astro' ? 'planet' : 'planet-outline'}
+                        name={activeTab === 'Chat' ? 'sparkles' : 'sparkles-outline'}
                         size={24}
-                        color={activeTab === 'Astro' ? '#9c6ce6' : '#FFF'}
+                        color={activeTab === 'Chat' ? '#9c6ce6' : '#FFF'}
                     />
-                    <Text style={[styles.navLabel, activeTab === 'Astro' && { color: '#9c6ce6' }]}>{t.astro}</Text>
+                    <Text style={[styles.navLabel, activeTab === 'Chat' && { color: '#9c6ce6' }]}>{t.chat}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
