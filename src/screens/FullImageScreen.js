@@ -14,6 +14,7 @@ import {
     useWindowDimensions,
     View
 } from 'react-native';
+import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -102,6 +103,24 @@ const FullImageScreen = () => {
     const [isLimitModalVisible, setLimitModalVisible] = useState(false);
     const [isLowCoinVisible, setLowCoinVisible] = useState(false);
     const flatListRef = useRef(null);
+
+    // Ad Rotation Logic
+    // Using 10s for testing so you can see it work. 
+    // IMPORTANT: For production, use 30s+ to avoid AdMob bans.
+    const BANNER_AD_IDS = [
+        TestIds.BANNER,
+        'ca-app-pub-3940256099942544/6300978111' // Another standard test banner ID
+    ];
+    const [adIndex, setAdIndex] = useState(0);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setAdIndex((prev) => (prev + 1) % BANNER_AD_IDS.length);
+            console.log('[Ads] Rotating to index:', (adIndex + 1) % BANNER_AD_IDS.length);
+        }, 30000); // 30 seconds for production
+
+        return () => clearInterval(interval);
+    }, [adIndex]); // Depend on adIndex to ensure clean rotation
 
     useEffect(() => {
         loadGalleryImages();
@@ -330,6 +349,18 @@ const FullImageScreen = () => {
                 </TouchableOpacity>
             </View>
 
+            {/* Banner Ad Placement */}
+            <View style={[styles.adContainer, { top: insets.top + 60 }]}>
+                <BannerAd
+                    key={`ad-${adIndex}`}
+                    unitId={BANNER_AD_IDS[adIndex]}
+                    size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+                    requestOptions={{
+                        requestNonPersonalizedAdsOnly: true,
+                    }}
+                />
+            </View>
+
             {/* Bottom Button Group */}
             <View style={[styles.footer, { paddingBottom: insets.bottom + 20 }]}>
                 <View style={styles.buttonRow}>
@@ -485,6 +516,12 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#000',
+    },
+    adContainer: {
+        position: 'absolute',
+        width: '100%',
+        alignItems: 'center',
+        zIndex: 10,
     },
     imageContainer: {
         backgroundColor: '#000',

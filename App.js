@@ -2,6 +2,7 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
+import mobileAds from 'react-native-google-mobile-ads';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import appJson from './app.json';
 import LoadingOverlay from './src/components/LoadingOverlay';
@@ -84,6 +85,14 @@ const AppContent = () => {
 };
 
 export default function App() {
+    useEffect(() => {
+        mobileAds()
+            .initialize()
+            .then(adapterStatuses => {
+                console.log('[Ads] Initialization complete', adapterStatuses);
+            });
+    }, []);
+
     return (
         <SafeAreaProvider>
             <LoadingProvider>

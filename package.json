@@ -8,7 +8,14 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "owner": "bidiptabikash"
+  },
+  "react-native-google-mobile-ads": {
+    "androidAppId": "ca-app-pub-3940256099942544~3347511713",
+    "android_app_id": "ca-app-pub-3940256099942544~3347511713",
+    "iosAppId": "ca-app-pub-3940256099942544~1458002511",
+    "ios_app_id": "ca-app-pub-3940256099942544~1458002511"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.0.0",
@@ -42,6 +49,7 @@
     "react-dom": "18.3.1",
     "react-native": "0.76.6",
     "react-native-gesture-handler": "~2.20.2",
+    "react-native-google-mobile-ads": "^14.2.2",
     "react-native-reanimated": "~3.16.1",
     "react-native-safe-area-context": "4.12.0",
     "react-native-screens": "~4.4.0",
