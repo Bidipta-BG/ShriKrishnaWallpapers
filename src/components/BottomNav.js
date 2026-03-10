@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../context/LanguageContext';
 import { useLoading } from '../contexts/LoadingContext';
+import { handleProtectedNavigation } from '../utils/navigation_helpers';
 
 const NAV_TRANSLATIONS = {
     en: {
@@ -32,40 +33,16 @@ const BottomNav = ({ navigation, activeTab, disabled }) => {
     const { language } = useLanguage();
     const t = NAV_TRANSLATIONS[language] || NAV_TRANSLATIONS.en;
 
-    const handleProtectedNavigation = async (screen, params = {}) => {
-        if (disabled) return;
-        showLoading('Loading...');
-        // Simple connectivity check using a HEAD request to the API
-        // This is fast and doesn't download large data.
-        try {
-            const response = await fetch('https://api.thevibecoderagency.online/api/Health', {
-                method: 'GET', // Using GET as some servers don't like HEAD, but keep it minimal
-                headers: { 'Cache-Control': 'no-cache' }
-            }).catch(() => null);
-
-            if (response && response.status >= 200 && response.status < 400) {
-                // Online, proceed to navigation
-                if (screen === 'Gallery') {
-                    navigation.navigate('Gallery');
-                    navigation.navigate('FullImage');
-                } else {
-                    navigation.navigate(screen, params);
-                }
-                // Hide loading after a short delay to allow screen to mount
-                setTimeout(() => hideLoading(), 300);
-            } else {
-                hideLoading();
-                throw new Error('Offline');
-            }
-        } catch (error) {
-            // Offline or network error
-            hideLoading();
-            Alert.alert(
-                t.offlineTitle,
-                t.offlineMsg,
-                [{ text: t.ok }]
-            );
-        }
+    const handleNavigation = (screen, params = {}) => {
+        handleProtectedNavigation({
+            navigation,
+            screen,
+            params,
+            language,
+            showLoading,
+            hideLoading,
+            disabled
+        });
     };
 
     return (
@@ -76,7 +53,7 @@ const BottomNav = ({ navigation, activeTab, disabled }) => {
             <View style={[styles.navBar, disabled && { opacity: 0.6 }]}>
                 <TouchableOpacity
                     style={styles.navItem}
-                    onPress={() => handleProtectedNavigation('Gallery')}
+                    onPress={() => handleNavigation('Gallery')}
                     disabled={disabled}
                 >
                     <Ionicons
@@ -89,7 +66,7 @@ const BottomNav = ({ navigation, activeTab, disabled }) => {
 
                 <TouchableOpacity
                     style={styles.navItem}
-                    onPress={() => handleProtectedNavigation('Astro')}
+                    onPress={() => handleNavigation('Astro')}
                     disabled={disabled}
                 >
                     <Ionicons
@@ -116,7 +93,7 @@ const BottomNav = ({ navigation, activeTab, disabled }) => {
 
                 <TouchableOpacity
                     style={styles.navItem}
-                    onPress={() => handleProtectedNavigation('Samagri')}
+                    onPress={() => handleNavigation('Samagri')}
                     disabled={disabled}
                 >
                     <Ionicons
@@ -129,10 +106,9 @@ const BottomNav = ({ navigation, activeTab, disabled }) => {
 
                 <TouchableOpacity
                     style={styles.navItem}
-                    onPress={() => !disabled && navigation.navigate('Settings')}
+                    onPress={() => handleNavigation('Settings')}
                     disabled={disabled}
                 >
-                    {/* Settings/More tab */}
                     <Ionicons
                         name={activeTab === 'Settings' ? 'settings' : 'settings-outline'}
                         size={24}

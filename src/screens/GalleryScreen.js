@@ -17,6 +17,40 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BottomNav from '../components/BottomNav';
+import { useLanguage } from '../context/LanguageContext';
+
+const GALLERY_TRANSLATIONS = {
+    en: {
+        headerTitle: 'Sri Krishna Puja',
+        saved: 'SAVED',
+        noAds: 'NO ADS',
+        loading: 'Loading divine content...',
+        retry: 'Retry',
+        viewAll: 'View All',
+        allCategory: 'All Category',
+        daysLeft: 'DAYS LEFT',
+        errorDefault: 'Failed to load content',
+        errorNetwork: 'No internet connection. Please check your network and try again.',
+        errorServer: 'Server is temporarily unavailable. Please try again later.',
+        errorInvalid: 'Received invalid data from server. Please try again.',
+        errorGeneral: 'Unable to load gallery content.'
+    },
+    hi: {
+        headerTitle: 'श्री कृष्ण पूजा',
+        saved: 'संग्रहित',
+        noAds: 'कोई विज्ञापन नहीं',
+        loading: 'दिव्य सामग्री लोड हो रही है...',
+        retry: 'पुनः प्रयास करें',
+        viewAll: 'सभी देखें',
+        allCategory: 'सभी श्रेणियां',
+        daysLeft: 'दिन शेष',
+        errorDefault: 'सामग्री लोड करने में विफल',
+        errorNetwork: 'कोई इंटरनेट कनेक्शन नहीं है। कृपया अपना नेटवर्क जांचें और पुनः प्रयास करें।',
+        errorServer: 'सर्वर अस्थायी रूप से अनुपलब्ध है। कृपया बाद में पुनः प्रयास करें।',
+        errorInvalid: 'सर्वर से अमान्य डेटा प्राप्त हुआ। कृपया पुनः प्रयास करें।',
+        errorGeneral: 'गैलरी सामग्री लोड करने में असमर्थ।'
+    }
+};
 
 const PLACEHOLDER_IMAGE = require('../assets/images/default_darshan.jpg');
 
@@ -28,6 +62,8 @@ const ITEM_WIDTH = (width - 44) / 1.7;
 const GalleryScreen = () => {
     const navigation = useNavigation();
     const insets = useSafeAreaInsets();
+    const { language } = useLanguage();
+    const t = GALLERY_TRANSLATIONS[language] || GALLERY_TRANSLATIONS.en;
 
     const [galleryData, setGalleryData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -94,14 +130,14 @@ const GalleryScreen = () => {
             console.error('Failed to load gallery:', err);
 
             // User-friendly error messages
-            let errorMessage = 'Unable to load gallery content.';
+            let errorMessage = t.errorGeneral;
 
             if (err.message.includes('Network request failed') || err.name === 'TypeError') {
-                errorMessage = 'No internet connection. Please check your network and try again.';
+                errorMessage = t.errorNetwork;
             } else if (err.message.includes('Server error')) {
-                errorMessage = 'Server is temporarily unavailable. Please try again later.';
+                errorMessage = t.errorServer;
             } else if (err.message.includes('Invalid')) {
-                errorMessage = 'Received invalid data from server. Please try again.';
+                errorMessage = t.errorInvalid;
             }
 
             setError(errorMessage);
@@ -192,17 +228,17 @@ const GalleryScreen = () => {
                     <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.navigate('Settings')}>
                         <Ionicons name="information-circle-outline" size={26} color="#fff" />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Sri Krishna Puja</Text>
+                    <Text style={styles.headerTitle}>{t.headerTitle}</Text>
                     <TouchableOpacity style={styles.savedButtonContainer} onPress={() => navigation.navigate('Saved')}>
                         <View style={styles.savedButtonCircle}>
                             <Ionicons name="bookmark" size={14} color="#ffd700" />
-                            <Text style={styles.savedText}>SAVED</Text>
+                            <Text style={styles.savedText}>{t.saved}</Text>
                         </View>
                     </TouchableOpacity>
                 </View>
                 <View style={styles.centerContent}>
                     <ActivityIndicator size="large" color="#4dabf7" />
-                    <Text style={styles.loadingText}>Loading divine content...</Text>
+                    <Text style={styles.loadingText}>{t.loading}</Text>
                 </View>
                 <View style={styles.bottomNavContainer}>
                     <BottomNav navigation={navigation} activeTab="Image" />
@@ -220,19 +256,19 @@ const GalleryScreen = () => {
                     <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.navigate('Settings')}>
                         <Ionicons name="information-circle-outline" size={26} color="#fff" />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Sri Krishna Puja</Text>
+                    <Text style={styles.headerTitle}>{t.headerTitle}</Text>
                     <View style={styles.noAdsContainer}>
                         <View style={styles.noAdsCircle}>
                             <Ionicons name="ban" size={14} color="#ff4444" />
-                            <Text style={styles.adsText}>NO ADS</Text>
+                            <Text style={styles.adsText}>{t.noAds}</Text>
                         </View>
                     </View>
                 </View>
                 <View style={styles.centerContent}>
                     <Ionicons name="cloud-offline-outline" size={60} color="#9c6ce6" />
-                    <Text style={styles.errorText}>{error || 'Failed to load content'}</Text>
+                    <Text style={styles.errorText}>{error || t.errorDefault}</Text>
                     <TouchableOpacity style={styles.retryButton} onPress={loadGalleryData}>
-                        <Text style={styles.retryButtonText}>Retry</Text>
+                        <Text style={styles.retryButtonText}>{t.retry}</Text>
                     </TouchableOpacity>
                 </View>
                 <View style={styles.bottomNavContainer}>
@@ -255,7 +291,7 @@ const GalleryScreen = () => {
                     <Ionicons name="information-circle-outline" size={26} color="#fff" />
                 </TouchableOpacity>
 
-                <Text style={styles.headerTitle}>Sri Krishna Puja</Text>
+                <Text style={styles.headerTitle}>{t.headerTitle}</Text>
 
                 <TouchableOpacity
                     style={styles.savedButtonContainer}
@@ -263,7 +299,7 @@ const GalleryScreen = () => {
                 >
                     <View style={styles.savedButtonCircle}>
                         <Ionicons name="bookmark" size={14} color="#ffd700" />
-                        <Text style={styles.savedText}>SAVED</Text>
+                        <Text style={styles.savedText}>{t.saved}</Text>
                     </View>
                 </TouchableOpacity>
             </View>
@@ -290,7 +326,7 @@ const GalleryScreen = () => {
                                 <View style={styles.bannerLeft}>
                                     <View style={styles.festBadge}>
                                         <Text style={styles.festBadgeText}>
-                                            {galleryData.promoBanner.daysLeft} DAYS LEFT
+                                            {galleryData.promoBanner.daysLeft} {t.daysLeft}
                                         </Text>
                                     </View>
                                     <Text style={styles.bannerTitle}>{galleryData.promoBanner.title}</Text>
@@ -317,7 +353,7 @@ const GalleryScreen = () => {
                                 style={styles.viewAllBtn}
                                 onPress={() => navigation.navigate('CategoryGrid', { title: section.title, items: section.items })}
                             >
-                                <Text style={styles.viewAllText}>View All</Text>
+                                <Text style={styles.viewAllText}>{t.viewAll}</Text>
                                 <Ionicons name="chevron-forward" size={14} color="#fff" />
                             </TouchableOpacity>
                         </View>
@@ -336,7 +372,7 @@ const GalleryScreen = () => {
 
                 {/* All Categories (Vertical Cards) */}
                 <View style={styles.section}>
-                    <Text style={[styles.sectionTitle, { marginLeft: 20, marginBottom: 15, color: '#9c6ce6' }]}>All Category</Text>
+                    <Text style={[styles.sectionTitle, { marginLeft: 20, marginBottom: 15, color: '#9c6ce6' }]}>{t.allCategory}</Text>
                     <View style={styles.exploreGrid}>
                         {galleryData.categories.map(renderExploreItem)}
                     </View>

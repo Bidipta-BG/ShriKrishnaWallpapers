@@ -1,8 +1,35 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useLanguage } from '../context/LanguageContext';
+
+const ABOUT_TRANSLATIONS = {
+    en: {
+        header: 'About Us',
+        appName: 'Sri Krishna Puja',
+        appSubtitle: 'Daily Puja & Aarti',
+        version: 'Version',
+        greeting: 'Jai Sri Krishna! 🙏',
+        mission1: 'This application is dedicated to all the devotees of Lord Krishna. Our mission is to provide a digital sanctuary where you can perform daily puja, listen to divine aartis, and immerse yourself in the bhakti of Sri Krishna and Nanha Kanhaiya.',
+        mission2: 'We hope this app brings peace, joy, and spiritual connection to your daily life.',
+        footer: 'Made with ❤️ by'
+    },
+    hi: {
+        header: 'हमारे बारे में',
+        appName: 'श्री कृष्ण पूजा',
+        appSubtitle: 'दैनिक पूजा और आरती',
+        version: 'वर्जन',
+        greeting: 'जय श्री कृष्णा! 🙏',
+        mission1: 'यह एप्लिकेशन भगवान कृष्ण के सभी भक्तों को समर्पित है। हमारा मिशन एक ऐसा डिजिटल अभयारण्य प्रदान करना है जहां आप दैनिक पूजा कर सकें, दिव्य आरतियां सुन सकें और श्री कृष्ण और नन्हे कन्हैया की भक्ति में लीन हो सकें।',
+        mission2: 'हमें उम्मीद है कि यह ऐप आपके दैनिक जीवन में शांति, खुशी और आध्यात्मिक जुड़ाव लाएगा।',
+        footer: '❤️ के साथ बनाया गया'
+    }
+};
 
 const AboutScreen = ({ navigation }) => {
+    const { language } = useLanguage();
+    const t = ABOUT_TRANSLATIONS[language] || ABOUT_TRANSLATIONS.en;
+
     const handlePortfolio = () => {
         Linking.openURL('https://axomitlab.com'); // Placeholder
     };
@@ -13,7 +40,7 @@ const AboutScreen = ({ navigation }) => {
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color="#FFF" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>About Us</Text>
+                <Text style={styles.headerTitle}>{t.header}</Text>
                 <View style={{ width: 40 }} />
             </View>
 
@@ -23,25 +50,25 @@ const AboutScreen = ({ navigation }) => {
                     <View style={styles.logoPlaceholder}>
                         <Ionicons name="flower-outline" size={60} color="#FFD700" />
                     </View>
-                    <Text style={styles.appName}>Sri Krishna Puja</Text>
-                    <Text style={styles.appSubtitle}>Daily Puja & Aarti</Text>
-                    <Text style={styles.version}>Version 1.0.0</Text>
+                    <Text style={styles.appName}>{t.appName}</Text>
+                    <Text style={styles.appSubtitle}>{t.appSubtitle}</Text>
+                    <Text style={styles.version}>{t.version} 1.0.0</Text>
                 </View>
 
                 <View style={styles.section}>
                     <Text style={styles.sectionText}>
-                        Jai Sri Krishna! 🙏
+                        {t.greeting}
                     </Text>
                     <Text style={styles.sectionText}>
-                        This application is dedicated to all the devotees of Lord Krishna. Our mission is to provide a digital sanctuary where you can perform daily puja, listen to divine aartis, and immerse yourself in the bhakti of Sri Krishna and Nanha Kanhaiya.
+                        {t.mission1}
                     </Text>
                     <Text style={styles.sectionText}>
-                        We hope this app brings peace, joy, and spiritual connection to your daily life.
+                        {t.mission2}
                     </Text>
                 </View>
 
                 <View style={styles.footer}>
-                    <Text style={styles.footerText}>Made with ❤️ by</Text>
+                    <Text style={styles.footerText}>{t.footer}</Text>
                     <TouchableOpacity onPress={handlePortfolio}>
                         <Text style={styles.developerName}>Axom IT Lab</Text>
                     </TouchableOpacity>

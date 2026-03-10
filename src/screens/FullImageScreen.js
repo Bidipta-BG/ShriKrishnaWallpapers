@@ -15,6 +15,62 @@ import {
     View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useLanguage } from '../context/LanguageContext';
+
+const FULL_IMAGE_TRANSLATIONS = {
+    en: {
+        loading: 'Loading...',
+        savedTitle: 'SAVED',
+        pujaImage: 'Puja Image',
+        save: 'Save',
+        saved: 'Saved',
+        share: 'Share',
+        download: 'Download',
+        storageFullTitle: 'Divine Storage Full',
+        storageFullText: 'Your capacity is limited to {capacity} sacred images. Unsave some or expand your storage to save more.',
+        balance: 'Current Balance:',
+        maybeLater: 'Maybe Later',
+        expandSlots: '+2 Slots (1 Coin)',
+        insufficientCoinsTitle: 'Insufficient Coins',
+        insufficientCoinsText: 'You need 1 Divya Coin to expand your divine storage. Get more coins to continue saving your favorite sacred wallpapers.',
+        back: 'Back',
+        getMoreCoins: 'Get More Coins',
+        storageExpandedTitle: 'Blessed!',
+        storageExpandedText: 'Your divine storage has been expanded by 2 slots.',
+        pujaUpdatedTitle: 'Daily Darshan Image Updated',
+        pujaUpdatedText: 'Puja background updated successfully! Your Daily Darshan screen now features this divine form of Sri Krishna.',
+        comingSoon: 'Coming Soon',
+        comingSoonText: 'The Divine Store is being prepared by the devas. Check back soon!',
+        error: 'Error',
+        errorPuja: 'Failed to update Puja background.'
+    },
+    hi: {
+        loading: 'लोड हो रहा है...',
+        savedTitle: 'संग्रहित',
+        pujaImage: 'पूजा चित्र',
+        save: 'सहेजें',
+        saved: 'सहेजा गया',
+        share: 'साझा करें',
+        download: 'डाउनलोड',
+        storageFullTitle: 'दिव्य भंडारण पूर्ण',
+        storageFullText: 'आपकी क्षमता {capacity} पवित्र चित्रों तक सीमित है। अधिक सहेजने के लिए कुछ को हटाएं या अपना भंडारण बढ़ाएं।',
+        balance: 'वर्तमान शेष:',
+        maybeLater: 'बाद में',
+        expandSlots: '+2 स्लॉट (1 मुद्रा)',
+        insufficientCoinsTitle: 'अपर्याप्त मुद्रा',
+        insufficientCoinsText: 'अपने दिव्य भंडारण का विस्तार करने के लिए आपको 1 दिव्य मुद्रा की आवश्यकता है। अपने पसंदीदा वॉलपेपर सहेजना जारी रखने के लिए और मुद्राएं प्राप्त करें।',
+        back: 'पीछे',
+        getMoreCoins: 'मुद्राएं प्राप्त करें',
+        storageExpandedTitle: 'आशीर्वाद!',
+        storageExpandedText: 'आपके दिव्य भंडारण में 2 स्लॉट बढ़ा दिए गए हैं।',
+        pujaUpdatedTitle: 'दैनिक दर्शन चित्र अपडेट किया गया',
+        pujaUpdatedText: 'पूजा बैकग्राउंड सफलतापूर्वक अपडेट किया गया! अब आपकी दैनिक दर्शन स्क्रीन पर श्री कृष्ण का यह दिव्य रूप दिखाई देगा।',
+        comingSoon: 'जल्द आ रहा है',
+        comingSoonText: 'दिव्य स्टोर देवों द्वारा तैयार किया जा रहा है। जल्द ही वापस देखें!',
+        error: 'त्रुटि',
+        errorPuja: 'पूजा बैकग्राउंड अपडेट करने में विफल।'
+    }
+};
 
 const PLACEHOLDER_IMAGE = require('../assets/images/default_darshan.jpg');
 
@@ -26,6 +82,8 @@ const FullImageScreen = () => {
     const navigation = useNavigation();
     const route = useRoute();
     const insets = useSafeAreaInsets();
+    const { language } = useLanguage();
+    const t = FULL_IMAGE_TRANSLATIONS[language] || FULL_IMAGE_TRANSLATIONS.en;
     const { width, height } = useWindowDimensions();
 
     const initialIndex = route.params?.initialIndex ?? 0;
@@ -158,7 +216,7 @@ const FullImageScreen = () => {
                 AsyncStorage.setItem(SAVE_CAPACITY_KEY, newCapacity.toString())
             ]);
 
-            Alert.alert('Blessed!', 'Your divine storage has been expanded by 2 slots.');
+            Alert.alert(t.storageExpandedTitle, t.storageExpandedText);
         } catch (error) {
             console.error('Error purchasing capacity:', error);
         }
@@ -175,13 +233,13 @@ const FullImageScreen = () => {
 
             await AsyncStorage.setItem('saved_background_image', uriToSave);
             Alert.alert(
-                'Daily Darshan Image Updated',
-                'Puja background updated successfully! Your Daily Darshan screen now features this divine form of Sri Krishna.',
+                t.pujaUpdatedTitle,
+                t.pujaUpdatedText,
                 [{ text: 'Ok' }]
             );
         } catch (error) {
             console.error('Error setting puja background:', error);
-            Alert.alert('Error', 'Failed to update Puja background.');
+            Alert.alert(t.error, t.errorPuja);
         }
     };
 
@@ -218,7 +276,7 @@ const FullImageScreen = () => {
                     </TouchableOpacity>
                 </View>
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                    <Text style={{ color: '#fff' }}>Loading...</Text>
+                    <Text style={{ color: '#fff' }}>{t.loading}</Text>
                 </View>
             </View>
         );
@@ -267,7 +325,7 @@ const FullImageScreen = () => {
                 >
                     <View style={styles.savedButtonCircle}>
                         <Ionicons name="bookmark" size={14} color="#ffd700" />
-                        <Text style={styles.savedText}>SAVED</Text>
+                        <Text style={styles.savedText}>{t.savedTitle}</Text>
                     </View>
                 </TouchableOpacity>
             </View>
@@ -282,7 +340,7 @@ const FullImageScreen = () => {
                         <View style={styles.iconCircle}>
                             <Ionicons name="image-outline" size={24} color="#4dabf7" />
                         </View>
-                        <Text style={styles.buttonLabel}>Puja Image</Text>
+                        <Text style={styles.buttonLabel}>{t.pujaImage}</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -297,7 +355,7 @@ const FullImageScreen = () => {
                             />
                         </View>
                         <Text style={[styles.buttonLabel, isSaved && { color: '#9c6ce6' }]}>
-                            {isSaved ? 'Saved' : 'Save'}
+                            {isSaved ? t.saved : t.save}
                         </Text>
                     </TouchableOpacity>
 
@@ -314,7 +372,7 @@ const FullImageScreen = () => {
                                 <Text style={styles.countText}>{currentItem.shares}</Text>
                             </View>
                         </View>
-                        <Text style={styles.buttonLabel}>Share</Text>
+                        <Text style={styles.buttonLabel}>{t.share}</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -330,7 +388,7 @@ const FullImageScreen = () => {
                                 <Text style={styles.countText}>{currentItem.downloads}</Text>
                             </View>
                         </View>
-                        <Text style={styles.buttonLabel}>Download</Text>
+                        <Text style={styles.buttonLabel}>{t.download}</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -346,15 +404,15 @@ const FullImageScreen = () => {
                     <View style={styles.modalContent}>
                         <View style={styles.modalHeader}>
                             <Ionicons name="bookmark" size={40} color="#9c6ce6" />
-                            <Text style={styles.modalTitle}>Divine Storage Full</Text>
+                            <Text style={styles.modalTitle}>{t.storageFullTitle}</Text>
                         </View>
 
                         <Text style={styles.modalText}>
-                            Your capacity is limited to {saveCapacity} sacred images. Unsave some or expand your storage to save more.
+                            {t.storageFullText.replace('{capacity}', saveCapacity)}
                         </Text>
 
                         <Text style={styles.coinBalance}>
-                            Current Balance: <Ionicons name="flash" size={14} color="#ffd700" /> {divyaCoins} Divya Coins
+                            {t.balance} <Ionicons name="flash" size={14} color="#ffd700" /> {divyaCoins} Divya Coins
                         </Text>
 
                         <View style={styles.modalButtons}>
@@ -362,7 +420,7 @@ const FullImageScreen = () => {
                                 style={[styles.modalBtn, styles.cancelBtn]}
                                 onPress={() => setLimitModalVisible(false)}
                             >
-                                <Text style={styles.cancelBtnText}>Maybe Later</Text>
+                                <Text style={styles.cancelBtnText}>{t.maybeLater}</Text>
                             </TouchableOpacity>
 
                             <TouchableOpacity
@@ -370,7 +428,7 @@ const FullImageScreen = () => {
                                 onPress={purchaseCapacity}
                             >
                                 <View style={styles.buyBtnContent}>
-                                    <Text style={styles.buyBtnText}>+2 Slots (1 Coin)</Text>
+                                    <Text style={styles.buyBtnText}>{t.expandSlots}</Text>
                                 </View>
                             </TouchableOpacity>
                         </View>
@@ -389,11 +447,11 @@ const FullImageScreen = () => {
                     <View style={[styles.modalContent, { borderColor: '#ffd700' }]}>
                         <View style={styles.modalHeader}>
                             <Ionicons name="flash" size={40} color="#ffd700" />
-                            <Text style={[styles.modalTitle, { color: '#ffd700' }]}>Insufficient Coins</Text>
+                            <Text style={[styles.modalTitle, { color: '#ffd700' }]}>{t.insufficientCoinsTitle}</Text>
                         </View>
 
                         <Text style={styles.modalText}>
-                            You need 1 Divya Coin to expand your divine storage. Get more coins to continue saving your favorite sacred wallpapers.
+                            {t.insufficientCoinsText}
                         </Text>
 
                         <View style={styles.modalButtons}>
@@ -401,7 +459,7 @@ const FullImageScreen = () => {
                                 style={[styles.modalBtn, styles.cancelBtn]}
                                 onPress={() => setLowCoinVisible(false)}
                             >
-                                <Text style={styles.cancelBtnText}>Back</Text>
+                                <Text style={styles.cancelBtnText}>{t.back}</Text>
                             </TouchableOpacity>
 
                             <TouchableOpacity
@@ -410,10 +468,10 @@ const FullImageScreen = () => {
                                     setLowCoinVisible(false);
                                     setLimitModalVisible(false);
                                     // Future: navigation.navigate('Store')
-                                    Alert.alert('Coming Soon', 'The Divine Store is being prepared by the devas. Check back soon!');
+                                    Alert.alert(t.comingSoon, t.comingSoonText);
                                 }}
                             >
-                                <Text style={[styles.buyBtnText, { color: '#000' }]}>Get More Coins</Text>
+                                <Text style={[styles.buyBtnText, { color: '#000' }]}>{t.getMoreCoins}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>

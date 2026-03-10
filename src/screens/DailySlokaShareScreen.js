@@ -17,6 +17,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { captureRef } from 'react-native-view-shot';
 import { useLanguage } from '../context/LanguageContext';
+import { GRANTH_LIBRARY_DATA } from '../data/SlokaLibraryData';
 
 const { width, height } = Dimensions.get('window');
 
@@ -42,27 +43,54 @@ const DailySlokaShareScreen = () => {
         try {
             // 1. Fetch Granth List
             const bookRes = await fetch('https://api.thevibecoderagency.online/api/srikrishna-aarti/granth');
-            const books = await bookRes.json();
-            const bookId = books[0]?.id || 'bg';
+            if (bookRes.ok) {
+                const books = await bookRes.json();
+                const bookId = books[0]?.id || 'bg';
 
-            // 2. Fetch specific Granth Structure
-            const structureRes = await fetch(`https://api.thevibecoderagency.online/api/srikrishna-aarti/granth/${bookId}`);
-            const structure = await structureRes.json();
+                // 2. Fetch specific Granth Structure
+                const structureRes = await fetch(`https://api.thevibecoderagency.online/api/srikrishna-aarti/granth/${bookId}`);
+                if (structureRes.ok) {
+                    const structure = await structureRes.json();
 
-            // 3. Pick a random verse
-            const chapters = structure.chapters || [];
-            const randomChapter = chapters[Math.floor(Math.random() * chapters.length)];
-            const verses = randomChapter?.verses || [];
-            const randomVerse = verses[Math.floor(Math.random() * verses.length)];
+                    // 3. Pick a random verse
+                    const chapters = structure.chapters || [];
+                    const validChapters = chapters.filter(c => c.verses && c.verses.length > 0);
+                    if (validChapters.length > 0) {
+                        const randomChapter = validChapters[Math.floor(Math.random() * validChapters.length)];
+                        const verses = randomChapter.verses;
+                        const randomVerse = verses[Math.floor(Math.random() * verses.length)];
 
-            if (randomVerse) {
-                // 4. Fetch full verse details
-                const detailRes = await fetch(`https://api.thevibecoderagency.online/api/srikrishna-aarti/granth/verse/${randomVerse.id}`);
-                const verseDetail = await detailRes.json();
-                setSloka(verseDetail);
+                        if (randomVerse) {
+                            // 4. Fetch full verse details
+                            const detailRes = await fetch(`https://api.thevibecoderagency.online/api/srikrishna-aarti/granth/verse/${randomVerse.id}`);
+                            if (detailRes.ok) {
+                                const verseDetail = await detailRes.json();
+                                setSloka(verseDetail);
+                                setIsLoading(false);
+                                return;
+                            }
+                        }
+                    }
+                }
             }
         } catch (error) {
-            console.error('Error fetching Granth Wisdom:', error);
+            console.error('API fetch failed, using local fallback:', error);
+        }
+
+        // --- Fallback: Use Local Data ---
+        try {
+            const localBooks = GRANTH_LIBRARY_DATA.filter(b => b.chapters && b.chapters.length > 0);
+            if (localBooks.length > 0) {
+                const randomBook = localBooks[Math.floor(Math.random() * localBooks.length)];
+                const chapters = randomBook.chapters.filter(c => c.verses && c.verses.length > 0);
+                if (chapters.length > 0) {
+                    const randomChapter = chapters[Math.floor(Math.random() * chapters.length)];
+                    const randomVerse = randomChapter.verses[Math.floor(Math.random() * randomChapter.verses.length)];
+                    setSloka(randomVerse);
+                }
+            }
+        } catch (error) {
+            console.error('Local fallback failed:', error);
         } finally {
             setIsLoading(false);
         }

@@ -21,6 +21,8 @@ import BottomNav from '../components/BottomNav';
 import GarlandMala from '../components/GarlandMala';
 import PrasadDisplay from '../components/PrasadDisplay';
 import { useLanguage } from '../context/LanguageContext';
+import { useLoading } from '../contexts/LoadingContext';
+import { handleProtectedNavigation } from '../utils/navigation_helpers';
 import {
     ITEM_ICONS,
     loadSelectedPujaItems,
@@ -265,8 +267,21 @@ const TRANSLATIONS = {
 
 const DailyDarshanScreen = ({ navigation }) => {
     const { language, isUIReady } = useLanguage();
+    const { showLoading, hideLoading } = useLoading();
     const insets = useSafeAreaInsets();
     const route = useRoute();
+
+    const handleNavigation = (screen, params = {}) => {
+        handleProtectedNavigation({
+            navigation,
+            screen,
+            params,
+            language,
+            showLoading,
+            hideLoading,
+            disabled: isInteractionDisabled
+        });
+    };
 
     // --- Active Ceremony & Animation States ---
     const [isAartiActive, setIsAartiActive] = useState(false);
@@ -1076,19 +1091,19 @@ const DailyDarshanScreen = ({ navigation }) => {
                     <SideIcon
                         iconName="book-outline"
                         label={t.slokas}
-                        onPress={() => navigation.navigate('SlokaLibrary')}
+                        onPress={() => handleNavigation('SlokaLibrary')}
                         disabled={isInteractionDisabled}
                     />
                     <SideIcon
                         iconName="radio-button-on-outline"
                         label={t.chanting}
-                        onPress={() => navigation.navigate('MantraSelection')}
+                        onPress={() => handleNavigation('MantraSelection')}
                         disabled={isInteractionDisabled}
                     />
                     <SideIcon
                         iconName="share-social-outline"
                         label={t.shareBlessing || 'Share Blessing'}
-                        onPress={() => navigation.navigate('DailySlokaShare', { backgroundImage })}
+                        onPress={() => handleNavigation('DailySlokaShare', { backgroundImage })}
                         disabled={isInteractionDisabled}
                     />
                 </View>
@@ -1101,7 +1116,7 @@ const DailyDarshanScreen = ({ navigation }) => {
                     {/* Streak Counter (Now on the Left) */}
                     <TouchableOpacity
                         activeOpacity={0.7}
-                        onPress={() => navigation.navigate('ScheduleDarshan')}
+                        onPress={() => handleNavigation('ScheduleDarshan')}
                         style={{ alignItems: 'flex-start', minWidth: 100, paddingLeft: 15 }}
                         disabled={isInteractionDisabled}
                     >
@@ -1119,7 +1134,7 @@ const DailyDarshanScreen = ({ navigation }) => {
                     {/* Punya Points (On the Right) */}
                     <TouchableOpacity
                         activeOpacity={0.7}
-                        onPress={() => navigation.navigate('ScheduleDarshan')}
+                        onPress={() => handleNavigation('ScheduleDarshan')}
                         style={{ alignItems: 'flex-end', minWidth: 100, paddingRight: 15 }}
                         disabled={isInteractionDisabled}
                     >

@@ -18,10 +18,94 @@ import {
     View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useLanguage } from '../context/LanguageContext';
+
+const SETTINGS_TRANSLATIONS = {
+    en: {
+        header: 'Settings',
+        yourCoins: 'Your Coins',
+        earnCoins: 'Earn coins by watching ads',
+        watchAd: 'WATCH AD (+10)',
+        shareEarn: 'Share & Earn',
+        coinBonus: '+50 Coins',
+        forFriend: 'For you & your friend',
+        referDesc: 'Refer your friend and both will get 50 Divya Coins.',
+        inviteCode: 'YOUR INVITE CODE',
+        pendingRewards: 'Pending Rewards Found!',
+        bhaktasUsed: 'bhaktas used your code',
+        enterInvite: 'ENTER INVITE CODE',
+        claim: 'CLAIM',
+        rewardClaimed: 'INVITE REWARD CLAIMED',
+        supportInfo: 'Support & Info',
+        rateUs: 'Rate Us',
+        contact: 'Contact / Feedback',
+        language: 'Change Language',
+        privacy: 'Privacy Policy',
+        about: 'About Us',
+        version: 'Version',
+        invalidCode: 'Invalid Code',
+        invalidCodeMsg: 'Please enter a valid invite code.',
+        jaiSriKrishna: 'Jai Sri Krishna!',
+        rewardMsg: 'You have received 50 Divya Coins! Your friend will also be rewarded.',
+        redeemFailed: 'Redeem Failed',
+        redeemFailedMsg: 'Could not redeem this code.',
+        error: 'Error',
+        errorMsg: 'Something went wrong. Please try again.',
+        rewardsClaimed: 'Rewards Claimed!',
+        rewardsClaimedMsg: 'Jai Sri Krishna! You earned {reward} Divya Coins from your referrals.',
+        blessed: 'Blessed!',
+        blessedMsg: 'You earned 10 Divya Coins for your devotion.',
+        serenity: 'Divine Serenity',
+        serenityMsg: 'Ads have been removed for the next 5 minutes.',
+        shareMsg: 'Check out this amazing Sri Krishna Puja app! 🌸 Perform daily rituals and get beautiful wallpapers. Download now: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnadailypujaaarti',
+        inviteShareMsg: 'Use my invite code {code} in the Sri Krishna Puja app and get 50 Divya Coins! Download now: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnadailypujaaarti'
+    },
+    hi: {
+        header: 'सेटिंग्स',
+        yourCoins: 'आपकी दिव्य मुद्रा',
+        earnCoins: 'विज्ञापन देखकर मुद्रा कमाएं',
+        watchAd: 'विज्ञापन देखें (+10)',
+        shareEarn: 'साझा करें और कमाएं',
+        coinBonus: '+50 मुद्रा',
+        forFriend: 'आपके और आपके मित्र के लिए',
+        referDesc: 'अपने मित्र को रेफर करें और दोनों को 50 दिव्य मुद्रा मिलेगी।',
+        inviteCode: 'आपका आमंत्रण कोड',
+        pendingRewards: 'पुरस्कार मिले!',
+        bhaktasUsed: 'भक्तों ने आपके कोड का उपयोग किया',
+        enterInvite: 'आमंत्रण कोड दर्ज करें',
+        claim: 'प्राप्त करें',
+        rewardClaimed: 'इनाम प्राप्त किया गया',
+        supportInfo: 'सहायता और जानकारी',
+        rateUs: 'हमें रेट करें',
+        contact: 'संपर्क / फीडबैक',
+        language: 'भाषा बदलें',
+        privacy: 'गोपनीयता नीति',
+        about: 'हमारे बारे में',
+        version: 'वर्जन',
+        invalidCode: 'अमान्य कोड',
+        invalidCodeMsg: 'कृपया एक मान्य आमंत्रon कोड दर्ज करें।',
+        jaiSriKrishna: 'जय श्री कृष्णा!',
+        rewardMsg: 'आपको 50 दिव्य मुद्रा प्राप्त हुई हैं! आपके मित्र को भी पुरस्कृत किया जाएगा।',
+        redeemFailed: 'रिडीम विफल',
+        redeemFailedMsg: 'यह कोड रिडीम नहीं किया जा सका।',
+        error: 'त्रुटि',
+        errorMsg: 'कुछ गलत हो गया। कृपया पुन: प्रयास करें।',
+        rewardsClaimed: 'पुरस्कार प्राप्त हुए!',
+        rewardsClaimedMsg: 'जय श्री कृष्णा! आपने अपने रेफरल से {reward} दिव्य मुद्रा अर्जित की हैं।',
+        blessed: 'आशीर्वाद!',
+        blessedMsg: 'आपने अपनी भक्ति के लिए 10 दिव्य मुद्रा अर्जित की हैं।',
+        serenity: 'दिव्य शांति',
+        serenityMsg: 'अगले 5 मिनट के लिए विज्ञापन हटा दिए गए हैं।',
+        shareMsg: 'इस अद्भुत श्री कृष्ण पूजा ऐप को देखें! 🌸 दैनिक अनुष्ठान करें और सुंदर वॉलपेपर प्राप्त करें। अभी डाउनलोड करें: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnadailypujaaarti',
+        inviteShareMsg: 'श्री कृष्ण पूजा ऐप में मेरे आमंत्रण कोड {code} का उपयोग करें और 50 दिव्य मुद्रा प्राप्त करें! अभी डाउनलोड करें: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnadailypujaaarti'
+    }
+};
 
 const SettingsScreen = () => {
     const navigation = useNavigation();
     const insets = useSafeAreaInsets();
+    const { language } = useLanguage();
+    const t = SETTINGS_TRANSLATIONS[language] || SETTINGS_TRANSLATIONS.en;
     const [currentCoins, setCurrentCoins] = useState(0);
     const [isWatchingAd, setIsWatchingAd] = useState(false);
     const [adFreeUntil, setAdFreeUntil] = useState(null);
@@ -90,7 +174,7 @@ const SettingsScreen = () => {
 
     const handleRedeem = async () => {
         if (!inviteCode || inviteCode.trim().length < 5) {
-            Alert.alert('Invalid Code', 'Please enter a valid invite code.');
+            Alert.alert(t.invalidCode, t.invalidCodeMsg);
             return;
         }
 
@@ -115,12 +199,12 @@ const SettingsScreen = () => {
                 await AsyncStorage.setItem('referral_redeemed', 'true');
                 setHasRedeemed(true);
                 setInviteCode('');
-                Alert.alert('Jai Sri Krishna!', 'You have received 50 Divya Coins! Your friend will also be rewarded.');
+                Alert.alert(t.jaiSriKrishna, t.rewardMsg);
             } else {
-                Alert.alert('Redeem Failed', result.message || 'Could not redeem this code.');
+                Alert.alert(t.redeemFailed, result.message || t.redeemFailedMsg);
             }
         } catch (error) {
-            Alert.alert('Error', 'Something went wrong. Please try again.');
+            Alert.alert(t.error, t.errorMsg);
         } finally {
             setIsProcessingReferral(false);
         }
@@ -144,7 +228,7 @@ const SettingsScreen = () => {
                     return newTotal;
                 });
                 setPendingRewards(0);
-                Alert.alert('Rewards Claimed!', `Jai Sri Krishna! You earned ${rewardTotal} Divya Coins from your referrals.`);
+                Alert.alert(t.rewardsClaimed, t.rewardsClaimedMsg.replace('{reward}', rewardTotal));
             }
         } catch (error) {
             console.error('Claim error:', error);
@@ -180,12 +264,12 @@ const SettingsScreen = () => {
                         AsyncStorage.setItem('divyaCoins', newTotal.toString());
                         return newTotal;
                     });
-                    Alert.alert('Blessed!', 'You earned 10 Divya Coins for your devotion.');
+                    Alert.alert(t.blessed, t.blessedMsg);
                 } else if (type === 'no_ads') {
                     const expiry = Date.now() + 5 * 60 * 1000; // 5 minutes for testing
                     setAdFreeUntil(expiry);
                     await AsyncStorage.setItem('ad_free_expiry', expiry.toString());
-                    Alert.alert('Divine Serenity', 'Ads have been removed for the next 5 minutes.');
+                    Alert.alert(t.serenity, t.serenityMsg);
                 }
             } catch (error) {
                 console.error('Error rewarding:', error);
@@ -200,8 +284,7 @@ const SettingsScreen = () => {
     const handleShare = async () => {
         try {
             await Share.share({
-                message:
-                    'Check out this amazing Sri Krishna Puja app! 🌸 Perform daily rituals and get beautiful wallpapers. Download now: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnadailypujaaarti',
+                message: t.shareMsg,
             });
         } catch (error) {
             console.error('Error sharing:', error);
@@ -258,7 +341,7 @@ const SettingsScreen = () => {
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                     <Ionicons name="chevron-back" size={28} color="#9c6ce6" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Settings</Text>
+                <Text style={styles.headerTitle}>{t.header}</Text>
                 <View style={{ width: 40 }} />
             </View>
 
@@ -271,7 +354,7 @@ const SettingsScreen = () => {
                     <View style={styles.cardHeader}>
                         <Ionicons name="wallet" size={40} color="#D4AF37" style={{ marginRight: 15 }} />
                         <View>
-                            <Text style={styles.cardTitle}>Your Coins</Text>
+                            <Text style={styles.cardTitle}>{t.yourCoins}</Text>
                             <Text style={styles.coinBalance}>{currentCoins}</Text>
                         </View>
                     </View>
@@ -279,12 +362,12 @@ const SettingsScreen = () => {
                     <View style={styles.featuresList}>
                         <View style={styles.featureItem}>
                             <Ionicons name="checkmark-circle" size={20} color="#FFA500" />
-                            <Text style={styles.featureText}>Earn coins by watching ads</Text>
+                            <Text style={styles.featureText}>{t.earnCoins}</Text>
                         </View>
                     </View>
 
                     <TouchableOpacity style={[styles.buyButton, { backgroundColor: '#4caf50' }]} onPress={() => handleWatchAd('coins')}>
-                        <Text style={styles.buyButtonText}>WATCH AD (+10)</Text>
+                        <Text style={styles.buyButtonText}>{t.watchAd}</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -300,11 +383,11 @@ const SettingsScreen = () => {
                             <Ionicons name="people" size={24} color="#D4AF37" />
                         </View>
                         <View style={styles.cardTitleContainer}>
-                            <Text style={styles.cardTitle}>Share & Earn</Text>
+                            <Text style={styles.cardTitle}>{t.shareEarn}</Text>
                             <View style={styles.priceRow}>
-                                <Text style={[styles.price, { color: '#D4AF37' }]}>+50 Coins</Text>
+                                <Text style={[styles.price, { color: '#D4AF37' }]}>{t.coinBonus}</Text>
                                 <View style={styles.tagContainer}>
-                                    <Text style={styles.tagText}>For you & your friend</Text>
+                                    <Text style={styles.tagText}>{t.forFriend}</Text>
                                 </View>
                             </View>
                         </View>
@@ -313,21 +396,21 @@ const SettingsScreen = () => {
                     <View style={styles.featuresList}>
                         <View style={styles.featureItem}>
                             <Ionicons name="checkmark-circle" size={20} color="#D4AF37" />
-                            <Text style={styles.featureText}>Refer your friend and both will get 50 Divya Coins.</Text>
+                            <Text style={styles.featureText}>{t.referDesc}</Text>
                         </View>
                     </View>
 
                     {/* Referrer Section */}
                     {referralCode && (
                         <View style={styles.referralInfoBox}>
-                            <Text style={styles.referralLabel}>YOUR INVITE CODE</Text>
+                            <Text style={styles.referralLabel}>{t.inviteCode}</Text>
                             <View style={styles.codeRow}>
                                 <Text style={styles.codeText}>{referralCode}</Text>
                                 <TouchableOpacity
                                     style={styles.copyBtn}
                                     onPress={() => {
                                         Share.share({
-                                            message: `Use my invite code ${referralCode} in the Sri Krishna Puja app and get 50 Divya Coins! Download now: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnadailypujaaarti`
+                                            message: t.inviteShareMsg.replace('{code}', referralCode)
                                         });
                                     }}
                                 >
@@ -345,8 +428,8 @@ const SettingsScreen = () => {
                             disabled={isProcessingReferral}
                         >
                             <View>
-                                <Text style={styles.claimTitle}>Pending Rewards Found!</Text>
-                                <Text style={styles.claimSub}>{pendingRewards} bhaktas used your code</Text>
+                                <Text style={styles.claimTitle}>{t.pendingRewards}</Text>
+                                <Text style={styles.claimSub}>{pendingRewards} {t.bhaktasUsed}</Text>
                             </View>
                             <View style={styles.claimAction}>
                                 <Text style={styles.claimCount}>+{pendingRewards * 50}</Text>
@@ -360,7 +443,7 @@ const SettingsScreen = () => {
                         <View style={styles.redeemSection}>
                             <TextInput
                                 style={styles.redeemInput}
-                                placeholder="ENTER INVITE CODE"
+                                placeholder={t.enterInvite}
                                 placeholderTextColor="#666"
                                 value={inviteCode}
                                 onChangeText={setInviteCode}
@@ -374,14 +457,14 @@ const SettingsScreen = () => {
                                 {isProcessingReferral ? (
                                     <ActivityIndicator size="small" color="#000" />
                                 ) : (
-                                    <Text style={styles.redeemBtnText}>CLAIM</Text>
+                                    <Text style={styles.redeemBtnText}>{t.claim}</Text>
                                 )}
                             </TouchableOpacity>
                         </View>
                     ) : (
                         <View style={styles.redeemedBadge}>
                             <Ionicons name="checkmark-done-circle" size={18} color="#4caf50" />
-                            <Text style={styles.redeemedText}>INVITE REWARD CLAIMED</Text>
+                            <Text style={styles.redeemedText}>{t.rewardClaimed}</Text>
                         </View>
                     )}
                 </LinearGradient>
@@ -430,41 +513,41 @@ const SettingsScreen = () => {
 
                 {/* New Feature List */}
                 <View style={styles.menuSection}>
-                    <Text style={styles.sectionHeader}>Support & Info</Text>
+                    <Text style={styles.sectionHeader}>{t.supportInfo}</Text>
 
                     <MenuOption
                         icon="star"
-                        title="Rate Us"
+                        title={t.rateUs}
                         onPress={handleRate}
                         color="#FFD700"
                     />
                     <MenuOption
                         icon="mail"
-                        title="Contact / Feedback"
+                        title={t.contact}
                         onPress={handleContact}
                         color="#ff6b6b"
                     />
                     <MenuOption
                         icon="language"
-                        title="Change Language"
+                        title={t.language}
                         onPress={handleLanguage}
                         color="#9c6ce6"
                     />
                     <MenuOption
                         icon="shield-checkmark"
-                        title="Privacy Policy"
+                        title={t.privacy}
                         onPress={handlePrivacy}
                         color="#4caf50"
                     />
                     <MenuOption
                         icon="information-circle"
-                        title="About Us"
+                        title={t.about}
                         onPress={handleAbout}
                         color="#fff"
                     />
                 </View>
 
-                <Text style={styles.versionText}>Version 1.0.0</Text>
+                <Text style={styles.versionText}>{t.version} 1.0.0</Text>
 
             </ScrollView>
         </View>
