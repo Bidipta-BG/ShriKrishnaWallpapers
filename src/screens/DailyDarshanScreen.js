@@ -24,7 +24,8 @@ import { useLanguage } from '../context/LanguageContext';
 import {
     ITEM_ICONS,
     loadSelectedPujaItems,
-    loadUnlockedItems
+    loadUnlockedItems,
+    loadUserCoins
 } from '../utils/samagri_helpers';
 
 const { width, height } = Dimensions.get('window');
@@ -218,7 +219,7 @@ const TRANSLATIONS = {
         slokas: 'Granth',
         chanting: 'Mantra',
         share: 'Share',
-        shareBlessing: 'Wisdom',
+        shareBlessing: 'Share',
         allImages: 'All Images',
         allMantras: 'All Mantras',
         download: 'Download',
@@ -497,7 +498,8 @@ const DailyDarshanScreen = ({ navigation }) => {
                 newCoins = 10;
                 shouldAutoPlay = true;
             } else if (lastDate === today) {
-                // Same day refresh
+                // Same day refresh: ensure state is synced from storage
+                newCoins = await loadUserCoins();
                 shouldAutoPlay = false;
             } else {
                 const yesterday = new Date();

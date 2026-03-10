@@ -14,13 +14,7 @@ const LanguageSelectionScreen = () => {
 
     const handleLanguageSelect = (langCode) => {
         selectLanguage(langCode);
-        setUIReady(true);
-        // If we can go back, it means we came from Settings
-        if (navigation.canGoBack()) {
-            navigation.goBack();
-        } else {
-            navigation.replace('DailyDarshan');
-        }
+        navigation.replace('AppGuide');
     };
 
     const renderItem = ({ item }) => (

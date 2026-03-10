@@ -1,5 +1,6 @@
 import { createStackNavigator } from '@react-navigation/stack';
 import AboutScreen from '../screens/AboutScreen';
+import AppGuideScreen from '../screens/AppGuideScreen';
 import AstroScreen from '../screens/AstroScreen';
 import CategoryGridScreen from '../screens/CategoryGridScreen';
 import ChantingScreen from '../screens/ChantingScreen';
@@ -34,6 +35,7 @@ const AppNavigator = ({ initialRouteName = 'LanguageSelection' }) => {
             }}
         >
             <Stack.Screen name="LanguageSelection" component={LanguageSelectionScreen} />
+            <Stack.Screen name="AppGuide" component={AppGuideScreen} />
             <Stack.Screen name="DailyDarshan" component={DailyDarshanScreen} />
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="Slokas" component={SlokasScreen} />

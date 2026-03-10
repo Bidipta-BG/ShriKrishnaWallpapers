@@ -14,7 +14,7 @@ import { isVersionLower } from './src/utils/versionHelper';
 const APP_VERSION = appJson.expo.version;
 
 const AppContent = () => {
-    const { language, isLoading, clearLanguage, setUIReady, selectLanguage, isUIReady } = useLanguage();
+    const { language, isLoading, isGuideSeen, isUIReady } = useLanguage();
     const [updateConfig, setUpdateConfig] = useState(null);
     const [showUpdateModal, setShowUpdateModal] = useState(false);
 
@@ -64,9 +64,15 @@ const AppContent = () => {
         );
     }
 
+    const getInitialRoute = () => {
+        if (!language) return "LanguageSelection";
+        if (!isGuideSeen) return "AppGuide";
+        return "DailyDarshan";
+    };
+
     return (
         <NavigationContainer key={language ? 'user' : 'guest'}>
-            <AppNavigator initialRouteName={language ? "DailyDarshan" : "LanguageSelection"} />
+            <AppNavigator initialRouteName={getInitialRoute()} />
             <LoadingOverlay />
             <UpdateModal
                 visible={showUpdateModal}

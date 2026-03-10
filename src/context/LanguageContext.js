@@ -9,7 +9,8 @@ export const useLanguage = () => useContext(LanguageContext);
 export const LanguageProvider = ({ children }) => {
   const [language, setLanguage] = useState(null); // 'en', 'hi', or null (not selected)
   const [isLoading, setIsLoading] = useState(true);
-  const [isUIReady, setUIReady] = useState(false); // Controls when main screen animations can start
+  const [isUIReady, setUIReady] = useState(false);
+  const [isGuideSeen, setGuideSeenState] = useState(false);
 
   useEffect(() => {
     loadLanguage();
@@ -17,9 +18,18 @@ export const LanguageProvider = ({ children }) => {
 
   const loadLanguage = async () => {
     try {
-      const storedLanguage = await AsyncStorage.getItem('userLanguage');
+      const [storedLanguage, storedGuideSeen] = await Promise.all([
+        AsyncStorage.getItem('userLanguage'),
+        AsyncStorage.getItem('isGuideSeen')
+      ]);
+
       if (storedLanguage) {
         setLanguage(storedLanguage);
+        setUIReady(true);
+      }
+
+      if (storedGuideSeen === 'true') {
+        setGuideSeenState(true);
       }
     } catch (error) {
       console.error('Failed to load language', error);
@@ -31,12 +41,21 @@ export const LanguageProvider = ({ children }) => {
   const selectLanguage = async (lang) => {
     try {
       await AsyncStorage.setItem('userLanguage', lang);
+      // Reset guide seen when language changes
+      await AsyncStorage.setItem('isGuideSeen', 'false');
       setLanguage(lang);
-      // If selecting for first time, we might skip the "Welcome Back" alert or handle it differently.
-      // For now, let's assume we want to signal ready immediately if it's a fresh selection?
-      // actually App.js will remount.
+      setGuideSeenState(false);
     } catch (error) {
       console.error('Failed to save language', error);
+    }
+  };
+
+  const setGuideSeen = async (seen) => {
+    try {
+      await AsyncStorage.setItem('isGuideSeen', seen.toString());
+      setGuideSeenState(seen);
+    } catch (error) {
+      console.error('Failed to save guide seen state', error);
     }
   };
 
@@ -51,7 +70,16 @@ export const LanguageProvider = ({ children }) => {
   }
 
   return (
-    <LanguageContext.Provider value={{ language, isLoading, isUIReady, setUIReady, selectLanguage, clearLanguage }}>
+    <LanguageContext.Provider value={{
+      language,
+      isLoading,
+      isUIReady,
+      isGuideSeen,
+      setUIReady,
+      setGuideSeen,
+      selectLanguage,
+      clearLanguage
+    }}>
       {children}
     </LanguageContext.Provider>
   );
