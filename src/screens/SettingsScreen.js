@@ -350,7 +350,7 @@ const SettingsScreen = () => {
     };
 
     const handleExploreApps = () => {
-        const developerUrl = 'https://play.google.com/store/apps/dev?id=5180120150247492167'; // Axomit Lab developer page
+        const developerUrl = 'https://play.google.com/store/apps/developer?id=Axom+IT+Lab'; // Axom IT Lab developer page
         Linking.openURL(developerUrl).catch(err => {
             console.error('Error opening developer page:', err);
         });
