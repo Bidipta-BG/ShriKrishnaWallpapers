@@ -14,9 +14,10 @@ import {
     useWindowDimensions,
     View
 } from 'react-native';
-import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
+import { BannerAd, BannerAdSize, TestIds, useInterstitialAd } from 'react-native-google-mobile-ads';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '../context/LanguageContext';
+import { useLoading } from '../contexts/LoadingContext';
 
 const FULL_IMAGE_TRANSLATIONS = {
     en: {
@@ -43,7 +44,12 @@ const FULL_IMAGE_TRANSLATIONS = {
         comingSoon: 'Coming Soon',
         comingSoonText: 'The Divine Store is being prepared by the devas. Check back soon!',
         error: 'Error',
-        errorPuja: 'Failed to update Puja background.'
+        errorPuja: 'Failed to update Puja background.',
+        supportTitle: 'Support the App',
+        supportText: 'Please watch a short ad to set this image as your Daily Darshan background. This supports our divine mission.',
+        watchAdBtn: 'Watch Ad',
+        watchAdCancel: 'Maybe Later',
+        adLoading: 'Loading Ad...'
     },
     hi: {
         loading: 'लोड हो रहा है...',
@@ -69,7 +75,12 @@ const FULL_IMAGE_TRANSLATIONS = {
         comingSoon: 'जल्द आ रहा है',
         comingSoonText: 'दिव्य स्टोर देवों द्वारा तैयार किया जा रहा है। जल्द ही वापस देखें!',
         error: 'त्रुटि',
-        errorPuja: 'पूजा बैकग्राउंड अपडेट करने में विफल।'
+        errorPuja: 'पूजा बैकग्राउंड अपडेट करने में विफल।',
+        supportTitle: 'ऐप का समर्थन करें',
+        supportText: 'इस चित्र को अपने दैनिक दर्शन बैकग्राउंड के रूप में सेट करने के लिए कृपया एक छोटा विज्ञापन देखें। यह हमारे दिव्य मिशन का समर्थन करता है।',
+        watchAdBtn: 'विज्ञापन देखें',
+        watchAdCancel: 'शायद बाद में',
+        adLoading: 'दिव्य विज्ञापन लोड हो रहा है...'
     }
 };
 
@@ -102,6 +113,9 @@ const FullImageScreen = () => {
     const [divyaCoins, setDivyaCoins] = useState(0);
     const [isLimitModalVisible, setLimitModalVisible] = useState(false);
     const [isLowCoinVisible, setLowCoinVisible] = useState(false);
+    const [isAdModalVisible, setAdModalVisible] = useState(false);
+    const [pendingImageSource, setPendingImageSource] = useState(null);
+    const { showLoading, hideLoading } = useLoading();
     const flatListRef = useRef(null);
 
     // Ad Rotation Logic
@@ -116,11 +130,44 @@ const FullImageScreen = () => {
     useEffect(() => {
         const interval = setInterval(() => {
             setAdIndex((prev) => (prev + 1) % BANNER_AD_IDS.length);
-            console.log('[Ads] Rotating to index:', (adIndex + 1) % BANNER_AD_IDS.length);
         }, 30000); // 30 seconds for production
 
         return () => clearInterval(interval);
-    }, [adIndex]); // Depend on adIndex to ensure clean rotation
+    }, [adIndex]);
+
+    // Interstitial Ad Setup
+    const { isLoaded, isClosed, load, show } = useInterstitialAd(TestIds.INTERSTITIAL, {
+        requestNonPersonalizedAdsOnly: true,
+    });
+
+    useEffect(() => {
+        if (isClosed) {
+            console.log('[Ads] Interstitial closed, updating background...');
+            updateBackgroundAfterAd();
+            setAdModalVisible(false);
+            setPendingImageSource(null);
+        }
+    }, [isClosed]);
+
+    const showInterstitialAd = () => {
+        if (!pendingImageSource) return;
+        setAdModalVisible(false);
+        showLoading(t.adLoading);
+        load();
+    };
+
+    useEffect(() => {
+        if (isLoaded && !isClosed) {
+            show();
+        }
+    }, [isLoaded]);
+
+    const updateBackgroundAfterAd = async () => {
+        if (pendingImageSource) {
+            await setPujaBackground(pendingImageSource, true);
+            hideLoading();
+        }
+    };
 
     useEffect(() => {
         loadGalleryImages();
@@ -241,7 +288,13 @@ const FullImageScreen = () => {
         }
     };
 
-    const setPujaBackground = async (source) => {
+    const setPujaBackground = async (source, skipAd = false) => {
+        if (!skipAd) {
+            setPendingImageSource(source);
+            setAdModalVisible(true);
+            return;
+        }
+
         try {
             let uriToSave;
             if (typeof source === 'number') {
@@ -503,6 +556,43 @@ const FullImageScreen = () => {
                                 }}
                             >
                                 <Text style={[styles.buyBtnText, { color: '#000' }]}>{t.getMoreCoins}</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Rewarded Ad Support Modal */}
+            <Modal
+                visible={isAdModalVisible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => !isAdLoading && setAdModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={[styles.modalContent, { borderColor: '#4dabf7' }]}>
+                        <View style={styles.modalHeader}>
+                            <Ionicons name="heart" size={40} color="#ff4d4d" />
+                            <Text style={[styles.modalTitle, { color: '#4dabf7' }]}>{t.supportTitle}</Text>
+                        </View>
+
+                        <Text style={styles.modalText}>
+                            {t.supportText}
+                        </Text>
+
+                        <View style={styles.modalButtons}>
+                            <TouchableOpacity
+                                style={[styles.modalBtn, styles.cancelBtn]}
+                                onPress={() => setAdModalVisible(false)}
+                            >
+                                <Text style={styles.cancelBtnText}>{t.watchAdCancel}</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[styles.modalBtn, { backgroundColor: '#4dabf7' }]}
+                                onPress={showInterstitialAd}
+                            >
+                                <Text style={[styles.buyBtnText, { color: '#fff' }]}>{t.watchAdBtn}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
