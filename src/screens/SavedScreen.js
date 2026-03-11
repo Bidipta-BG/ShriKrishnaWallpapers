@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Dimensions,
@@ -13,6 +13,7 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
@@ -23,6 +24,20 @@ const SavedScreen = ({ navigation }) => {
     const insets = useSafeAreaInsets();
     const [savedImages, setSavedImages] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+
+    // Ad Rotation Logic
+    const BANNER_AD_IDS = [
+        TestIds.BANNER,
+        'ca-app-pub-3940256099942544/6300978111'
+    ];
+    const [adIndex, setAdIndex] = useState(0);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setAdIndex((prevIndex) => (prevIndex + 1) % BANNER_AD_IDS.length);
+        }, 30000);
+        return () => clearInterval(interval);
+    }, []);
 
     useFocusEffect(
         useCallback(() => {
@@ -117,6 +132,17 @@ const SavedScreen = ({ navigation }) => {
                     <Text style={styles.emptySubText}>Save your favorite divine wallpapers to see them here.</Text>
                 </View>
             )}
+
+            {/* Banner Ad at fixed bottom */}
+            <View style={[styles.adContainer, { paddingBottom: insets.bottom > 0 ? insets.bottom : 5 }]}>
+                <BannerAd
+                    unitId={BANNER_AD_IDS[adIndex]}
+                    size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+                    requestOptions={{
+                        requestNonPersonalizedAdsOnly: true,
+                    }}
+                />
+            </View>
         </View>
     );
 };
@@ -182,6 +208,15 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginTop: 10,
     },
+    adContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(25, 25, 25, 0.9)',
+        paddingVertical: 5,
+        width: '100%',
+        borderTopWidth: 1,
+        borderTopColor: '#1A1A1A',
+    }
 });
 
 export default SavedScreen;
