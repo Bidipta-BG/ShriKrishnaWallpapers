@@ -1,10 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { useCallback, useState } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useCallback, useEffect, useState } from 'react';
 import {
     ActivityIndicator,
+    BackHandler,
     FlatList,
     LayoutAnimation,
+    Modal,
     Platform,
     StatusBar,
     StyleSheet,
@@ -13,8 +16,10 @@ import {
     UIManager,
     View
 } from 'react-native';
+import { BannerAd, BannerAdSize, TestIds, useInterstitialAd } from 'react-native-google-mobile-ads';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../context/LanguageContext';
+import { useLoading } from '../contexts/LoadingContext';
 import { loadSlokaProgress } from '../utils/sloka_helpers';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -29,6 +34,71 @@ const SlokaChapterListScreen = ({ navigation, route }) => {
     const [progress, setProgress] = useState(null);
     const [bookData, setBookData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [showSupportModal, setShowSupportModal] = useState(false);
+    const [isAdActionActive, setIsAdActionActive] = useState(false);
+    const { showLoading, hideLoading } = useLoading();
+
+    // Interstitial Ad Setup
+    const { isLoaded, isClosed, load, show } = useInterstitialAd(TestIds.INTERSTITIAL, {
+        requestNonPersonalizedAdsOnly: true,
+    });
+
+    // Handle Ad Completion/Close
+    useEffect(() => {
+        if (isClosed && isAdActionActive) {
+            setIsAdActionActive(false);
+            hideLoading();
+            navigation.goBack();
+        }
+    }, [isClosed]);
+
+    // Show ad when loaded
+    useEffect(() => {
+        if (isLoaded && isAdActionActive) {
+            show();
+        }
+    }, [isLoaded]);
+
+    // Handle Hardware Back Button
+    useEffect(() => {
+        const backAction = () => {
+            setShowSupportModal(true);
+            return true;
+        };
+
+        const backHandler = BackHandler.addEventListener(
+            'hardwareBackPress',
+            backAction,
+        );
+
+        return () => backHandler.remove();
+    }, []);
+
+    const handleExitWithAd = () => {
+        setShowSupportModal(false);
+        setIsAdActionActive(true);
+        showLoading(isHindi ? 'दिव्य विज्ञापन तैयार हो रहा है...' : 'Preparing ad...');
+        load();
+    };
+
+    const handleExitDirectly = () => {
+        setShowSupportModal(false);
+        navigation.goBack();
+    };
+
+    // Ad Rotation Logic
+    const BANNER_AD_IDS = [
+        TestIds.BANNER,
+        'ca-app-pub-3940256099942544/6300978111'
+    ];
+    const [adIndex, setAdIndex] = useState(0);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setAdIndex((prev) => (prev + 1) % BANNER_AD_IDS.length);
+        }, 30000);
+        return () => clearInterval(interval);
+    }, []);
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
@@ -135,7 +205,7 @@ const SlokaChapterListScreen = ({ navigation, route }) => {
             <StatusBar barStyle="light-content" />
 
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                <TouchableOpacity onPress={() => setShowSupportModal(true)} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color="#FFD700" />
                 </TouchableOpacity>
                 <View style={styles.headerTitleContainer}>
@@ -147,6 +217,16 @@ const SlokaChapterListScreen = ({ navigation, route }) => {
                     </Text>
                 </View>
                 <View style={{ width: 40 }} />
+            </View>
+
+            {/* Banner Ad placement (below header) */}
+            <View style={styles.adContainer}>
+                <BannerAd
+                    key={`ad-chapters-${adIndex}`}
+                    unitId={BANNER_AD_IDS[adIndex]}
+                    size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+                    requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+                />
             </View>
 
             {isLoading ? (
@@ -164,6 +244,58 @@ const SlokaChapterListScreen = ({ navigation, route }) => {
                     contentContainerStyle={styles.listContent}
                 />
             )}
+
+            {/* Exit Support Modal */}
+            <Modal
+                transparent={true}
+                visible={showSupportModal}
+                animationType="fade"
+                onRequestClose={() => setShowSupportModal(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.devotionalCard}>
+                        <View style={styles.spiritualIconBox}>
+                            <Ionicons name="heart-circle" size={60} color="#FFD700" />
+                        </View>
+
+                        <Text style={styles.modalTitle}>
+                            {isHindi ? 'शुभ विदाई' : 'Sacred Farewell'}
+                        </Text>
+
+                        <Text style={styles.devotionalText}>
+                            {isHindi
+                                ? 'प्रिय भक्त, यदि आपको गीता पढ़ना और हमारा कार्य पसंद आ रहा है, तो कृपया एक विज्ञापन देखकर हमारा सहयोग करें।'
+                                : 'Dear Devotee, if you like our work or reading the Gita, please support us by watching a short ad.'}
+                        </Text>
+
+                        <View style={styles.modalButtonRow}>
+                            <TouchableOpacity
+                                style={styles.supportBtn}
+                                onPress={handleExitWithAd}
+                            >
+                                <LinearGradient
+                                    colors={['#FFD700', '#FFA000']}
+                                    style={styles.btnGradient}
+                                >
+                                    <Ionicons name="videocam" size={20} color="#000" />
+                                    <Text style={styles.supportBtnText}>
+                                        {isHindi ? 'सहयोग करें' : 'Support'}
+                                    </Text>
+                                </LinearGradient>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={styles.cancelBtn}
+                                onPress={handleExitDirectly}
+                            >
+                                <Text style={styles.cancelBtnText}>
+                                    {isHindi ? 'वापस जाएं' : 'Back'}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -193,6 +325,14 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: '#3E2723',
         backgroundColor: '#1A120B'
+    },
+    adContainer: {
+        width: '100%',
+        alignItems: 'center',
+        paddingVertical: 10,
+        backgroundColor: '#120E0A',
+        borderBottomWidth: 1,
+        borderBottomColor: '#3E2723',
     },
     backButton: {
         padding: 8,
@@ -275,6 +415,76 @@ const styles = StyleSheet.create({
         fontStyle: 'italic',
         textAlign: 'center',
         padding: 10
+    },
+    // Modal Enhancements
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.85)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20
+    },
+    devotionalCard: {
+        backgroundColor: '#1A120B',
+        width: '90%',
+        borderRadius: 25,
+        padding: 30,
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#FFD700',
+    },
+    spiritualIconBox: {
+        marginBottom: 20,
+    },
+    modalTitle: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: '#FFD700',
+        marginBottom: 15,
+        fontFamily: 'serif'
+    },
+    devotionalText: {
+        color: '#EFEBE9',
+        fontSize: 15,
+        textAlign: 'center',
+        lineHeight: 22,
+        marginBottom: 30,
+    },
+    modalButtonRow: {
+        width: '100%',
+        gap: 12
+    },
+    supportBtn: {
+        width: '100%',
+        height: 50,
+        borderRadius: 25,
+        overflow: 'hidden',
+    },
+    btnGradient: {
+        flex: 1,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 10
+    },
+    supportBtnText: {
+        color: '#000',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    cancelBtn: {
+        width: '100%',
+        height: 50,
+        borderRadius: 25,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.2)',
+    },
+    cancelBtnText: {
+        color: 'rgba(255,255,255,0.6)',
+        fontSize: 16,
+        fontWeight: 'bold',
     }
 });
 

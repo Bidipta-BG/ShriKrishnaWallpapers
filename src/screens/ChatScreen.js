@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -12,9 +12,11 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+import { BannerAd, BannerAdSize, TestIds, useInterstitialAd } from 'react-native-google-mobile-ads';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BottomNav from '../components/BottomNav';
 import { useLanguage } from '../context/LanguageContext';
+import { useLoading } from '../contexts/LoadingContext';
 
 const { width } = Dimensions.get('window');
 
@@ -30,7 +32,7 @@ const TRANSLATIONS = {
         supportMsg: 'We humbly request your patience and support during this journey. You can directly contribute to the development process and help us keep this feature free by watching a short video. Every contribution brings us one step closer to Sri Krishna.',
         watchAdBtn: 'Support with an Ad ✨',
         thankYou: 'Jai Sri Krishna! Your support is recorded. Every prayer and contribution helps us in this divine mission.',
-        loadingAd: 'Preparing divine video...',
+        loadingAd: 'Preparing video...',
     },
     hi: {
         headerTitle: 'दिव्य एआई चैट',
@@ -52,17 +54,49 @@ const ChatScreen = ({ navigation }) => {
     const t = TRANSLATIONS[language] || TRANSLATIONS.en;
 
     const [isAdLoading, setIsAdLoading] = useState(false);
+    const [isSupportAdActive, setIsSupportAdActive] = useState(false);
+    const { showLoading, hideLoading } = useLoading();
 
-    const handleWatchAd = () => {
-        setIsAdLoading(true);
-        // Simulate ad loading for now
-        setTimeout(() => {
-            setIsAdLoading(false);
+    // Interstitial Ad Setup
+    const { isLoaded, isClosed, load, show } = useInterstitialAd(TestIds.INTERSTITIAL, {
+        requestNonPersonalizedAdsOnly: true,
+    });
+
+    useEffect(() => {
+        if (isClosed && isSupportAdActive) {
+            setIsSupportAdActive(false);
+            hideLoading();
             Alert.alert(
                 language === 'hi' ? 'जय श्री कृष्णा! 🙏' : 'Jai Sri Krishna! 🙏',
                 t.thankYou
             );
-        }, 2000);
+        }
+    }, [isClosed]);
+
+    useEffect(() => {
+        if (isLoaded && isSupportAdActive) {
+            show();
+        }
+    }, [isLoaded]);
+
+    // Ad Rotation Logic
+    const BANNER_AD_IDS = [
+        TestIds.BANNER,
+        'ca-app-pub-3940256099942544/6300978111'
+    ];
+    const [adIndex, setAdIndex] = useState(0);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setAdIndex((prev) => (prev + 1) % BANNER_AD_IDS.length);
+        }, 30000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const handleWatchAd = () => {
+        setIsSupportAdActive(true);
+        showLoading(t.loadingAd);
+        load();
     };
 
     return (
@@ -76,6 +110,16 @@ const ChatScreen = ({ navigation }) => {
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>{t.headerTitle}</Text>
                 <View style={{ width: 28 }} />
+            </View>
+
+            {/* Banner Ad placement (below header) */}
+            <View style={styles.adContainer}>
+                <BannerAd
+                    key={`ad-chat-${adIndex}`}
+                    unitId={BANNER_AD_IDS[adIndex]}
+                    size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+                    requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+                />
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -160,6 +204,14 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 15,
         backgroundColor: '#000',
+    },
+    adContainer: {
+        width: '100%',
+        alignItems: 'center',
+        paddingVertical: 10,
+        backgroundColor: '#000',
+        borderBottomWidth: 1,
+        borderBottomColor: '#1f1f1f',
     },
     backButton: {
         padding: 5,

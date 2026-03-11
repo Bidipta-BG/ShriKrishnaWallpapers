@@ -17,8 +17,10 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { BannerAd, BannerAdSize, TestIds, useInterstitialAd } from 'react-native-google-mobile-ads';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '../context/LanguageContext';
+import { useLoading } from '../contexts/LoadingContext';
 
 const SETTINGS_TRANSLATIONS = {
     en: {
@@ -27,9 +29,9 @@ const SETTINGS_TRANSLATIONS = {
         earnCoins: 'Earn coins by watching ads',
         watchAd: 'WATCH AD (+10)',
         shareEarn: 'Share & Earn',
-        coinBonus: '+50 Coins',
+        coinBonus: '+100 Coins',
         forFriend: 'For you & your friend',
-        referDesc: 'Refer your friend and both will get 50 Divya Coins.',
+        referDesc: 'Refer your friend and both will get 100 Divya Coins.',
         inviteCode: 'YOUR INVITE CODE',
         pendingRewards: 'Pending Rewards Found!',
         bhaktasUsed: 'bhaktas used your code',
@@ -46,7 +48,7 @@ const SETTINGS_TRANSLATIONS = {
         invalidCode: 'Invalid Code',
         invalidCodeMsg: 'Please enter a valid invite code.',
         jaiSriKrishna: 'Jai Sri Krishna!',
-        rewardMsg: 'You have received 50 Divya Coins! Your friend will also be rewarded.',
+        rewardMsg: 'You have received 100 Divya Coins! Your friend will also be rewarded.',
         redeemFailed: 'Redeem Failed',
         redeemFailedMsg: 'Could not redeem this code.',
         error: 'Error',
@@ -57,8 +59,8 @@ const SETTINGS_TRANSLATIONS = {
         blessedMsg: 'You earned 10 Divya Coins for your devotion.',
         serenity: 'Divine Serenity',
         serenityMsg: 'Ads have been removed for the next 5 minutes.',
-        shareMsg: 'Check out this amazing Sri Krishna Puja app! 🌸 Perform daily rituals and get beautiful wallpapers. Download now: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnadailypujaaarti',
-        inviteShareMsg: 'Use my invite code {code} in the Sri Krishna Puja app and get 50 Divya Coins! Download now: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnadailypujaaarti',
+        shareMsg: 'Look! I found this wonderful app to express my bhakti to Lord Shri Krishna and perform a sacred puja even within my busy daily schedule. 🌸 It has truly helped me stay focused and find peace amidst the chaos of life. Download here: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnadailypujaaarti',
+        inviteShareMsg: 'Look! I found this wonderful app to express my bhakti to Lord Shri Krishna and perform a sacred puja even within my busy daily schedule. 🌸 It has truly helped me stay focused and find peace. Use my invite code {code} to get 100 Divya Coins and start your spiritual journey! Download now: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnadailypujaaarti',
         supportUs: 'Support Us',
         supportUsTitle: 'Support Our Mission 🙏',
         supportUsMsg: 'Would you like to support the development and maintenance of this app by watching a short video?',
@@ -72,9 +74,9 @@ const SETTINGS_TRANSLATIONS = {
         earnCoins: 'विज्ञापन देखकर मुद्रा कमाएं',
         watchAd: 'विज्ञापन देखें (+10)',
         shareEarn: 'साझा करें और कमाएं',
-        coinBonus: '+50 मुद्रा',
+        coinBonus: '+100 मुद्रा',
         forFriend: 'आपके और आपके मित्र के लिए',
-        referDesc: 'अपने मित्र को रेफर करें और दोनों को 50 दिव्य मुद्रा मिलेगी।',
+        referDesc: 'अपने मित्र को रेफर करें और दोनों को 100 दिव्य मुद्रा मिलेगी।',
         inviteCode: 'आपका आमंत्रण कोड',
         pendingRewards: 'पुरस्कार मिले!',
         bhaktasUsed: 'भक्तों ने आपके कोड का उपयोग किया',
@@ -91,7 +93,7 @@ const SETTINGS_TRANSLATIONS = {
         invalidCode: 'अमान्य कोड',
         invalidCodeMsg: 'कृपया एक मान्य आमंत्रon कोड दर्ज करें।',
         jaiSriKrishna: 'जय श्री कृष्णा!',
-        rewardMsg: 'आपको 50 दिव्य मुद्रा प्राप्त हुई हैं! आपके मित्र को भी पुरस्कृत किया जाएगा।',
+        rewardMsg: 'आपको 100 दिव्य मुद्रा प्राप्त हुई हैं! आपके मित्र को भी पुरस्कृत किया जाएगा।',
         redeemFailed: 'रिडीम विफल',
         redeemFailedMsg: 'यह कोड रिडीम नहीं किया जा सका।',
         error: 'त्रुटि',
@@ -102,8 +104,8 @@ const SETTINGS_TRANSLATIONS = {
         blessedMsg: 'आपने अपनी भक्ति के लिए 10 दिव्य मुद्रा अर्जित की हैं।',
         serenity: 'दिव्य शांति',
         serenityMsg: 'अगले 5 मिनट के लिए विज्ञापन हटा दिए गए हैं।',
-        shareMsg: 'इस अद्भुत श्री कृष्ण पूजा ऐप को देखें! 🌸 दैनिक अनुष्ठान करें और सुंदर वॉलपेपर प्राप्त करें। अभी डाउनलोड करें: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnadailypujaaarti',
-        inviteShareMsg: 'श्री कृष्ण पूजा ऐप में मेरे आमंत्रण कोड {code} का उपयोग करें और 50 दिव्य मुद्रा प्राप्त करें! अभी डाउनलोड करें: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnadailypujaaarti',
+        shareMsg: 'देखिए! मुझे भगवान श्री कृष्ण की भक्ति व्यक्त करने और अपने व्यस्त दैनिक जीवन के बीच भी पवित्र पूजा करने के लिए यह अद्भुत ऐप मिला है। 🌸 इसने वास्तव में मुझे जीवन की आपाधापी के बीच ध्यान केंद्रित करने और शांति पाने में मदद की है। अभी डाउनलोड करें: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnadailypujaaarti',
+        inviteShareMsg: 'देखिए! मुझे भगवान श्री कृष्ण की भक्ति व्यक्त करने और अपने व्यस्त दैनिक जीवन के बीच भी पवित्र पूजा करने के लिए यह अद्भुत ऐप मिला है। 🌸 इसने वास्तव में मुझे जीवन की आपाधापी के बीच ध्यान केंद्रित करने और शांति पाने में मदद की है। मेरा आमंत्रण कोड {code} उपयोग करें और 100 दिव्य मुद्रा प्राप्त करें और अपनी आध्यात्मिक यात्रा शुरू करें! अभी डाउनलोड करें: https://play.google.com/store/apps/details?id=com.thevibecoder.shrikrishnadailypujaaarti',
         supportUs: 'हमें सहयोग करें',
         supportUsTitle: 'हमारे मिशन का समर्थन करें 🙏',
         supportUsMsg: 'क्या आप एक छोटा वीडियो देखकर इस ऐप के विकास और रखरखाव का समर्थन करना चाहेंगे?',
@@ -119,7 +121,6 @@ const SettingsScreen = () => {
     const { language } = useLanguage();
     const t = SETTINGS_TRANSLATIONS[language] || SETTINGS_TRANSLATIONS.en;
     const [currentCoins, setCurrentCoins] = useState(0);
-    const [isWatchingAd, setIsWatchingAd] = useState(false);
     const [adFreeUntil, setAdFreeUntil] = useState(null);
     const [deviceId, setDeviceId] = useState(null);
     const [referralCode, setReferralCode] = useState(null);
@@ -127,6 +128,69 @@ const SettingsScreen = () => {
     const [inviteCode, setInviteCode] = useState('');
     const [isProcessingReferral, setIsProcessingReferral] = useState(false);
     const [hasRedeemed, setHasRedeemed] = useState(false);
+    const { showLoading, hideLoading } = useLoading();
+
+    // Interstitial Ad Setup
+    const { isLoaded, isClosed, load, show } = useInterstitialAd(TestIds.INTERSTITIAL, {
+        requestNonPersonalizedAdsOnly: true,
+    });
+
+    const [adActionType, setAdActionType] = useState(null); // 'coins' or 'no_ads'
+
+    // Handle Ad Completion/Close
+    useEffect(() => {
+        if (isClosed && adActionType) {
+            const completedType = adActionType;
+            setAdActionType(null); // Reset before rewarding to prevent loops
+            hideLoading();
+
+            // Short delay to let the ad modal clean up before showing our Alert
+            setTimeout(() => {
+                rewardUser(completedType);
+            }, 500);
+        }
+    }, [isClosed]);
+
+    // Show ad when loaded (if we are waiting for it)
+    useEffect(() => {
+        if (isLoaded && adActionType) {
+            show();
+        }
+    }, [isLoaded]);
+
+    const rewardUser = async (type) => {
+        try {
+            if (type === 'coins') {
+                setCurrentCoins(prev => {
+                    const newTotal = (prev || 0) + 10;
+                    AsyncStorage.setItem('divyaCoins', newTotal.toString());
+                    return newTotal;
+                });
+                Alert.alert(t.blessed, t.blessedMsg);
+            } else if (type === 'no_ads') {
+                const expiry = Date.now() + 5 * 60 * 1000; // 5 minutes for testing
+                setAdFreeUntil(expiry);
+                await AsyncStorage.setItem('ad_free_expiry', expiry.toString());
+                Alert.alert(t.serenity, t.serenityMsg);
+            }
+        } catch (error) {
+            console.error('Error rewarding:', error);
+        }
+    };
+
+    // Ad Rotation Logic
+    const BANNER_AD_IDS = [
+        TestIds.BANNER,
+        'ca-app-pub-3940256099942544/6300978111'
+    ];
+    const [adIndex, setAdIndex] = useState(0);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setAdIndex((prev) => (prev + 1) % BANNER_AD_IDS.length);
+        }, 30000);
+        return () => clearInterval(interval);
+    }, []);
 
     useFocusEffect(
         useCallback(() => {
@@ -204,7 +268,7 @@ const SettingsScreen = () => {
 
             if (result.success) {
                 setCurrentCoins(prev => {
-                    const newTotal = (prev || 0) + 50;
+                    const newTotal = (prev || 0) + 100;
                     AsyncStorage.setItem('divyaCoins', newTotal.toString());
                     return newTotal;
                 });
@@ -233,7 +297,7 @@ const SettingsScreen = () => {
             const result = await response.json();
 
             if (result.success) {
-                const rewardTotal = pendingRewards * 50;
+                const rewardTotal = pendingRewards * 100;
                 setCurrentCoins(prev => {
                     const newTotal = (prev || 0) + rewardTotal;
                     AsyncStorage.setItem('divyaCoins', newTotal.toString());
@@ -265,30 +329,13 @@ const SettingsScreen = () => {
     };
 
     const handleWatchAd = async (type) => {
-        setIsWatchingAd(true);
-
-        // Simulate ad watching duration (3 seconds)
-        setTimeout(async () => {
-            try {
-                if (type === 'coins') {
-                    setCurrentCoins(prev => {
-                        const newTotal = (prev || 0) + 10;
-                        AsyncStorage.setItem('divyaCoins', newTotal.toString());
-                        return newTotal;
-                    });
-                    Alert.alert(t.blessed, t.blessedMsg);
-                } else if (type === 'no_ads') {
-                    const expiry = Date.now() + 5 * 60 * 1000; // 5 minutes for testing
-                    setAdFreeUntil(expiry);
-                    await AsyncStorage.setItem('ad_free_expiry', expiry.toString());
-                    Alert.alert(t.serenity, t.serenityMsg);
-                }
-            } catch (error) {
-                console.error('Error rewarding:', error);
-            } finally {
-                setIsWatchingAd(false);
-            }
-        }, 3000);
+        setAdActionType(type);
+        if (isLoaded) {
+            show();
+        } else {
+            showLoading(language === 'hi' ? 'दिव्य विज्ञापन तैयार हो रहा है...' : 'Preparing ad...');
+            load();
+        }
     };
 
     // --- New Feature Handlers ---
@@ -379,6 +426,16 @@ const SettingsScreen = () => {
                 <View style={{ width: 40 }} />
             </View>
 
+            {/* Banner Ad placement (Below Header) */}
+            <View style={styles.adContainer}>
+                <BannerAd
+                    key={`ad-settings-${adIndex}`}
+                    unitId={BANNER_AD_IDS[adIndex]}
+                    size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+                    requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+                />
+            </View>
+
             <ScrollView
                 contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 20 }]}
                 showsVerticalScrollIndicator={false}
@@ -466,7 +523,7 @@ const SettingsScreen = () => {
                                 <Text style={styles.claimSub}>{pendingRewards} {t.bhaktasUsed}</Text>
                             </View>
                             <View style={styles.claimAction}>
-                                <Text style={styles.claimCount}>+{pendingRewards * 50}</Text>
+                                <Text style={styles.claimCount}>+{pendingRewards * 100}</Text>
                                 <Ionicons name="gift" size={20} color="#000" />
                             </View>
                         </TouchableOpacity>
@@ -635,6 +692,12 @@ const styles = StyleSheet.create({
         color: '#9c6ce6',
         textAlign: 'center',
         flex: 1,
+    },
+    adContainer: {
+        width: '100%',
+        alignItems: 'center',
+        paddingVertical: 10,
+        backgroundColor: '#000',
     },
     content: {
         paddingHorizontal: 20,

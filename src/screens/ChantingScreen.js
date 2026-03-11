@@ -1,8 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
 import {
     Alert,
+    BackHandler,
     Dimensions,
     Image,
     Modal,
@@ -13,8 +15,9 @@ import {
     TouchableOpacity,
     TouchableWithoutFeedback,
     Vibration,
-    View,
+    View
 } from 'react-native';
+import { BannerAd, BannerAdSize, TestIds, useInterstitialAd } from 'react-native-google-mobile-ads';
 import Animated, {
     Easing,
     runOnJS,
@@ -28,6 +31,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../context/LanguageContext';
+import { useLoading } from '../contexts/LoadingContext';
 import { loadUserCoins, saveUserCoins } from '../utils/samagri_helpers';
 
 const { width, height } = Dimensions.get('window');
@@ -153,6 +157,71 @@ const ChantingScreen = ({ route, navigation }) => {
     // Audio State: 'speak' | 'mute'
     const [flowers, setFlowers] = useState([]);
     const [showRewardModal, setShowRewardModal] = useState(false);
+    const [showSupportModal, setShowSupportModal] = useState(false);
+    const [isAdActionActive, setIsAdActionActive] = useState(false);
+    const { showLoading, hideLoading } = useLoading();
+
+    // Ad Rotation Logic
+    const BANNER_AD_IDS = [
+        TestIds.BANNER,
+        'ca-app-pub-3940256099942544/6300978111'
+    ];
+    const [adIndex, setAdIndex] = useState(0);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setAdIndex((prev) => (prev + 1) % BANNER_AD_IDS.length);
+        }, 30000);
+        return () => clearInterval(interval);
+    }, []);
+
+    // Interstitial Ad Setup
+    const { isLoaded, isClosed, load, show } = useInterstitialAd(TestIds.INTERSTITIAL, {
+        requestNonPersonalizedAdsOnly: true,
+    });
+
+    // Handle Ad Completion/Close
+    useEffect(() => {
+        if (isClosed && isAdActionActive) {
+            setIsAdActionActive(false);
+            hideLoading();
+            navigation.goBack();
+        }
+    }, [isClosed]);
+
+    // Show ad when loaded
+    useEffect(() => {
+        if (isLoaded && isAdActionActive) {
+            show();
+        }
+    }, [isLoaded]);
+
+    // Handle Hardware Back Button
+    useEffect(() => {
+        const backAction = () => {
+            setShowSupportModal(true);
+            return true;
+        };
+
+        const backHandler = BackHandler.addEventListener(
+            'hardwareBackPress',
+            backAction,
+        );
+
+        return () => backHandler.remove();
+    }, []);
+
+    const handleExitWithAd = () => {
+        setShowSupportModal(false);
+        setIsAdActionActive(true);
+        showLoading(isHindi ? 'दिव्य विज्ञापन तैयार हो रहा है...' : 'Preparing ad...');
+        load();
+    };
+
+    const handleExitDirectly = () => {
+        setShowSupportModal(false);
+        navigation.goBack();
+    };
 
     const scale = useSharedValue(1);
     const rippleOpacity = useSharedValue(0);
@@ -251,7 +320,7 @@ const ChantingScreen = ({ route, navigation }) => {
 
             {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                <TouchableOpacity onPress={() => setShowSupportModal(true)} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color="#FFD700" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>{isHindi ? 'जाप' : 'Chanting'}</Text>
@@ -346,6 +415,68 @@ const ChantingScreen = ({ route, navigation }) => {
                     </View>
                 </View>
             </Modal>
+
+            {/* Exit Support Modal */}
+            <Modal
+                transparent={true}
+                visible={showSupportModal}
+                animationType="fade"
+                onRequestClose={() => setShowSupportModal(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.devotionalCard}>
+                        <View style={styles.spiritualIconBox}>
+                            <Ionicons name="heart-circle" size={60} color="#FFD700" />
+                        </View>
+
+                        <Text style={styles.modalTitle}>
+                            {isHindi ? 'शुभ विदाई' : 'Sacred Farewell'}
+                        </Text>
+
+                        <Text style={styles.devotionalText}>
+                            {isHindi
+                                ? 'प्रिय भक्त, यदि आपको मंत्र जाप और हमारा कार्य पसंद आ रहा है, तो कृपया एक विज्ञापन देखकर हमारा सहयोग करें।'
+                                : 'Dear Devotee, if you like chanting or our work, please support us by watching a short ad.'}
+                        </Text>
+
+                        <View style={styles.modalButtonRow}>
+                            <TouchableOpacity
+                                style={styles.supportBtn}
+                                onPress={handleExitWithAd}
+                            >
+                                <LinearGradient
+                                    colors={['#FFD700', '#FFA000']}
+                                    style={styles.btnGradient}
+                                >
+                                    <Ionicons name="videocam" size={20} color="#000" />
+                                    <Text style={styles.supportBtnText}>
+                                        {isHindi ? 'सहयोग करें' : 'Support'}
+                                    </Text>
+                                </LinearGradient>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={styles.cancelBtn}
+                                onPress={handleExitDirectly}
+                            >
+                                <Text style={styles.cancelBtnText}>
+                                    {isHindi ? 'वापस जाएं' : 'Back'}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Banner Ad placement (Sticky Bottom) */}
+            <View style={styles.adContainer}>
+                <BannerAd
+                    key={`ad-chanting-${adIndex}`}
+                    unitId={BANNER_AD_IDS[adIndex]}
+                    size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+                    requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+                />
+            </View>
         </SafeAreaView>
     );
 };
@@ -363,6 +494,14 @@ const styles = StyleSheet.create({
         paddingVertical: 15,
         backgroundColor: '#1A120B',
         zIndex: 10
+    },
+    adContainer: {
+        width: '100%',
+        alignItems: 'center',
+        paddingVertical: 10,
+        backgroundColor: '#120E0A',
+        borderTopWidth: 1,
+        borderTopColor: '#3E2723',
     },
     headerTitle: {
         fontSize: 20,
@@ -563,7 +702,70 @@ const styles = StyleSheet.create({
         color: '#BCAAA4',
         fontSize: 16,
         fontWeight: '600'
-    }
+    },
+    // Modal Enhancements
+    modalButtonRow: {
+        width: '100%',
+        gap: 12
+    },
+    supportBtn: {
+        width: '100%',
+        height: 50,
+        borderRadius: 25,
+        overflow: 'hidden',
+    },
+    btnGradient: {
+        flex: 1,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 10
+    },
+    supportBtnText: {
+        color: '#000',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    cancelBtn: {
+        width: '100%',
+        height: 50,
+        borderRadius: 25,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.2)',
+    },
+    cancelBtnText: {
+        color: 'rgba(255,255,255,0.6)',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    spiritualIconBox: {
+        marginBottom: 20,
+    },
+    modalTitle: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: '#FFD700',
+        marginBottom: 15,
+        fontFamily: 'serif'
+    },
+    devotionalText: {
+        color: '#EFEBE9',
+        fontSize: 15,
+        textAlign: 'center',
+        lineHeight: 22,
+        marginBottom: 30,
+    },
+    devotionalCard: {
+        backgroundColor: '#1A120B',
+        width: '90%',
+        borderRadius: 25,
+        padding: 30,
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#FFD700',
+    },
 });
 
 export default ChantingScreen;

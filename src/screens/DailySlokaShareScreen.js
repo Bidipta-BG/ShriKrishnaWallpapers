@@ -161,14 +161,14 @@ const DailySlokaShareScreen = () => {
                             <View style={styles.brandingRow}>
                                 <Ionicons name="logo-google-playstore" size={20} color="#FFD700" style={{ marginRight: 8 }} />
                                 <Text style={styles.brandingText}>Sri Krishna Puja App</Text>
-                                {!isSharing && (
+                                {/* {!isSharing && (
                                     <TouchableOpacity
                                         onPress={() => setShowBranding(false)}
                                         style={styles.closeBranding}
                                     >
                                         <Ionicons name="close-circle" size={18} color="rgba(255,215,0,0.6)" />
                                     </TouchableOpacity>
-                                )}
+                                )} */}
                             </View>
                         )}
                     </View>

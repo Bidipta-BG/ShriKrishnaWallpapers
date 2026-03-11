@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Dimensions,
@@ -15,6 +15,7 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BottomNav from '../components/BottomNav';
 import { useLanguage } from '../context/LanguageContext';
@@ -68,6 +69,20 @@ const GalleryScreen = () => {
     const [galleryData, setGalleryData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    // Ad Rotation Logic
+    const BANNER_AD_IDS = [
+        TestIds.BANNER,
+        'ca-app-pub-3940256099942544/6300978111'
+    ];
+    const [adIndex, setAdIndex] = useState(0);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setAdIndex((prev) => (prev + 1) % BANNER_AD_IDS.length);
+        }, 30000);
+        return () => clearInterval(interval);
+    }, []);
 
     // Load gallery data when screen comes into focus
     useFocusEffect(
@@ -236,6 +251,17 @@ const GalleryScreen = () => {
                         </View>
                     </TouchableOpacity>
                 </View>
+
+                {/* Banner Ad placement (below header) */}
+                <View style={styles.adContainer}>
+                    <BannerAd
+                        key={`ad-loading-${adIndex}`}
+                        unitId={BANNER_AD_IDS[adIndex]}
+                        size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+                        requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+                    />
+                </View>
+
                 <View style={styles.centerContent}>
                     <ActivityIndicator size="large" color="#4dabf7" />
                     <Text style={styles.loadingText}>{t.loading}</Text>
@@ -264,6 +290,17 @@ const GalleryScreen = () => {
                         </View>
                     </View>
                 </View>
+
+                {/* Banner Ad placement (below header) */}
+                <View style={styles.adContainer}>
+                    <BannerAd
+                        key={`ad-error-${adIndex}`}
+                        unitId={BANNER_AD_IDS[adIndex]}
+                        size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+                        requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+                    />
+                </View>
+
                 <View style={styles.centerContent}>
                     <Ionicons name="cloud-offline-outline" size={60} color="#9c6ce6" />
                     <Text style={styles.errorText}>{error || t.errorDefault}</Text>
@@ -302,6 +339,16 @@ const GalleryScreen = () => {
                         <Text style={styles.savedText}>{t.saved}</Text>
                     </View>
                 </TouchableOpacity>
+            </View>
+
+            {/* Banner Ad placement (below header) */}
+            <View style={styles.adContainer}>
+                <BannerAd
+                    key={`ad-main-${adIndex}`}
+                    unitId={BANNER_AD_IDS[adIndex]}
+                    size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+                    requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+                />
             </View>
 
             <ScrollView
@@ -383,7 +430,7 @@ const GalleryScreen = () => {
             <View style={styles.bottomNavContainer}>
                 <BottomNav navigation={navigation} activeTab="Image" />
             </View>
-        </View>
+        </View >
     );
 };
 
@@ -399,6 +446,14 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingBottom: 20,
         backgroundColor: '#000',
+    },
+    adContainer: {
+        width: '100%',
+        alignItems: 'center',
+        paddingVertical: 10,
+        backgroundColor: '#000',
+        borderBottomWidth: 1,
+        borderBottomColor: '#1f1f1f',
     },
     headerIcon: {
         width: 40,

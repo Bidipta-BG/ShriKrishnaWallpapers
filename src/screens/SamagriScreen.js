@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Dimensions, FlatList, Image, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import samagriItems from '../assets/data/samagri_items.json';
 import BottomNav from '../components/BottomNav';
@@ -58,6 +59,20 @@ const SamagriScreen = () => {
     const [selectedPujaItems, setSelectedPujaItems] = useState({});
     const [currentTime, setCurrentTime] = useState(Date.now());
     const { language } = useLanguage();
+
+    // Ad Rotation Logic
+    const BANNER_AD_IDS = [
+        TestIds.BANNER,
+        'ca-app-pub-3940256099942544/6300978111'
+    ];
+    const [adIndex, setAdIndex] = useState(0);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setAdIndex((prev) => (prev + 1) % BANNER_AD_IDS.length);
+        }, 30000);
+        return () => clearInterval(interval);
+    }, []);
     const mainListRef = useRef(null);
     const categoryListRef = useRef(null);
 
@@ -308,6 +323,16 @@ const SamagriScreen = () => {
                 </View>
             </View>
 
+            {/* Banner Ad placement (below header) */}
+            <View style={styles.adContainer}>
+                <BannerAd
+                    key={`ad-store-${adIndex}`}
+                    unitId={BANNER_AD_IDS[adIndex]}
+                    size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+                    requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+                />
+            </View>
+
             {/* Categories Horizontal List */}
             <View style={styles.categoriesContainer}>
                 <FlatList
@@ -343,7 +368,7 @@ const SamagriScreen = () => {
             <View style={styles.bottomNavContainer}>
                 <BottomNav navigation={navigation} activeTab="Samagri" />
             </View>
-        </View>
+        </View >
     );
 };
 
@@ -361,6 +386,14 @@ const styles = StyleSheet.create({
         backgroundColor: '#000',
         borderBottomWidth: 1,
         borderBottomColor: '#1a1a1a',
+    },
+    adContainer: {
+        width: '100%',
+        alignItems: 'center',
+        paddingVertical: 10,
+        backgroundColor: '#000',
+        borderBottomWidth: 1,
+        borderBottomColor: '#1f1f1f',
     },
     backButton: {
         padding: 8,

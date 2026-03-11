@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -14,6 +14,7 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../context/LanguageContext';
 import { GRANTH_LIBRARY_DATA } from '../data/SlokaLibraryData';
@@ -29,6 +30,20 @@ const SlokaLibraryScreen = ({ navigation }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [showEntranceModal, setShowEntranceModal] = useState(false);
     const [pendingBook, setPendingBook] = useState(null);
+
+    // Ad Rotation Logic
+    const BANNER_AD_IDS = [
+        TestIds.BANNER,
+        'ca-app-pub-3940256099942544/6300978111'
+    ];
+    const [adIndex, setAdIndex] = useState(0);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setAdIndex((prev) => (prev + 1) % BANNER_AD_IDS.length);
+        }, 30000);
+        return () => clearInterval(interval);
+    }, []);
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
@@ -177,9 +192,10 @@ const SlokaLibraryScreen = ({ navigation }) => {
                 <Text style={styles.headerTitle}>
                     {isHindi ? 'ग्रन्थ पुस्तकालय' : 'Granth Library'}
                 </Text>
-                <TouchableOpacity onPress={handleReset} style={styles.resetButton}>
+                {/* <TouchableOpacity onPress={handleReset} style={styles.resetButton}>
                     <Ionicons name="refresh-circle" size={28} color="#D35400" />
-                </TouchableOpacity>
+                </TouchableOpacity> */}
+                <View style={{ width: 28 }} />
             </View>
 
             {isLoading ? (
@@ -261,6 +277,16 @@ const SlokaLibraryScreen = ({ navigation }) => {
                     </View>
                 </View>
             </Modal>
+
+            {/* Banner Ad placement (Sticky Bottom) */}
+            <View style={styles.adContainer}>
+                <BannerAd
+                    key={`ad-granth-${adIndex}`}
+                    unitId={BANNER_AD_IDS[adIndex]}
+                    size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+                    requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+                />
+            </View>
         </SafeAreaView>
     );
 };
@@ -269,6 +295,14 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#120E0A',
+    },
+    adContainer: {
+        width: '100%',
+        alignItems: 'center',
+        paddingVertical: 10,
+        backgroundColor: '#120E0A',
+        borderTopWidth: 1,
+        borderTopColor: '#3E2723',
     },
     loadingContainer: {
         flex: 1,

@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as MediaLibrary from 'expo-media-library';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
     Alert,
     Dimensions,
@@ -14,8 +14,10 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { TestIds, useInterstitialAd } from 'react-native-google-mobile-ads';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { captureRef } from 'react-native-view-shot';
+import { useLoading } from '../contexts/LoadingContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -28,6 +30,46 @@ const ImageDownloadScreen = ({ navigation, route }) => {
     const [isQualityModalVisible, setQualityModalVisible] = useState(false);
     const [selectedQuality, setSelectedQuality] = useState('Low Quality');
     const [isDownloading, setIsDownloading] = useState(false);
+    const [isSupportModalVisible, setSupportModalVisible] = useState(false);
+    const [adActionType, setAdActionType] = useState(null); // 'DOWNLOAD' or 'REMOVE_LOGO'
+    const { showLoading, hideLoading } = useLoading();
+
+    // Interstitial Ad Setup
+    const { isLoaded, isClosed, load, show } = useInterstitialAd(TestIds.INTERSTITIAL, {
+        requestNonPersonalizedAdsOnly: true,
+    });
+
+    useEffect(() => {
+        if (isClosed) {
+            handleAdComplete();
+        }
+    }, [isClosed]);
+
+    useEffect(() => {
+        if (isLoaded && adActionType) {
+            show();
+        }
+    }, [isLoaded]);
+
+    const handleAdComplete = async () => {
+        const action = adActionType;
+        setAdActionType(null); // Clear immediately to prevent double-triggers
+
+        if (action === 'DOWNLOAD') {
+            await executeDownloadAfterAd();
+        } else if (action === 'REMOVE_LOGO') {
+            setShowWatermark(false);
+            hideLoading();
+        }
+    };
+
+    const triggerAdGate = (type) => {
+        setAdActionType(type);
+        setQualityModalVisible(false);
+        setSupportModalVisible(false);
+        showLoading('Loading Ad...');
+        load();
+    };
 
     const updateDownloadCountApi = async (id) => {
         try {
@@ -44,7 +86,11 @@ const ImageDownloadScreen = ({ navigation, route }) => {
     };
 
     const confirmDownload = async () => {
-        setQualityModalVisible(false);
+        triggerAdGate('DOWNLOAD');
+    };
+
+    const executeDownloadAfterAd = async () => {
+        if (isDownloading) return; // Guard against multiple triggers
         setIsDownloading(true);
 
         try {
@@ -65,6 +111,7 @@ const ImageDownloadScreen = ({ navigation, route }) => {
                     Alert.alert('Permission Required', 'Please grant gallery permissions to download the wallpaper.');
                 }
                 setIsDownloading(false);
+                hideLoading();
                 return;
             }
 
@@ -91,6 +138,7 @@ const ImageDownloadScreen = ({ navigation, route }) => {
             Alert.alert('Error', 'Failed to save the image to your gallery.');
         } finally {
             setIsDownloading(false);
+            hideLoading();
         }
     };
 
@@ -140,7 +188,7 @@ const ImageDownloadScreen = ({ navigation, route }) => {
                             {!isDownloading && (
                                 <TouchableOpacity
                                     style={styles.removeWatermark}
-                                    onPress={() => setShowWatermark(false)}
+                                    onPress={() => setSupportModalVisible(true)}
                                 >
                                     <Ionicons name="close-circle" size={18} color="rgba(255,215,0,0.6)" />
                                 </TouchableOpacity>
@@ -173,7 +221,7 @@ const ImageDownloadScreen = ({ navigation, route }) => {
                 </TouchableOpacity>
             </View>
 
-            {/* Quality Selection Modal */}
+            {/* Quality Selection Modal (Now Ad-Gated) */}
             <Modal
                 visible={isQualityModalVisible}
                 transparent={true}
@@ -182,8 +230,14 @@ const ImageDownloadScreen = ({ navigation, route }) => {
             >
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
+                        <StatusBar barStyle="light-content" backgroundColor="rgba(0,0,0,0.8)" />
+                        <View style={styles.modalHeaderIcon}>
+                            <Ionicons name="cloud-download" size={40} color="#9c6ce6" />
+                        </View>
                         <Text style={styles.modalTitle}>Watch an Ad to Download</Text>
-                        <Text style={[styles.modalText, { marginBottom: 20 }]}>Please watch a short video to support our temple and download this divine wallpaper.</Text>
+                        <Text style={[styles.modalText, { marginBottom: 20 }]}>
+                            Please watch a short video to support our temple and download this divine wallpaper.
+                        </Text>
 
                         <TouchableOpacity
                             style={styles.modalOkBtn}
@@ -195,13 +249,55 @@ const ImageDownloadScreen = ({ navigation, route }) => {
                                 end={{ x: 1, y: 0 }}
                                 style={styles.okBtnGradient}
                             >
-                                <Text style={styles.okBtnText}>OK</Text>
+                                <Text style={styles.okBtnText}>Watch Ad & Download</Text>
                             </LinearGradient>
                         </TouchableOpacity>
 
                         <TouchableOpacity
                             style={styles.modalCloseBtn}
                             onPress={() => setQualityModalVisible(false)}
+                        >
+                            <Text style={styles.modalCloseBtnText}>Maybe Later</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Logo Removal Support Modal */}
+            <Modal
+                visible={isSupportModalVisible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setSupportModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={[styles.modalContent, { borderColor: '#ffd700' }]}>
+                        <StatusBar barStyle="light-content" backgroundColor="rgba(0,0,0,0.8)" />
+                        <View style={styles.modalHeaderIcon}>
+                            <Ionicons name="heart" size={40} color="#ff4d4d" />
+                        </View>
+                        <Text style={[styles.modalTitle, { color: '#ffd700' }]}>Remove Watermark</Text>
+                        <Text style={styles.modalText}>
+                            Support our divine mission by watching a short ad to remove the watermark from this image.
+                        </Text>
+
+                        <TouchableOpacity
+                            style={styles.modalOkBtn}
+                            onPress={() => triggerAdGate('REMOVE_LOGO')}
+                        >
+                            <LinearGradient
+                                colors={['#ffd700', '#ff9933']}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 0 }}
+                                style={styles.okBtnGradient}
+                            >
+                                <Text style={[styles.okBtnText, { color: '#000' }]}>Watch Ad & Remove</Text>
+                            </LinearGradient>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={styles.modalCloseBtn}
+                            onPress={() => setSupportModalVisible(false)}
                         >
                             <Text style={styles.modalCloseBtnText}>Cancel</Text>
                         </TouchableOpacity>
@@ -357,6 +453,9 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
     },
+    modalHeaderIcon: {
+        marginBottom: 10,
+    },
     modalOkBtn: {
         width: '100%',
         marginTop: 15,
@@ -370,7 +469,7 @@ const styles = StyleSheet.create({
     },
     okBtnText: {
         color: '#fff',
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: 'bold',
     },
     modalCloseBtn: {

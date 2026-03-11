@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
     Dimensions,
     ImageBackground,
@@ -10,6 +10,7 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -69,6 +70,20 @@ const ScheduleDarshanScreen = () => {
         coins: 0,
         shields: 0
     });
+
+    // Ad Rotation Logic
+    const BANNER_AD_IDS = [
+        TestIds.BANNER,
+        'ca-app-pub-3940256099942544/6300978111' // Rotating with test IDs for safety
+    ];
+    const [adIndex, setAdIndex] = useState(0);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setAdIndex((prevIndex) => (prevIndex + 1) % BANNER_AD_IDS.length);
+        }, 30000); // 30 seconds rotation
+        return () => clearInterval(interval);
+    }, []);
 
     useFocusEffect(
         useCallback(() => {
@@ -189,6 +204,17 @@ const ScheduleDarshanScreen = () => {
                 <View style={styles.footer}>
                     <Text style={styles.footerText}>{t.footer}</Text>
                 </View>
+
+                {/* Banner Ad at fixed bottom */}
+                <View style={styles.adContainer}>
+                    <BannerAd
+                        unitId={BANNER_AD_IDS[adIndex]}
+                        size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+                        requestOptions={{
+                            requestNonPersonalizedAdsOnly: true,
+                        }}
+                    />
+                </View>
             </SafeAreaView>
         </ImageBackground>
     );
@@ -269,6 +295,13 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#333',
         textAlign: 'center'
+    },
+    adContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        paddingVertical: 5,
+        width: '100%',
     }
 });
 
