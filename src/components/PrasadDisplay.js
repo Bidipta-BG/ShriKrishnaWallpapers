@@ -8,6 +8,8 @@ import Animated, {
     withTiming
 } from 'react-native-reanimated';
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 const { width, height } = Dimensions.get('window');
 
 /**
@@ -43,11 +45,12 @@ const PrasadDisplay = ({ items, isVisible, dhupIcon, isDhupVisible }) => {
 };
 
 const PrasadItem = ({ imageSource, index, totalItems, isVisible, isSingleCentered = false }) => {
+    const insets = useSafeAreaInsets();
     const ITEM_SIZE = isSingleCentered ? 100 : 70; // Larger size for Dhup/Diya
     const MAX_PER_ROW = 3;
     const SPACING = 15;
     const ROW_HEIGHT = 60;
-    const BASELINE_Y = height * 0.72; // Slightly above Thali
+    const BASELINE_Y = height - (210 + insets.bottom); // Slightly above Thali
 
     const translateX = useSharedValue(index % 2 === 0 ? -200 : width + 200);
     const opacity = useSharedValue(0);

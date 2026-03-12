@@ -70,9 +70,10 @@ const FallingFlower = ({ index, onComplete, imageSource }) => {
     const rotate = useSharedValue(0);
     const opacity = useSharedValue(1);
 
+    const insets = useSafeAreaInsets();
     useEffect(() => {
         // Target Y: Use percentage of screen height to ensure items land consistently relative to Prasad
-        const targetY = (height * 0.83) + (Math.random() * 20);
+        const targetY = (height - (145 + insets.bottom)) + (Math.random() * 20);
 
         translateY.value = withDelay(
             randomDelay,
@@ -136,9 +137,10 @@ const FallingCoin = ({ index, onComplete, imageSource }) => {
 
     const opacity = useSharedValue(1);
 
+    const insets = useSafeAreaInsets();
     useEffect(() => {
         // Target Y: Match flower percentage for consistent scaling across devices
-        const targetY = (height * 0.83) + (Math.random() * 20);
+        const targetY = (height - (145 + insets.bottom)) + (Math.random() * 20);
 
         translateY.value = withDelay(
             config.delay,
@@ -1350,14 +1352,14 @@ const styles = StyleSheet.create({
     },
     flower: {
         position: 'absolute',
-        top: -50,
+        top: 0,
         width: 40,
         height: 40,
         zIndex: 100,
     },
     coin: {
         position: 'absolute',
-        top: -50,
+        top: 0,
         width: 35,
         height: 35,
         zIndex: 100,
