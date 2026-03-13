@@ -370,7 +370,7 @@ const SettingsScreen = () => {
 
     const handlePrivacy = () => {
         // Replace with your actual privacy policy URL
-        Linking.openURL('https://bidipta-bg.github.io/ShriKrishnaWallpapers/privacy-policy.html');
+        Linking.openURL('https://axomitlab.com/app/srikrishnapuja/privacy-policy');
     };
 
     const handleAbout = () => {

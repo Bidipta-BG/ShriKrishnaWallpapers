@@ -10,6 +10,9 @@ import UpdateModal from './src/components/UpdateModal';
 import { LanguageProvider, useLanguage } from './src/context/LanguageContext';
 import { LoadingProvider } from './src/contexts/LoadingContext';
 import AppNavigator from './src/navigation/AppNavigator';
+import * as Notifications from 'expo-notifications';
+import { initNotifications, scheduleDailyRituals } from './src/services/notificationService';
+
 import { isVersionLower } from './src/utils/versionHelper';
 
 const APP_VERSION = appJson.expo.version;
@@ -91,6 +94,16 @@ export default function App() {
             .then(adapterStatuses => {
                 console.log('[Ads] Initialization complete', adapterStatuses);
             });
+
+        // Initialize Notifications — always reschedule on startup
+        // (safe because scheduleDailyRituals cancels old ones first)
+        const setupNotifications = async () => {
+            const hasPermission = await initNotifications();
+            if (hasPermission) {
+                await scheduleDailyRituals();
+            }
+        };
+        setupNotifications();
     }, []);
 
     return (

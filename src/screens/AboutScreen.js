@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -48,7 +48,7 @@ const AboutScreen = ({ navigation }) => {
                 <View style={styles.logoContainer}>
                     {/* Placeholder for App Icon if available, else using generic icon */}
                     <View style={styles.logoPlaceholder}>
-                        <Ionicons name="flower-outline" size={60} color="#FFD700" />
+                        <Image source={require('../assets/images/about-icon.png')} style={{ width: 100, height: 100 }} resizeMode="contain" />
                     </View>
                     <Text style={styles.appName}>{t.appName}</Text>
                     <Text style={styles.appSubtitle}>{t.appSubtitle}</Text>
