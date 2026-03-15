@@ -141,25 +141,25 @@
                 "id": "t1",
                 "name": "Classic Thali",
                 "name_hi": "क्लासिक थाली",
-                "price": 100
+                "price": 80
             },
             {
                 "id": "t2",
                 "name": "Silver Thali",
                 "name_hi": "चांदी की थाली",
-                "price": 500
+                "price": 120
             },
             {
                 "id": "t3",
                 "name": "Gold Plated Thali",
                 "name_hi": "स्वर्ण जड़ित थाली",
-                "price": 1000
+                "price": 200
             },
             {
                 "id": "t4",
                 "name": "Kundan Thali",
                 "name_hi": "कुंदन थाली",
-                "price": 800
+                "price": 160
             }
         ]
     },
@@ -265,7 +265,7 @@
                 "id": "sa11",
                 "name": "Chappan Bhog",
                 "name_hi": "छप्पन भोग",
-                "price": 200
+                "price": 120
             }
         ]
     },
@@ -282,19 +282,19 @@
                 "id": "c2",
                 "name": "Bronze Coins",
                 "name_hi": "कांस्य मुद्रा",
-                "price": 50
+                "price": 40
             },
             {
                 "id": "c3",
                 "name": "Silver Coins",
                 "name_hi": "चांदी की मुद्रा",
-                "price": 100
+                "price": 80
             },
             {
                 "id": "c4",
                 "name": "Gold Coins",
                 "name_hi": "स्वर्ण मुद्रा",
-                "price": 250
+                "price": 200
             }
         ]
     }

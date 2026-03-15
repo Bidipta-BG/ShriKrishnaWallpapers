@@ -5,6 +5,7 @@ import {
     ActivityIndicator,
     Alert,
     Dimensions,
+    Image,
     ScrollView,
     StatusBar,
     StyleSheet,
@@ -131,7 +132,8 @@ const ChatScreen = ({ navigation }) => {
                         {/* Icon/Visual Section */}
                         <View style={styles.iconWrapper}>
                             <View style={styles.glowRing} />
-                            <Ionicons name="sparkles" size={60} color="#4dabf7" />
+                            <Image source={require('../assets/images/about-icon.png')} style={{ width: 100, height: 100, borderRadius: 50 }} resizeMode="cover" />
+
                             <View style={styles.glowDot} />
                         </View>
 

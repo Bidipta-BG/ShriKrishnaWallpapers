@@ -64,7 +64,7 @@ export const scheduleDailyRituals = async () => {
             },
             trigger: {
                 type: 'daily',
-                hour: 8,
+                hour: 7,
                 minute: 0,
             },
         });
